@@ -2,15 +2,20 @@ version: '3.8'
 
 services:
   core:
+    container_name: hacknation-core
     build:
       context: ./core
       dockerfile: Dockerfile
-    container_name: hacknation-core
+    command: bun run dev
+    working_dir: /app
     volumes:
       - ./core:/app
       - /app/node_modules
+      - /app/dist
     ports:
       - "3000:3000"
+    environment:
+      - WATCH_FILES=true
     restart: unless-stopped
 
   landing:

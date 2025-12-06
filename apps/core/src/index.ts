@@ -1,20 +1,11 @@
-import { Elysia } from "elysia";
-import { auth } from "./lib/auth";
-import { cors } from '@elysiajs/cors'
-import { serverTiming } from '@elysiajs/server-timing'
-import { openapi } from '@elysiajs/openapi'
+import cluster from 'node:cluster'
+import os from 'node:os'
+import process from 'node:process'
 
-
-const app = new Elysia()
-
-// plugins
-app.use(cors())
-app.use(serverTiming())
-app.use(openapi())
-
-// routes
-app.mount(auth.handler)
-
-app.listen(3000, () => {
-  console.log(`🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`)
-})
+if (cluster.isPrimary) {
+  	for (let i = 0; i < os.availableParallelism(); i++)
+    	cluster.fork()
+} else {
+  	await import('./server')
+  	console.log(`Worker ${process.pid} started`)
+}
