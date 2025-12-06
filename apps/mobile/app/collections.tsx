@@ -9,10 +9,13 @@ import {
   Pressable,
   Animated,
   Easing,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { items as allItems, type CollectedItem } from "./profile";
+import Navbar from "@/components/Navbar";
+import { authClient } from "@/lib/auth-client";
 
 const COLORS = {
   red: "#ED1C24",
@@ -27,6 +30,27 @@ const COLORS = {
 
 const CollectionsScreen: React.FC = () => {
   const router = useRouter();
+  const { data: session, isPending } = authClient.useSession();
+
+  useEffect(() => {
+    if (!isPending && !session) {
+      router.replace("/");
+    }
+  }, [session, isPending, router]);
+
+  if (isPending) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#ED1C24" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!session) {
+    return null; // Will redirect
+  }
 
   const collectedItems = allItems.filter((i) => i.collected);
   const totalCount = allItems.length;
@@ -279,6 +303,7 @@ const CollectionsScreen: React.FC = () => {
           </Pressable>
         </Animated.View>
       </Modal>
+      <Navbar />
     </SafeAreaView>
   );
 };
@@ -293,7 +318,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 8,
-    paddingBottom: 24,
+    paddingBottom: 100, // Extra padding for absolute navbar
   },
 
   // blobs
@@ -504,5 +529,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#FFFFFF",
     fontWeight: "600",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

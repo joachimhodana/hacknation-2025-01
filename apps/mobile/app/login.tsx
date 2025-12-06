@@ -1,16 +1,18 @@
-// screens/StartScreen.tsx
-import React from "react";
+// screens/LoginScreen.tsx
+import React, { useState } from "react";
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-// If you're using expo-router, you can uncomment this:
-// import { useRouter } from "expo-router";
+import { useRouter } from "expo-router";
+import { authClient } from "@/lib/auth-client";
 
 const COLORS = {
   red: "#ED1C24",
@@ -22,20 +24,35 @@ const COLORS = {
   bgSoft: "#F3F4F6",
 };
 
-export default function StartScreen() {
-  // If you want navigation via expo-router:
-  // const router = useRouter();
+export default function LoginScreen() {
+  const router = useRouter();
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleStartGuest = () => {
-    // TODO: navigate to main game/map without account
-    // router.push("/(tabs)/map");
-    console.log("Start without account");
+  const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      // TODO: Show validation error
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await authClient.signIn.email({
+        email,
+        password,
+      });
+      router.replace("/map");
+    } catch (error) {
+      console.error("Login error:", error);
+      // TODO: Show error message to user
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleGoToLogin = () => {
-    // TODO: navigate to login screen
-    // router.push("/login");
-    console.log("Go to login");
+  const handleGoToSignup = () => {
+    router.push("/signup");
   };
 
   return (
@@ -52,15 +69,9 @@ export default function StartScreen() {
         <View style={styles.container}>
           {/* Top section */}
           <View style={styles.header}>
-
-            <Text style={styles.title}>Zacznij odkrywanie Bydgoszczy</Text>
-            <Text style={styles.subtitle}>
-              Odkrywaj muzea, pomniki i ukryte tajemnice miasta. Możesz zacząć
-              od razu albo zalogować się, żeby zapisywać swój postęp.
-            </Text>
           </View>
 
-          {/* Card with choices */}
+          {/* Card */}
           <View style={styles.cardOuter}>
             <View style={styles.accentStrip}>
               <View
@@ -75,34 +86,72 @@ export default function StartScreen() {
             </View>
 
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>Jak chcesz zacząć?</Text>
+              <Text style={styles.cardTitle}>Zaloguj się</Text>
               <Text style={styles.cardSubtitle}>
-                Możesz wejść do gry bez konta albo zalogować się, aby zapisywać
-                swój postęp oraz zbierać punkty.
+                Zapisz postęp, znajdź najciekawszą ścieżkę i kontynuuj grę z dowolnego
+                urządzenia.
               </Text>
 
-              <TouchableOpacity
-                style={styles.primaryButton}
-                onPress={handleStartGuest}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>E-mail</Text>
+                <TextInput
+                  style={styles.input}
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="bydgoszczanin@mail.com"
+                  placeholderTextColor={COLORS.textMuted}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Hasło</Text>
+                <TextInput
+                  style={styles.input}
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="••••••••"
+                  placeholderTextColor={COLORS.textMuted}
+                  secureTextEntry
+                />
+              </View>
+
+              <TouchableOpacity 
+                style={[styles.loginButton, isLoading && styles.loginButtonDisabled]} 
+                onPress={handleLogin}
+                disabled={isLoading}
               >
-                <Text style={styles.primaryButtonText}>Zacznij bez konta</Text>
+                {isLoading ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.loginButtonText}>Wejdź do miasta</Text>
+                )}
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.secondaryButtonFilled}
-                onPress={handleGoToLogin}
-              >
-                <Text style={styles.secondaryButtonFilledText}>Zaloguj się</Text>
-              </TouchableOpacity>
+              <View style={styles.metaRow}>
+                <TouchableOpacity>
+                  <Text style={styles.linkText}>Nie pamiętasz hasła?</Text>
+                </TouchableOpacity>
+              </View>
 
-              <Text style={styles.smallNote}>
-                Konto możesz założyć później – przed utratą postępu przypomnimy
-                Ci o tym.
-              </Text>
+              <View style={styles.dividerRow}>
+                <View style={styles.divider} />
+                <Text style={styles.dividerText}>albo</Text>
+                <View style={styles.divider} />
+              </View>
+
+              <TouchableOpacity style={styles.secondaryButton} onPress={handleGoToSignup}>
+                <Text style={styles.secondaryButtonText}>
+                  Nowy w grze?{" "}
+                  <Text style={styles.secondaryButtonHighlight}>
+                    Utwórz konto
+                  </Text>
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
-
-          {/* Footer path */}
+          {/* Footer hint */}
           <View style={styles.footer}>
             <View style={styles.footerPath}>
               <View
@@ -122,7 +171,7 @@ export default function StartScreen() {
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -139,7 +188,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
 
-  // decorative soft blobs (same motive as Login)
+  // decorative soft blobs
   blob: {
     position: "absolute",
     opacity: 0.32,
@@ -182,6 +231,13 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 1,
     borderColor: "rgba(15,23,42,0.05)",
+  },
+  badgeText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "600",
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
   },
   badgeTextGhost: {
     color: COLORS.textDark,
@@ -246,42 +302,83 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.textMuted,
     marginTop: 4,
-    marginBottom: 16,
+    marginBottom: 10,
   },
 
-  primaryButton: {
+  inputGroup: {
+    marginTop: 10,
+  },
+  label: {
+    fontSize: 13,
+    color: COLORS.textDark,
+    marginBottom: 4,
+  },
+  input: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: COLORS.textDark,
+  },
+
+  loginButton: {
+    marginTop: 16,
     backgroundColor: COLORS.red,
     borderRadius: 999,
     paddingVertical: 12,
     alignItems: "center",
     justifyContent: "center",
   },
-  primaryButtonText: {
+  loginButtonDisabled: {
+    opacity: 0.6,
+  },
+  loginButtonText: {
     color: "#FFFFFF",
     fontSize: 15,
     fontWeight: "700",
   },
 
-  secondaryButtonFilled: {
+  metaRow: {
     marginTop: 10,
-    borderRadius: 999,
-    paddingVertical: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: "#FFFFFF",
+    alignItems: "flex-end",
   },
-  secondaryButtonFilledText: {
-    color: COLORS.textDark,
-    fontSize: 15,
-    fontWeight: "600",
+  linkText: {
+    fontSize: 12,
+    color: COLORS.blue,
+    fontWeight: "500",
   },
 
-  smallNote: {
-    marginTop: 10,
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 16,
+    marginBottom: 4,
+    gap: 8,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: COLORS.border,
+  },
+  dividerText: {
     fontSize: 11,
     color: COLORS.textMuted,
+  },
+
+  secondaryButton: {
+    alignItems: "center",
+    paddingVertical: 6,
+  },
+  secondaryButtonText: {
+    fontSize: 13,
+    color: COLORS.textMuted,
+  },
+  secondaryButtonHighlight: {
+    color: COLORS.blue,
+    fontWeight: "600",
   },
 
   footer: {

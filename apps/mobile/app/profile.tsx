@@ -1,5 +1,5 @@
-// app/(tabs)/profile.tsx
-import React, { useState } from "react";
+// app/profile.tsx
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,9 +7,12 @@ import {
   TouchableOpacity,
   ScrollView,
   Switch,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import Navbar from "@/components/Navbar";
+import { authClient } from "@/lib/auth-client";
 
 const COLORS = {
   red: "#ED1C24",
@@ -75,15 +78,50 @@ export const items: CollectedItem[] = [
 
 const ProfileScreen: React.FC = () => {
   const router = useRouter();
+  const { data: session, isPending } = authClient.useSession();
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(true);
   const [language, setLanguage] = useState<LanguageCode>("pl");
+
+  useEffect(() => {
+    if (!isPending && !session) {
+      router.replace("/");
+    }
+  }, [session, isPending, router]);
+
+  if (isPending) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#ED1C24" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!session) {
+    return null; // Will redirect
+  }
+
+  const user = session.user;
+  const isAnonymous = user?.isAnonymous || false;
+  const userName = isAnonymous ? "Anonymous" : (user?.name || "Użytkownik");
+  const userEmail = user?.email || "";
+  const userInitials = isAnonymous ? "?" : (user?.name?.substring(0, 2).toUpperCase() || "??");
 
   const collected = items.filter((i) => i.collected);
   const previewItems = collected.slice(0, 3);
 
-  const handleLogout = () => {
-    // TODO: real logout logic
-    console.log("Logout tapped");
+  const handleLogout = async () => {
+    try {
+      await authClient.signOut();
+      router.replace("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
+  const handleGoToLogin = () => {
+    router.push("/login");
   };
 
   return (
@@ -102,6 +140,32 @@ const ProfileScreen: React.FC = () => {
           </Text>
         </View>
 
+        {/* Anonymous user warning banner */}
+        {isAnonymous && (
+          <View style={styles.anonymousBanner}>
+            <View style={styles.anonymousBannerContent}>
+              <Text style={styles.anonymousBannerIcon}>⚠️</Text>
+              <View style={styles.anonymousBannerText}>
+                <Text style={styles.anonymousBannerTitle}>
+                  Konto anonimowe
+                </Text>
+                <Text style={styles.anonymousBannerDescription}>
+                  Twój postęp może nie być zapisany. Nie będziesz widoczny w
+                  rankingach ani nie będziesz mógł wygrać nagród.
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.anonymousBannerButton}
+              onPress={handleGoToLogin}
+            >
+              <Text style={styles.anonymousBannerButtonText}>
+                Zaloguj się
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Profile card */}
         <View style={styles.profileCardOuter}>
           <View style={styles.accentStrip}>
@@ -115,14 +179,18 @@ const ProfileScreen: React.FC = () => {
           <View style={styles.profileCard}>
             <View style={styles.profileRow}>
               {/* Avatar */}
-              <View style={styles.avatar}>
-                <Text style={styles.avatarInitials}>BK</Text>
+              <View style={[styles.avatar, isAnonymous && styles.avatarAnonymous]}>
+                <Text style={styles.avatarInitials}>{userInitials}</Text>
               </View>
 
               <View style={styles.profileInfo}>
-                <Text style={styles.playerName}>Bydgoski Król</Text>
+                <Text style={styles.playerName}>{userName}</Text>
                 <Text style={styles.playerSubtitle}>
-                  Poziom 3 • Odkrywca miasta
+                  {isAnonymous
+                    ? "Konto anonimowe"
+                    : userEmail
+                    ? `${userEmail} • Poziom 3`
+                    : "Poziom 3 • Odkrywca miasta"}
                 </Text>
 
                 <View style={styles.progressBar}>
@@ -258,6 +326,7 @@ const ProfileScreen: React.FC = () => {
 
         <View style={{ height: 32 }} />
       </ScrollView>
+      <Navbar />
     </SafeAreaView>
   );
 };
@@ -274,7 +343,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: 24,
+    paddingBottom: 100, // Extra padding for absolute navbar
   },
 
   // blobs
@@ -362,6 +431,11 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     alignItems: "center",
     justifyContent: "center",
+  },
+  avatarAnonymous: {
+    backgroundColor: COLORS.bgSoft,
+    borderColor: COLORS.textMuted,
+    borderWidth: 2,
   },
   avatarInitials: {
     fontSize: 20,
@@ -550,6 +624,53 @@ const styles = StyleSheet.create({
   logoutText: {
     fontSize: 13,
     color: COLORS.red,
+    fontWeight: "600",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  anonymousBanner: {
+    marginBottom: 16,
+    backgroundColor: "#FFF4E6",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#FFD89B",
+    padding: 14,
+  },
+  anonymousBannerContent: {
+    flexDirection: "row",
+    marginBottom: 12,
+  },
+  anonymousBannerIcon: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  anonymousBannerText: {
+    flex: 1,
+  },
+  anonymousBannerTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: COLORS.textDark,
+    marginBottom: 4,
+  },
+  anonymousBannerDescription: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    lineHeight: 16,
+  },
+  anonymousBannerButton: {
+    backgroundColor: COLORS.red,
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: "center",
+  },
+  anonymousBannerButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
     fontWeight: "600",
   },
 });

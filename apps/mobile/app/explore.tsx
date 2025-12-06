@@ -1,8 +1,11 @@
-import { StyleSheet, ScrollView, View, Text } from 'react-native';
+import { StyleSheet, ScrollView, View, Text, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useEffect } from 'react';
 import { RouteCard } from '@/components/route-card';
 import { routes } from '@/data/routes';
+import Navbar from '@/components/Navbar';
+import { authClient } from '@/lib/auth-client';
 
 const COLORS = {
   red: '#ED1C24',
@@ -16,6 +19,27 @@ const COLORS = {
 
 export default function ExploreScreen() {
   const router = useRouter();
+  const { data: session, isPending } = authClient.useSession();
+
+  useEffect(() => {
+    if (!isPending && !session) {
+      router.replace("/");
+    }
+  }, [session, isPending, router]);
+
+  if (isPending) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#ED1C24" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!session) {
+    return null; // Will redirect
+  }
 
   const handleRoutePress = (routeId: string) => {
     router.push(`/route-details?routeId=${routeId}`);
@@ -92,6 +116,7 @@ export default function ExploreScreen() {
           </View>
         </View>
       </View>
+      <Navbar />
     </SafeAreaView>
   );
 }
@@ -180,7 +205,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 20,
+    paddingBottom: 100, // Extra padding for absolute navbar
   },
   footer: {
     marginTop: 16,
@@ -200,5 +225,10 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 2,
     backgroundColor: COLORS.bgSoft,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

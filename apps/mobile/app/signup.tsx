@@ -1,4 +1,4 @@
-// screens/LoginScreen.tsx
+// screens/SignupScreen.tsx
 import React, { useState } from "react";
 import {
   View,
@@ -8,8 +8,11 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { authClient } from "@/lib/auth-client";
 
 const COLORS = {
   red: "#ED1C24",
@@ -21,13 +24,37 @@ const COLORS = {
   bgSoft: "#F3F4F6",
 };
 
-export default function LoginScreen() {
+export default function SignupScreen() {
+  const router = useRouter();
+  const [name, setName] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = () => {
-    // TODO: auth logic
-    console.log({ email, password });
+  const handleSignup = async () => {
+    if (!name.trim() || !email.trim() || !password.trim()) {
+      // TODO: Show validation error
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await authClient.signUp.email({
+        email,
+        password,
+        name,
+      });
+      router.replace("/map");
+    } catch (error) {
+      console.error("Signup error:", error);
+      // TODO: Show error message to user
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoToLogin = () => {
+    router.push("/login");
   };
 
   return (
@@ -61,11 +88,23 @@ export default function LoginScreen() {
             </View>
 
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>Zaloguj się</Text>
+              <Text style={styles.cardTitle}>Utwórz konto</Text>
               <Text style={styles.cardSubtitle}>
-                Zapisz postęp, znajdź najciekawszą ścieżkę i kontynuuj grę z dowolnego
+                Załóż konto, aby zapisywać swój postęp i kontynuować grę z dowolnego
                 urządzenia.
               </Text>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Imię</Text>
+                <TextInput
+                  style={styles.input}
+                  value={name}
+                  onChangeText={setName}
+                  placeholder="Jan"
+                  placeholderTextColor={COLORS.textMuted}
+                  autoCapitalize="words"
+                />
+              </View>
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>E-mail</Text>
@@ -92,15 +131,17 @@ export default function LoginScreen() {
                 />
               </View>
 
-              <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-                <Text style={styles.loginButtonText}>Wejdź do miasta</Text>
+              <TouchableOpacity 
+                style={[styles.signupButton, isLoading && styles.signupButtonDisabled]} 
+                onPress={handleSignup}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.signupButtonText}>Utwórz konto</Text>
+                )}
               </TouchableOpacity>
-
-              <View style={styles.metaRow}>
-                <TouchableOpacity>
-                  <Text style={styles.linkText}>Nie pamiętasz hasła?</Text>
-                </TouchableOpacity>
-              </View>
 
               <View style={styles.dividerRow}>
                 <View style={styles.divider} />
@@ -108,11 +149,11 @@ export default function LoginScreen() {
                 <View style={styles.divider} />
               </View>
 
-              <TouchableOpacity style={styles.secondaryButton}>
+              <TouchableOpacity style={styles.secondaryButton} onPress={handleGoToLogin}>
                 <Text style={styles.secondaryButtonText}>
-                  Nowy w grze?{" "}
+                  Masz już konto?{" "}
                   <Text style={styles.secondaryButtonHighlight}>
-                    Utwórz konto
+                    Zaloguj się
                   </Text>
                 </Text>
               </TouchableOpacity>
@@ -138,7 +179,7 @@ export default function LoginScreen() {
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -185,53 +226,6 @@ const styles = StyleSheet.create({
 
   header: {
     gap: 14,
-  },
-  badgeRow: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  badgePill: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "rgba(15,23,42,0.05)",
-  },
-  badgeText: {
-    color: "#FFFFFF",
-    fontSize: 11,
-    fontWeight: "600",
-    letterSpacing: 0.6,
-    textTransform: "uppercase",
-  },
-  badgeTextGhost: {
-    color: COLORS.textDark,
-    fontSize: 11,
-    fontWeight: "500",
-    letterSpacing: 0.4,
-  },
-  badgeColorDots: {
-    flexDirection: "row",
-    gap: 4,
-    marginRight: 6,
-  },
-  badgeDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 999,
-  },
-
-  title: {
-    fontSize: 26,
-    fontWeight: "700",
-    color: COLORS.textDark,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: COLORS.textMuted,
-    lineHeight: 20,
   },
 
   cardOuter: {
@@ -291,7 +285,7 @@ const styles = StyleSheet.create({
     color: COLORS.textDark,
   },
 
-  loginButton: {
+  signupButton: {
     marginTop: 16,
     backgroundColor: COLORS.red,
     borderRadius: 999,
@@ -299,20 +293,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  loginButtonText: {
+  signupButtonDisabled: {
+    opacity: 0.6,
+  },
+  signupButtonText: {
     color: "#FFFFFF",
     fontSize: 15,
     fontWeight: "700",
-  },
-
-  metaRow: {
-    marginTop: 10,
-    alignItems: "flex-end",
-  },
-  linkText: {
-    fontSize: 12,
-    color: COLORS.blue,
-    fontWeight: "500",
   },
 
   dividerRow: {
@@ -363,8 +350,5 @@ const styles = StyleSheet.create({
     height: 2,
     backgroundColor: COLORS.bgSoft,
   },
-  footerText: {
-    fontSize: 11,
-    color: COLORS.textMuted,
-  },
 });
+
