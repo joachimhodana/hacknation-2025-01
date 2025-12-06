@@ -8,7 +8,9 @@ services:
     container_name: hacknation-core
     volumes:
       - ./core:/app
-      - /app/node_modules
+      - core_node_modules:/app/node_modules
+    working_dir: /app
+    command: sh -c "bun install && bunx prisma generate && bun run src/index.ts"
     ports:
       - "3000:3000"
     restart: unless-stopped
@@ -20,11 +22,15 @@ services:
     container_name: hacknation-landing
     volumes:
       - ./landing:/app
-      - /app/node_modules
+      - landing_node_modules:/app/node_modules
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=development
       - PORT=3000
     restart: unless-stopped
+
+volumes:
+  core_node_modules:
+  landing_node_modules:
 
