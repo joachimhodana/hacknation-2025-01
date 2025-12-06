@@ -52,29 +52,6 @@ export default function StartScreen() {
         <View style={styles.container}>
           {/* Top section */}
           <View style={styles.header}>
-            <View style={styles.badgeRow}>
-              <View
-                style={[
-                  styles.badgePill,
-                  { backgroundColor: "rgba(237, 28, 36, 0.08)", borderWidth: 0 },
-                ]}
-              >
-                <View style={styles.badgeColorDots}>
-                  <View
-                    style={[styles.badgeDot, { backgroundColor: COLORS.red }]}
-                  />
-                  <View
-                    style={[styles.badgeDot, { backgroundColor: COLORS.yellow }]}
-                  />
-                  <View
-                    style={[styles.badgeDot, { backgroundColor: COLORS.blue }]}
-                  />
-                </View>
-                <Text style={styles.badgeTextGhost}>
-                  Twoja Bydgoszcz, Twoja ścieżka
-                </Text>
-              </View>
-            </View>
 
             <Text style={styles.title}>Zacznij odkrywanie Bydgoszczy</Text>
             <Text style={styles.subtitle}>

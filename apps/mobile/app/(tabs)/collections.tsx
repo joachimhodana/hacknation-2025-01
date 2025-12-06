@@ -29,11 +29,14 @@ const CollectionsScreen: React.FC = () => {
   const router = useRouter();
 
   const collectedItems = allItems.filter((i) => i.collected);
+  const totalCount = allItems.length;
+  const collectedCount = collectedItems.length;
+
   const [selectedItem, setSelectedItem] = useState<CollectedItem | null>(
-    collectedItems[0] ?? null,
+    collectedItems[0] ?? allItems[0] ?? null,
   );
 
-  // logical "open/close"
+  // logical open/close
   const [isOpen, setIsOpen] = useState(false);
   // actual Modal mount flag (so we can animate out before unmount)
   const [isMounted, setIsMounted] = useState(false);
@@ -125,14 +128,22 @@ const CollectionsScreen: React.FC = () => {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.subtitle}>
-          Wszystkie przedmioty, które zebrałeś w mieście. Kliknij na przedmiot,
-          żeby zobaczyć, gdzie i kiedy go zdobyłeś.
-        </Text>
+        <View style={styles.counterRow}>
+          <Text style={styles.subtitle}>
+            Wszystkie przedmioty, które możesz zdobyć w mieście.
+          </Text>
 
-        {/* Grid: 3 in a row */}
+          <View style={styles.counterPill}>
+            <Text style={styles.counterText}>
+              {collectedCount} / {totalCount}
+            </Text>
+          </View>
+        </View>
+
+        {/* Grid: 3 in a row, includes collected + missing */}
         <View style={styles.itemsGrid}>
-          {collectedItems.map((item) => {
+          {allItems.map((item) => {
+            const isCollected = item.collected;
             const isActive = selectedItem?.id === item.id && isOpen;
 
             return (
@@ -144,22 +155,28 @@ const CollectionsScreen: React.FC = () => {
                 <View
                   style={[
                     styles.itemTileInner,
-                    isActive && styles.itemTileInnerActive,
+                    !isCollected && styles.itemTileInnerMissing,
+                    isCollected && isActive && styles.itemTileInnerActiveCollected,
                   ]}
                 >
-                  <Text style={styles.itemTileEmoji}>{item.emoji}</Text>
+                  <Text
+                    style={[
+                      styles.itemTileEmoji,
+                      !isCollected && styles.itemTileEmojiMissing,
+                    ]}
+                  >
+                    {item.emoji}
+                  </Text>
                 </View>
               </TouchableOpacity>
             );
           })}
 
           {/* phantom tiles to align grid */}
-          {collectedItems.length % 3 !== 0 &&
-            Array.from({ length: 3 - (collectedItems.length % 3) }).map(
-              (_, idx) => (
-                <View key={`phantom-${idx}`} style={styles.itemTilePhantom} />
-              ),
-            )}
+          {allItems.length % 3 !== 0 &&
+            Array.from({ length: 3 - (allItems.length % 3) }).map((_, idx) => (
+              <View key={`phantom-${idx}`} style={styles.itemTilePhantom} />
+            ))}
         </View>
 
         <View style={{ height: 32 }} />
@@ -216,7 +233,9 @@ const CollectionsScreen: React.FC = () => {
                       </View>
 
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.modalTitle}>{selectedItem.title}</Text>
+                        <Text style={styles.modalTitle}>
+                          {selectedItem.title}
+                        </Text>
                         <Text style={styles.modalPlace}>
                           {selectedItem.placeName ?? "Miejsce do uzupełnienia"}
                         </Text>
@@ -228,10 +247,23 @@ const CollectionsScreen: React.FC = () => {
                     </Text>
 
                     <View style={styles.modalMetaRow}>
-                      <Text style={styles.modalMetaLabel}>Data zebrania:</Text>
-                      <Text style={styles.modalMetaValue}>
-                        {selectedItem.collectedAt ?? "Do uzupełnienia"}
-                      </Text>
+                      <View>
+                        <Text style={styles.modalMetaLabel}>Status:</Text>
+                        <Text style={styles.modalMetaValue}>
+                          {selectedItem.collected
+                            ? "Zebrano"
+                            : "Jeszcze nie zebrano"}
+                        </Text>
+                      </View>
+
+                      <View style={{ alignItems: "flex-end" }}>
+                        <Text style={styles.modalMetaLabel}>Data zebrania:</Text>
+                        <Text style={styles.modalMetaValue}>
+                          {selectedItem.collectedAt && selectedItem.collected
+                            ? selectedItem.collectedAt
+                            : "—"}
+                        </Text>
+                      </View>
                     </View>
 
                     <TouchableOpacity
@@ -311,10 +343,30 @@ const styles = StyleSheet.create({
     color: COLORS.textDark,
   },
 
+  counterRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
   subtitle: {
+    flex: 1,
     fontSize: 12,
     color: COLORS.textMuted,
-    marginBottom: 10,
+    marginRight: 8,
+  },
+  counterPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: COLORS.softBg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  counterText: {
+    fontSize: 12,
+    color: COLORS.textDark,
+    fontWeight: "600",
   },
 
   // Grid: 3 in a row
@@ -344,12 +396,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  itemTileInnerActive: {
+  itemTileInnerMissing: {
+    backgroundColor: "#F5F5F5",
+    borderColor: "#E5E7EB",
+    opacity: 0.55,
+  },
+  itemTileInnerActiveCollected: {
     borderColor: COLORS.red,
     backgroundColor: "#FEE2E2",
   },
   itemTileEmoji: {
     fontSize: 30,
+    color: COLORS.textDark,
+  },
+  itemTileEmojiMissing: {
+    color: "#9CA3AF",
   },
 
   // Modal
@@ -419,7 +480,7 @@ const styles = StyleSheet.create({
   modalMetaRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
     marginBottom: 12,
   },
   modalMetaLabel: {
@@ -430,6 +491,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textDark,
     fontWeight: "500",
+    marginTop: 2,
   },
   modalCloseButton: {
     alignSelf: "flex-end",

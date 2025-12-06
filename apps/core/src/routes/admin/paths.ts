@@ -163,7 +163,11 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
   })
   .put(
     "/:id",
-    async ({ params, body, user }) => {
+    async (context: any) => {
+      const { params, body, user } = context;
+      if (!user) {
+        return { success: false, error: "Unauthorized" };
+      }
       const [updatedPath] = await db
         .update(paths)
         .set({
@@ -210,11 +214,15 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
       type: "multipart/form-data",
     }
   )
-  .delete("/:id", async ({ params, user }) => {
+  .delete("/:id", async (context: any) => {
+    const { params, user } = context;
+    if (!user) {
+      return { success: false, error: "Unauthorized" };
+    }
     const [deletedPath] = await db
       .delete(paths)
       .where(
-        and(eq(paths.id, Number(params.id)), eq(paths.createdBy, user!.id))
+        and(eq(paths.id, Number(params.id)), eq(paths.createdBy, user.id))
       )
       .returning();
 
