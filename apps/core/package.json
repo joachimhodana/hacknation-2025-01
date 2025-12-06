@@ -17,6 +17,7 @@
     "@elysiajs/cors": "^1.4.0",
     "@elysiajs/openapi": "^1.4.11",
     "@elysiajs/server-timing": "^1.4.0",
+    "@elysiajs/static": "^1.4.7",
     "better-auth": "^1.4.5",
     "drizzle-orm": "^0.45.0",
     "elysia": "latest",
