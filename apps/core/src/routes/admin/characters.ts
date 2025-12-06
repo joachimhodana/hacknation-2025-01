@@ -42,7 +42,7 @@ export const adminCharactersRoutes = new Elysia({ prefix: "/characters" })
       success: true,
       data: allCharacters,
     };
-  })
+  }, { auth: true })
   .get("/:id", async ({ params }) => {
     const [character] = await db
       .select()
@@ -61,7 +61,7 @@ export const adminCharactersRoutes = new Elysia({ prefix: "/characters" })
       success: true,
       data: character,
     };
-  })
+  }, { auth: true })
   .put(
     "/:id",
     async (context: any) => {
