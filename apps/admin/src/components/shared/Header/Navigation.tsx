@@ -1,5 +1,5 @@
-import { Link, useLocation } from "react-router-dom"
-import { Home, Route, FileText } from "lucide-react"
+import { Link, useLocation, useNavigate } from "react-router-dom"
+import { Home, Route, FileText, LogOut } from "lucide-react"
 import {
   NavigationMenu,
   NavigationMenuList,
@@ -9,12 +9,20 @@ import {
   NavigationMenuContent,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu.tsx"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { authClient } from "@/lib/auth-client"
 
 export function Navigation() {
   const location = useLocation()
+  const navigate = useNavigate()
 
   const isActive = (path: string) => location.pathname === path
+
+  const handleLogout = async () => {
+    await authClient.signOut()
+    navigate("/login")
+  }
 
   return (
     <NavigationMenu>
@@ -64,6 +72,17 @@ export function Navigation() {
             <FileText className="h-4 w-4" />
             Dokumentacja
           </Link>
+        </NavigationMenuItem>
+
+        <NavigationMenuItem>
+          <Button
+            variant="ghost"
+            onClick={handleLogout}
+            className="gap-2 text-blue-500 hover:text-blue-700"
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </Button>
         </NavigationMenuItem>
       </NavigationMenuList>
     </NavigationMenu>
