@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
-import { StyleSheet, Platform, ActivityIndicator, View } from "react-native";
-import MapView, { PROVIDER_GOOGLE, PROVIDER_DEFAULT, Camera } from "react-native-maps";
+import { StyleSheet, Platform, ActivityIndicator, View, Text } from "react-native";
+import MapView, { PROVIDER_GOOGLE, PROVIDER_DEFAULT, Camera, Marker } from "react-native-maps";
 import * as Location from "expo-location";
+import { authClient } from "@/lib/auth-client";
 
 export type MapProps = {
   lat?: number;
@@ -78,9 +79,23 @@ const subtleStyle = [
 ];
 
 export const Map: React.FC<MapProps> = ({ lat, lng, zoom = 15 }) => {
+  const { data: session } = authClient.useSession();
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationPermission, setLocationPermission] = useState<boolean>(false);
   const mapRef = useRef<MapView>(null);
+  const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
+  
+  // Get user info for avatar
+  const user = session?.user;
+  const userName = user?.name as string | undefined;
+  const userInitials = userName
+    ? userName
+        .split(" ")
+        .map((n: string) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    : "U";
   
   // Calculate delta based on zoom level
   const latitudeDelta = 0.0922 / (zoom / 13);
@@ -102,7 +117,7 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom = 15 }) => {
 
       setLocationPermission(true);
 
-      // Get current location
+      // Get initial location
       try {
         const location = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.High,
@@ -118,10 +133,36 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom = 15 }) => {
           setUserLocation({ lat, lng });
         }
       }
+
+      // Watch location in real-time
+      try {
+        locationSubscriptionRef.current = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.High,
+            timeInterval: 1000, // Update every second
+            distanceInterval: 1, // Update every meter
+          },
+          (location) => {
+            setUserLocation({
+              lat: location.coords.latitude,
+              lng: location.coords.longitude,
+            });
+          }
+        );
+      } catch (error) {
+        console.error("Error watching location:", error);
+      }
     })();
+
+    // Cleanup subscription on unmount
+    return () => {
+      if (locationSubscriptionRef.current) {
+        locationSubscriptionRef.current.remove();
+      }
+    };
   }, []);
 
-  // Update camera to 45-degree 3D view when location is available
+  // Update camera to follow user location in real-time
   useEffect(() => {
     if (userLocation && mapRef.current) {
       mapRef.current.animateCamera(
@@ -135,7 +176,7 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom = 15 }) => {
           altitude: 1000,
           zoom: zoom,
         },
-        { duration: 1000 }
+        { duration: 500 } // Faster update for real-time tracking
       );
     }
   }, [userLocation, zoom]);
@@ -153,13 +194,13 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom = 15 }) => {
       ref={mapRef}
       style={styles.map}
       provider={Platform.OS === "android" ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
-      initialRegion={{
+      region={{
         latitude: userLocation.lat,
         longitude: userLocation.lng,
         latitudeDelta,
         longitudeDelta,
       }}
-      showsUserLocation={true}
+      showsUserLocation={false}
       showsMyLocationButton={true}
       showsCompass={true}
       zoomEnabled={true}
@@ -169,7 +210,20 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom = 15 }) => {
       // Subtle, natural theme
       mapType={Platform.OS === "ios" ? "standard" : "standard"}
       customMapStyle={Platform.OS === "android" ? subtleStyle : undefined}
-    />
+    >
+      {/* Custom marker with user avatar */}
+      <Marker
+        coordinate={{
+          latitude: userLocation.lat,
+          longitude: userLocation.lng,
+        }}
+        anchor={{ x: 0.5, y: 0.5 }}
+      >
+        <View style={styles.avatarMarker}>
+          <Text style={styles.avatarMarkerText}>{userInitials}</Text>
+        </View>
+      </Marker>
+    </MapView>
   );
 };
 
@@ -183,6 +237,26 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#E8F0E8",
+  },
+  avatarMarker: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#9BCF7F",
+    borderWidth: 3,
+    borderColor: "white",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarMarkerText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "white",
   },
 });
 
