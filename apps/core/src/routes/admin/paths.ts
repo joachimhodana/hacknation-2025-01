@@ -3,18 +3,57 @@ import { db } from "@/db";
 import { paths, pathPoints, points } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { adminMiddleware } from "@/lib/admin-middleware";
+import { join } from "path";
 
 export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
   .use(adminMiddleware)
   .post(
     "/",
-    async ({ body, user }) => {
-      // Step 1: Create path with basic info
+    async (context: any) => {
+      const { body, user } = context;
+      if (!user) {
+        return { success: false, error: "Unauthorized" };
+      }
+      // Step 1: Save thumbnail file
+      const thumbnailUUID = crypto.randomUUID();
+      let thumbnailUrl: string | undefined;
+      
+      if (body.thumbnailFile) {
+        const thumbnailBuffer = await body.thumbnailFile.arrayBuffer();
+        const mimeType = body.thumbnailFile.type;
+        const extension = mimeType === "image/jpeg" ? ".jpg" : ".png";
+        const fileName = `${thumbnailUUID}${extension}`;
+        const filePath = join(process.cwd(), "resources", "thumbnails", fileName);
+        
+        await Bun.write(filePath, thumbnailBuffer);
+        thumbnailUrl = `/resources/thumbnails/${fileName}`;
+      }
+
+      // Step 2: Save marker icon file (if provided)
+      const markerIconUUID = crypto.randomUUID();
+      let markerIconUrl: string | undefined;
+      
+      if (body.markerIconFile) {
+        const markerIconBuffer = await body.markerIconFile.arrayBuffer();
+        const mimeType = body.markerIconFile.type;
+        const extension = mimeType === "image/jpeg" ? ".jpg" : ".png";
+        const fileName = `${markerIconUUID}${extension}`;
+        const filePath = join(process.cwd(), "resources", "marker_icons", fileName);
+        
+        await Bun.write(filePath, markerIconBuffer);
+        markerIconUrl = `/resources/marker_icons/${fileName}`;
+      }
+
+      // Step 3: Create path with basic info
+      const { thumbnailFile, markerIconFile, ...pathData } = body;
+      
       const [newPath] = await db
         .insert(paths)
         .values({
-          ...body,
-          createdBy: user!.id,
+          ...pathData,
+          thumbnailUrl,
+          markerIconUrl,
+          createdBy: user.id,
         })
         .returning();
 
@@ -24,6 +63,7 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
       };
     },
     {
+      type: "multipart/form-data",
       body: t.Object({
         pathId: t.String(),
         title: t.String(),
@@ -31,11 +71,17 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         longDescription: t.Optional(t.String()),
         category: t.String(),
         difficulty: t.String(),
-        totalTimeMinutes: t.Number(),
-        distanceMeters: t.Optional(t.Number()),
-        thumbnailUrl: t.Optional(t.String()),
+        thumbnailFile: t.File({
+          maxFileSize: "20MB",
+          allowedMimeTypes: ["image/jpeg", "image/png"],
+        }),
         stylePreset: t.Optional(t.String()),
-        markerIconUrl: t.Optional(t.String()),
+        markerIconFile: t.Optional(
+          t.File({
+            maxFileSize: "10MB",
+            allowedMimeTypes: ["image/jpeg", "image/png"],
+          })
+        ),
       }),
     }
   )
@@ -89,10 +135,7 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
           updatedAt: new Date(),
         })
         .where(
-          and(
-            eq(paths.id, Number(params.id)),
-            eq(paths.createdBy, user!.id)
-          )
+          and(eq(paths.id, Number(params.id)), eq(paths.createdBy, user.id))
         )
         .returning();
 
@@ -117,21 +160,25 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         difficulty: t.Optional(t.String()),
         totalTimeMinutes: t.Optional(t.Number()),
         distanceMeters: t.Optional(t.Number()),
-        thumbnailUrl: t.Optional(t.String()),
+        thumbnailFile: t.Optional(t.File({
+          maxFileSize: "20MB",
+          allowedMimeTypes: ["image/jpeg", "image/png"],
+        })),
         isPublished: t.Optional(t.Boolean()),
         stylePreset: t.Optional(t.String()),
-        markerIconUrl: t.Optional(t.String()),
+        markerIconFile: t.Optional(t.File({
+          maxFileSize: "10MB",
+          allowedMimeTypes: ["image/jpeg", "image/png"],
+        })),
       }),
+      type: "multipart/form-data",
     }
   )
   .delete("/:id", async ({ params, user }) => {
     const [deletedPath] = await db
       .delete(paths)
       .where(
-        and(
-          eq(paths.id, Number(params.id)),
-          eq(paths.createdBy, user!.id)
-        )
+        and(eq(paths.id, Number(params.id)), eq(paths.createdBy, user!.id))
       )
       .returning();
 
@@ -147,4 +194,3 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
       message: "Path deleted successfully",
     };
   });
-
