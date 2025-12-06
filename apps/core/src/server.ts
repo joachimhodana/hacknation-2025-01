@@ -16,6 +16,10 @@ app.get("/health", () => "OK")
 
 app.mount(auth.handler)
 
+// Admin routes
+import { adminRoutes } from "./routes/admin";
+app.use(adminRoutes)
+
 const port = Number(process.env.PORT) || 8080;
 app.listen({
   port,

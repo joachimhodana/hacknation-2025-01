@@ -1,4 +1,4 @@
-.PHONY: build up down restart logs clean ps secret
+.PHONY: build up down restart logs clean ps secret db-studio
 
 # Build all Docker images
 build:
@@ -49,4 +49,12 @@ rebuild: down build up
 
 # Rebuild without cache and restart
 rebuild-no-cache: down build-no-cache up
+
+# Open Drizzle Studio (database GUI)
+# Note: This will run in the foreground. Press Ctrl+C to stop.
+db-studio:
+	@echo "Opening Drizzle Studio..."
+	@echo "Access it at: http://localhost:4983"
+	@echo "Press Ctrl+C to stop Drizzle Studio"
+	@docker-compose exec core sh -c "cd /app && bunx drizzle-kit studio --port 4983 --host 0.0.0.0"
 
