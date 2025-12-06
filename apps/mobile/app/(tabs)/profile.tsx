@@ -1,3 +1,4 @@
+// app/(tabs)/profile.tsx
 import React, { useState } from "react";
 import {
   View,
@@ -23,21 +24,27 @@ const COLORS = {
 
 type LanguageCode = "pl" | "en";
 
-type CollectedItem = {
+// 👇 export this so collections.tsx can reuse the type
+export type CollectedItem = {
   id: string;
   title: string;
   description: string;
   emoji: string;
   collected: boolean;
+  placeName?: string;
+  collectedAt?: string;
 };
 
-const items: CollectedItem[] = [
+// 👇 export this so collections.tsx can reuse the test data
+export const items: CollectedItem[] = [
   {
     id: "golden-crown",
     title: "Złota Korona",
     description: "Symbol królewskiej historii miasta.",
     emoji: "👑",
     collected: true,
+    placeName: "Stary Rynek",
+    collectedAt: "2025-02-01",
   },
   {
     id: "river-stone",
@@ -45,6 +52,7 @@ const items: CollectedItem[] = [
     description: "Wygładzony przez nurt rzeki.",
     emoji: "🪨",
     collected: false,
+    placeName: "Nabrzeże Brdy",
   },
   {
     id: "old-ticket",
@@ -52,6 +60,7 @@ const items: CollectedItem[] = [
     description: "Relikt dawnej komunikacji miejskiej.",
     emoji: "🎫",
     collected: false,
+    placeName: "Zajezdnia tramwajowa",
   },
   {
     id: "mill-island-leaf",
@@ -59,6 +68,8 @@ const items: CollectedItem[] = [
     description: "Pamiątka ze spaceru po sercu miasta.",
     emoji: "🍃",
     collected: true,
+    placeName: "Wyspa Młyńska",
+    collectedAt: "2025-02-03",
   },
 ];
 
@@ -67,13 +78,13 @@ const ProfileScreen: React.FC = () => {
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(true);
   const [language, setLanguage] = useState<LanguageCode>("pl");
 
+  const collected = items.filter((i) => i.collected);
+  const previewItems = collected.slice(0, 3);
+
   const handleLogout = () => {
     // TODO: real logout logic
     console.log("Logout tapped");
   };
-
-  // Preview only a few items on profile
-  const previewItems = items.slice(0, 3);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -129,7 +140,7 @@ const ProfileScreen: React.FC = () => {
                 <Text style={styles.statLabel}>odwiedzone miejsca</Text>
               </View>
               <View style={styles.statBox}>
-                <Text style={styles.statValue}>2</Text>
+                <Text style={styles.statValue}>{collected.length}</Text>
                 <Text style={styles.statLabel}>przedmioty zebrane</Text>
               </View>
               <View style={styles.statBox}>
@@ -140,7 +151,7 @@ const ProfileScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Collections / items */}
+        {/* Collections / items – 3 in a row preview */}
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>Zebrane przedmioty</Text>
@@ -150,66 +161,22 @@ const ProfileScreen: React.FC = () => {
           </View>
 
           <Text style={styles.sectionSubtitle}>
-            Krótki podgląd Twojej kolekcji. Kliknij „Pokaż wszystkie”, aby
-            zobaczyć pełną listę.
+            Podgląd zebranych przedmiotów. Kliknij „Pokaż wszystkie”, żeby
+            zobaczyć więcej.
           </Text>
 
-          <View style={styles.itemsGrid}>
+          <View style={styles.itemsGridPreview}>
             {previewItems.map((item) => (
-              <View
-                key={item.id}
-                style={[
-                  styles.itemCard,
-                  !item.collected && styles.itemLocked,
-                ]}
-              >
-                {/* Image / icon */}
-                <View style={styles.itemImageWrapper}>
-                  <View
-                    style={[
-                      styles.itemImage,
-                      !item.collected && styles.itemImageLocked,
-                    ]}
-                  >
-                    <Text style={styles.itemEmoji}>{item.emoji}</Text>
-                  </View>
-                </View>
-
-                {/* Text */}
-                <View style={styles.itemTextWrapper}>
-                  <Text
-                    style={[
-                      styles.itemTitle,
-                      !item.collected && styles.itemTitleLocked,
-                    ]}
-                  >
-                    {item.title}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.itemDescription,
-                      !item.collected && styles.itemDescriptionLocked,
-                    ]}
-                  >
-                    {item.description}
-                  </Text>
-                </View>
-
-                {/* Status */}
-                <View style={styles.itemStatusWrapper}>
-                  <Text
-                    style={[
-                      styles.itemStatus,
-                      item.collected
-                        ? styles.itemStatusCollected
-                        : styles.itemStatusMissing,
-                    ]}
-                  >
-                    {item.collected ? "Zebrano" : "Brakuje"}
-                  </Text>
+              <View key={item.id} style={styles.itemTilePreview}>
+                <View style={styles.itemTileInner}>
+                  <Text style={styles.itemTileEmoji}>{item.emoji}</Text>
                 </View>
               </View>
             ))}
+            {previewItems.length < 3 &&
+              Array.from({ length: 3 - previewItems.length }).map((_, idx) => (
+                <View key={`phantom-${idx}`} style={styles.itemTilePreviewPhantom} />
+              ))}
           </View>
         </View>
 
@@ -497,74 +464,33 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
-  // Items grid
-  itemsGrid: {
-    gap: 12,
+  // Preview grid: 3 in a row
+  itemsGridPreview: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 8,
   },
-  itemCard: {
-    backgroundColor: COLORS.cardBg,
+  itemTilePreview: {
+    flex: 1,
+    maxWidth: "31%",
+    aspectRatio: 1,
+  },
+  itemTilePreviewPhantom: {
+    flex: 1,
+    maxWidth: "31%",
+    aspectRatio: 1,
+  },
+  itemTileInner: {
+    flex: 1,
     borderRadius: 16,
-    padding: 12,
+    backgroundColor: COLORS.softBg,
     borderWidth: 1,
     borderColor: COLORS.border,
-    flexDirection: "row",
-    gap: 12,
-    alignItems: "center",
-  },
-  itemLocked: {
-    opacity: 0.6,
-  },
-  itemImageWrapper: {
-    width: 58,
-    height: 58,
-  },
-  itemImage: {
-    flex: 1,
-    borderRadius: 12,
-    backgroundColor: COLORS.softBg,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: COLORS.border,
   },
-  itemImageLocked: {
-    backgroundColor: "#F0F0F0",
-  },
-  itemEmoji: {
-    fontSize: 30,
-  },
-  itemTextWrapper: {
-    flex: 1,
-  },
-  itemTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: COLORS.textDark,
-  },
-  itemTitleLocked: {
-    color: "#9CA3AF",
-  },
-  itemDescription: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-    marginTop: 2,
-  },
-  itemDescriptionLocked: {
-    color: "#B3B9C4",
-  },
-  itemStatusWrapper: {
-    alignItems: "flex-end",
-  },
-  itemStatus: {
-    fontSize: 11,
-    fontWeight: "600",
-    marginTop: 4,
-  },
-  itemStatusCollected: {
-    color: COLORS.blue,
-  },
-  itemStatusMissing: {
-    color: COLORS.red,
+  itemTileEmoji: {
+    fontSize: 28,
   },
 
   // Settings
