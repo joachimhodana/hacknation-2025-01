@@ -11,6 +11,9 @@
     "better-auth:migrate": "bunx @better-auth/cli migrate"
   },
   "dependencies": {
+    "@elysiajs/cors": "^1.4.0",
+    "@elysiajs/openapi": "^1.4.11",
+    "@elysiajs/server-timing": "^1.4.0",
     "@prisma/adapter-ppg": "^7.1.0",
     "@prisma/client": "^7.1.0",
     "better-auth": "^1.4.5",
