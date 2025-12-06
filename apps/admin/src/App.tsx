@@ -18,8 +18,8 @@ function App() {
               <ProtectedRoute>
                 <Header />
                 <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/routes/create" element={<RouteCreator />} />
+                  <Route path="/" element={<DashboardPage />} />
+                  <Route path="/routes/create" element={<RouteCreatorPage />} />
                   <Route path="/documentation" element={<Documentation />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
