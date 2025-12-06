@@ -1,9 +1,10 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx"
 import { Button } from "@/components/ui/button.tsx"
 import { MapPin, Clock, Route, Edit, Eye, EyeOff, Plus, Grid3x3, List } from "lucide-react"
 import type { RoutesObjectType } from "@/types/RoutesType.tsx"
+import { getPaths } from "@/lib/api-client.ts"
 
 // Mock data - w prawdziwej aplikacji dane będą z API
 const mockRoutes: RoutesObjectType[] = [
@@ -77,21 +78,98 @@ const ITEMS_PER_PAGE = 6
 type ViewMode = "grid" | "list"
 
 const RoutesListPage = () => {
-  const [routes, setRoutes] = useState<RoutesObjectType[]>(mockRoutes)
+  const [routes, setRoutes] = useState<RoutesObjectType[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [viewMode, setViewMode] = useState<ViewMode>("grid")
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Fetch routes from API
+  useEffect(() => {
+    const fetchRoutes = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+        const response = await getPaths()
+        
+        if (response.success && response.data) {
+          // Map API response to frontend format
+          const mappedRoutes: RoutesObjectType[] = response.data.map((path: any) => ({
+            pathId: path.pathId || path.id?.toString() || "",
+            id: path.id, // Store numeric ID for API calls
+            title: path.title || "",
+            shortDescription: path.shortDescription || "",
+            longDescription: path.longDescription || "",
+            category: path.category || "",
+            totalTimeMinutes: path.totalTimeMinutes || 0,
+            difficulty: path.difficulty || "",
+            distanceMeters: path.distanceMeters || 0,
+            thumbnailUrl: path.thumbnailUrl || "",
+            isPublished: path.isPublished || false,
+            stylePreset: path.stylePreset || "",
+            makerIconUrl: path.markerIconUrl || "",
+            createBy: path.createdBy || "",
+            createdAt: path.createdAt ? new Date(path.createdAt).getTime() : Date.now(),
+            updatedAt: path.updatedAt ? new Date(path.updatedAt).getTime() : Date.now(),
+            stops: [], // Stops will be loaded when editing a specific route
+          }))
+          setRoutes(mappedRoutes)
+        } else {
+          setError(response.error || "Nie udało się załadować tras")
+        }
+      } catch (err: any) {
+        console.error("Error fetching routes:", err)
+        setError(err?.message || "Wystąpił błąd podczas ładowania tras")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchRoutes()
+  }, [])
 
   const totalPages = Math.ceil(routes.length / ITEMS_PER_PAGE)
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
   const endIndex = startIndex + ITEMS_PER_PAGE
   const currentRoutes = routes.slice(startIndex, endIndex)
 
-  const handleTogglePublish = (pathId: string) => {
-    setRoutes(routes.map(route => 
-      route.pathId === pathId 
-        ? { ...route, isPublished: !route.isPublished }
-        : route
-    ))
+  const handleTogglePublish = async (route: RoutesObjectType) => {
+    // Use numeric ID from API, fallback to pathId if id is not available
+    const routeId = route.id || route.pathId
+    
+    if (!routeId) {
+      setError("Nie można znaleźć ID trasy")
+      return
+    }
+
+    try {
+      const API_BASE_URL = import.meta.env.VITE_BETTER_AUTH_URL || "http://localhost:8080"
+      const response = await fetch(`${API_BASE_URL}/admin/paths/${routeId}/toggle`, {
+        method: 'PATCH',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      })
+
+      const result = await response.json()
+      
+      if (result.success && result.data) {
+        // Update local state with new publication status
+        setRoutes(routes.map(r => 
+          r.id === route.id || (r.id === undefined && r.pathId === route.pathId)
+            ? { ...r, isPublished: result.data.isPublished }
+            : r
+        ))
+        setError(null) // Clear any previous errors
+      } else {
+        setError(result.error || "Nie udało się zmienić statusu publikacji")
+      }
+    } catch (err: any) {
+      console.error("Error toggling publish status:", err)
+      setError(err?.message || "Wystąpił błąd podczas zmiany statusu publikacji")
+    }
   }
 
   const formatDate = (timestamp: number) => {
@@ -156,7 +234,27 @@ const RoutesListPage = () => {
         </div>
       </div>
 
-      {routes.length === 0 ? (
+      {isLoading ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Route className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
+            <p className="text-muted-foreground">Ładowanie tras...</p>
+          </CardContent>
+        </Card>
+      ) : error ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Route className="h-12 w-12 mx-auto mb-4 text-red-500" />
+            <p className="text-red-600 mb-4">{error}</p>
+            <Button
+              onClick={() => window.location.reload()}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              Spróbuj ponownie
+            </Button>
+          </CardContent>
+        </Card>
+      ) : routes.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <Route className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
@@ -243,7 +341,7 @@ const RoutesListPage = () => {
                       <Button
                         variant={route.isPublished ? "outline" : "default"}
                         size="sm"
-                        onClick={() => handleTogglePublish(route.pathId)}
+                        onClick={() => handleTogglePublish(route)}
                         className={`${viewMode === "list" ? "flex-1" : "flex-1"} gap-2 ${
                           route.isPublished 
                             ? "border-red-200 text-red-700 hover:bg-red-50" 

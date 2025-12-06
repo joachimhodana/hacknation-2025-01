@@ -10,7 +10,7 @@ const ITEMS_PER_PAGE = 6
 
 type ViewMode = "grid" | "list"
 
-const CharactersListPage = () => {
+const CharactersPage = () => {
   const [characters, setCharacters] = useState<CharacterType[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -107,4 +107,4 @@ const CharactersListPage = () => {
   )
 }
 
-export default CharactersListPage
+export default CharactersPage

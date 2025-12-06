@@ -1,7 +1,7 @@
 import { Elysia, t } from "elysia";
 import { db } from "@/db";
 import { paths, pathPoints, points } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, count, inArray } from "drizzle-orm";
 import { adminMiddleware } from "@/lib/admin-middleware";
 import { join } from "path";
 import { mkdir } from "fs/promises";
@@ -246,6 +246,30 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
   )
   .get("/", async () => {
     const allPaths = await db.select().from(paths);
+    // Add count of points in each path
+    // We fetch the point counts for each path in one go for efficiency
+    const pathIds = allPaths.map(p => p.id);
+    let pointsCounts: Record<number, number> = {};
+    if (pathIds.length > 0) {
+      // Get counts per pathId
+      const counts = await db
+        .select({
+          pathId: pathPoints.pathId,
+          count: count(pathPoints.pointId).as("count")
+        })
+        .from(pathPoints)
+        .where(inArray(pathPoints.pathId, pathIds))
+        .groupBy(pathPoints.pathId);
+
+      // Convert to a Record for fast access
+      for (const row of counts) {
+        pointsCounts[row.pathId] = Number(row.count);
+      }
+    }
+    // Attach `pointsCount` to each path
+    for (const p of allPaths) {
+      (p as any).pointsCount = pointsCounts[p.id] ?? 0;
+    }
     return {
       success: true,
       data: allPaths,
@@ -284,22 +308,77 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
       },
     };
   })
-  .put(
+  .patch(
     "/:id",
     async (context: any) => {
       const { params, body, user } = context;
       if (!user) {
         return { success: false, error: "Unauthorized" };
       }
+
+      // Handle thumbnail file update
+      let thumbnailUrl = undefined;
+      if (body.thumbnailFile) {
+        const thumbnailUUID = crypto.randomUUID();
+        const thumbnailBuffer = await body.thumbnailFile.arrayBuffer();
+        const mimeType = body.thumbnailFile.type;
+        const extension = mimeType === "image/jpeg" ? ".jpg" : ".png";
+        const fileName = `${thumbnailUUID}${extension}`;
+        const filePath = join(process.cwd(), "resources", "thumbnails", fileName);
+        await mkdir(join(process.cwd(), "resources", "thumbnails"), { recursive: true });
+        await Bun.write(filePath, thumbnailBuffer);
+        thumbnailUrl = `/resources/thumbnails/${fileName}`;
+      }
+
+      // Handle marker icon file update
+      let markerIconUrl = undefined;
+      if (body.markerIconFile) {
+        const markerIconUUID = crypto.randomUUID();
+        const markerIconBuffer = await body.markerIconFile.arrayBuffer();
+        const mimeType = body.markerIconFile.type;
+        const extension = mimeType === "image/jpeg" ? ".jpg" : ".png";
+        const fileName = `${markerIconUUID}${extension}`;
+        const filePath = join(process.cwd(), "resources", "marker_icons", fileName);
+        await mkdir(join(process.cwd(), "resources", "marker_icons"), { recursive: true });
+        await Bun.write(filePath, markerIconBuffer);
+        markerIconUrl = `/resources/marker_icons/${fileName}`;
+      }
+
+      // Prepare update object, removing files and handling numeric fields
+      const {
+        thumbnailFile,
+        markerIconFile,
+        totalTimeMinutes,
+        distanceMeters,
+        ...updateData
+      } = body;
+
+      // Convert string to number if needed
+      const totalTime = totalTimeMinutes !== undefined
+        ? (typeof totalTimeMinutes === 'string' ? Number(totalTimeMinutes) : totalTimeMinutes)
+        : undefined;
+      const distance = distanceMeters !== undefined
+        ? (typeof distanceMeters === 'string' ? Number(distanceMeters) : distanceMeters)
+        : undefined;
+
+      if (thumbnailUrl !== undefined) updateData.thumbnailUrl = thumbnailUrl;
+      if (markerIconUrl !== undefined) updateData.markerIconUrl = markerIconUrl;
+      if (totalTime !== undefined) updateData.totalTimeMinutes = totalTime;
+      if (distance !== undefined) updateData.distanceMeters = distance;
+
+      if ('isPublished' in body && body.isPublished !== undefined) {
+        if (typeof body.isPublished === 'string') {
+          updateData.isPublished = body.isPublished === 'true' || body.isPublished === '1';
+        } else {
+          updateData.isPublished = Boolean(body.isPublished);
+        }
+      }
+      updateData.updatedAt = new Date();
+
       const [updatedPath] = await db
         .update(paths)
-        .set({
-          ...body,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(eq(paths.id, Number(params.id)), eq(paths.createdBy, user.id))
-        )
+        .set(updateData)
+        .where(and(eq(paths.id, Number(params.id)), eq(paths.createdBy, user.id)))
         .returning();
 
       if (!updatedPath) {
@@ -315,6 +394,7 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
       };
     },
     {
+      auth: true,
       body: t.Object({
         title: t.Optional(t.String()),
         shortDescription: t.Optional(t.String()),
