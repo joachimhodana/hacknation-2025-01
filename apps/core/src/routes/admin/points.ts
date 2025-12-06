@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { points, pathPoints } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { adminMiddleware } from "@/lib/admin-middleware";
-
+import { join } from "path";
 export const adminPointsRoutes = new Elysia({ prefix: "/points" })
   .use(adminMiddleware)
   .post(
@@ -16,13 +16,52 @@ export const adminPointsRoutes = new Elysia({ prefix: "/points" })
 
       // Extract path-related fields if provided
       const { pathId, orderIndex, ...pointData } = body;
-
+      
+      // Coerce string numbers to actual numbers (multipart/form-data sends everything as strings)
+      const processedData = {
+        ...pointData,
+        latitude: typeof pointData.latitude === 'string' ? parseFloat(pointData.latitude) : pointData.latitude,
+        longitude: typeof pointData.longitude === 'string' ? parseFloat(pointData.longitude) : pointData.longitude,
+        radiusMeters: typeof pointData.radiusMeters === 'string' ? parseInt(pointData.radiusMeters, 10) : pointData.radiusMeters,
+        characterId: pointData.characterId ? (typeof pointData.characterId === 'string' ? parseInt(pointData.characterId, 10) : pointData.characterId) : undefined,
+      };
+      const audioFile = pointData.audioFile;
+      const rewardIconFile = pointData.rewardIconFile;
+      const audioId = crypto.randomUUID();
+      const rewardIconId = crypto.randomUUID();
+      let audioUrl: string | undefined;
+      let rewardIconUrl: string | undefined;
+      if (audioFile) {
+        const audioBuffer = await audioFile.arrayBuffer();
+        const mimeType = audioFile.type;
+        const extension = mimeType === "audio/mpeg" ? ".mp3" : ".wav";
+        const fileName = `${audioId}${extension}`;
+        const filePath = join(process.cwd(), "public", "resources", "audio", fileName);
+        await Bun.write(filePath, audioBuffer);
+        audioUrl = `/resources/audio/${fileName}`;
+      }
+      if (rewardIconFile) {
+        const rewardIconBuffer = await rewardIconFile.arrayBuffer();
+        const mimeType = rewardIconFile.type;
+        const extension = mimeType === "image/jpeg" ? ".jpg" : ".png";
+        const fileName = `${rewardIconId}${extension}`;
+        const filePath = join(process.cwd(), "public", "resources", "reward_icons", fileName);
+        await Bun.write(filePath, rewardIconBuffer);
+        rewardIconUrl = `/resources/reward_icons/${fileName}`;
+      }
       // Step 2: Create point (can be created standalone or as part of path)
       const [newPoint] = await db
         .insert(points)
         .values({
-          ...pointData,
-          createdBy: user.id,
+          latitude: processedData.latitude,
+          longitude: processedData.longitude,
+          radiusMeters: processedData.radiusMeters, 
+          locationLabel: processedData.locationLabel,
+          characterId: processedData.characterId,
+          narrationText: processedData.narrationText,
+          audioUrl: audioUrl,
+          rewardIconUrl: rewardIconUrl,
+          createdBy: "qfJBN4SC5nbceb4M4VQj7wTXGAVkrKYJ",
         })
         .returning();
 
@@ -32,9 +71,9 @@ export const adminPointsRoutes = new Elysia({ prefix: "/points" })
         const [newPathPoint] = await db
           .insert(pathPoints)
           .values({
-            pathId: Number(pathId),
+            pathId: typeof pathId === 'string' ? parseInt(pathId, 10) : pathId,
             pointId: newPoint.id,
-            orderIndex: Number(orderIndex),
+            orderIndex: typeof orderIndex === 'string' ? parseInt(orderIndex, 10) : orderIndex,
           })
           .returning();
         pathPoint = newPathPoint;
@@ -49,18 +88,27 @@ export const adminPointsRoutes = new Elysia({ prefix: "/points" })
       };
     },
     {
+      type: "multipart/form-data",
       body: t.Object({
-        latitude: t.Number(),
-        longitude: t.Number(),
-        radiusMeters: t.Number(),
+        // Accept strings for numbers since multipart/form-data sends everything as strings
+        // We'll coerce them to numbers in the handler
+        latitude: t.Union([t.Number(), t.String()]),
+        longitude: t.Union([t.Number(), t.String()]),
+        radiusMeters: t.Union([t.Number(), t.String()]),
         locationLabel: t.Optional(t.String()),
-        characterId: t.Optional(t.Number()),
+        characterId: t.Optional(t.Union([t.Number(), t.String()])),
         narrationText: t.String(),
         fullNarrationText: t.Optional(t.String()),
-        audioUrl: t.Optional(t.String()),
+        audioFile: t.Optional(t.File({
+          maxFileSize: "10MB",
+          allowedMimeTypes: ["audio/mpeg", "audio/wav", "audio/mp3"],
+        })),
         triggerQuestion: t.Optional(t.String()),
         rewardLabel: t.Optional(t.String()),
-        rewardIconUrl: t.Optional(t.String()),
+        rewardIconFile: t.Optional(t.File({
+          maxFileSize: "10MB",
+          allowedMimeTypes: ["image/jpeg", "image/png"],
+        })),
         isPublic: t.Optional(t.Boolean()),
         // Optional: if provided, point will be added to path
         pathId: t.Optional(t.Number()),
@@ -142,13 +190,58 @@ export const adminPointsRoutes = new Elysia({ prefix: "/points" })
     "/:id",
     async (context: any) => {
       const { params, body, user } = context;
-      if (!user) {
-        return { success: false, error: "Unauthorized" };
+      // User is guaranteed to be defined by adminMiddleware.onBeforeHandle
+      
+      // Handle file uploads
+      const { audioFile, rewardIconFile, ...restBody } = body;
+      let audioUrl: string | undefined;
+      let rewardIconUrl: string | undefined;
+      
+      if (audioFile) {
+        const audioId = crypto.randomUUID();
+        const audioBuffer = await audioFile.arrayBuffer();
+        const mimeType = audioFile.type;
+        const extension = mimeType === "audio/mpeg" ? ".mp3" : ".wav";
+        const fileName = `${audioId}${extension}`;
+        const filePath = join(process.cwd(), "public", "resources", "audio", fileName);
+        await Bun.write(filePath, audioBuffer);
+        audioUrl = `/resources/audio/${fileName}`;
       }
+      
+      if (rewardIconFile) {
+        const rewardIconId = crypto.randomUUID();
+        const rewardIconBuffer = await rewardIconFile.arrayBuffer();
+        const mimeType = rewardIconFile.type;
+        const extension = mimeType === "image/jpeg" ? ".jpg" : ".png";
+        const fileName = `${rewardIconId}${extension}`;
+        const filePath = join(process.cwd(), "public", "resources", "reward_icons", fileName);
+        await Bun.write(filePath, rewardIconBuffer);
+        rewardIconUrl = `/resources/reward_icons/${fileName}`;
+      }
+      
+      // Coerce string numbers to actual numbers (multipart/form-data sends everything as strings)
+      const processedBody: any = { ...restBody };
+      if (processedBody.latitude !== undefined && typeof processedBody.latitude === 'string') {
+        processedBody.latitude = parseFloat(processedBody.latitude);
+      }
+      if (processedBody.longitude !== undefined && typeof processedBody.longitude === 'string') {
+        processedBody.longitude = parseFloat(processedBody.longitude);
+      }
+      if (processedBody.radiusMeters !== undefined && typeof processedBody.radiusMeters === 'string') {
+        processedBody.radiusMeters = parseInt(processedBody.radiusMeters, 10);
+      }
+      if (processedBody.characterId !== undefined && typeof processedBody.characterId === 'string') {
+        processedBody.characterId = parseInt(processedBody.characterId, 10);
+      }
+      
+      // Add file URLs if files were uploaded
+      if (audioUrl) processedBody.audioUrl = audioUrl;
+      if (rewardIconUrl) processedBody.rewardIconUrl = rewardIconUrl;
+      
       const [updatedPoint] = await db
         .update(points)
         .set({
-          ...body,
+          ...processedBody,
           updatedAt: new Date(),
         })
         .where(
@@ -173,19 +266,27 @@ export const adminPointsRoutes = new Elysia({ prefix: "/points" })
     },
     {
       body: t.Object({
-        latitude: t.Optional(t.Number()),
-        longitude: t.Optional(t.Number()),
-        radiusMeters: t.Optional(t.Number()),
+        // Accept strings for numbers since multipart/form-data sends everything as strings
+        latitude: t.Optional(t.Union([t.Number(), t.String()])),
+        longitude: t.Optional(t.Union([t.Number(), t.String()])),
+        radiusMeters: t.Optional(t.Union([t.Number(), t.String()])),
         locationLabel: t.Optional(t.String()),
-        characterId: t.Optional(t.Number()),
+        characterId: t.Optional(t.Union([t.Number(), t.String()])),
         narrationText: t.Optional(t.String()),
         fullNarrationText: t.Optional(t.String()),
-        audioUrl: t.Optional(t.String()),
+        audioFile: t.Optional(t.File({
+          maxFileSize: "10MB",
+          allowedMimeTypes: ["audio/mpeg", "audio/wav", "audio/mp3"],
+        })),
         triggerQuestion: t.Optional(t.String()),
         rewardLabel: t.Optional(t.String()),
-        rewardIconUrl: t.Optional(t.String()),
+        rewardIconFile: t.Optional(t.File({
+          maxFileSize: "10MB",
+          allowedMimeTypes: ["image/jpeg", "image/png"],
+        })),
         isPublic: t.Optional(t.Boolean()),
       }),
+      type: "multipart/form-data",
     }
   )
   .delete("/:id", async (context: any) => {
