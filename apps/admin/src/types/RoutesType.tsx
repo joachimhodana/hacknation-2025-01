@@ -1,10 +1,19 @@
 export type RoutesObjectType = {
-    route_id: string,
+    pathId: string,
     title: string,
-    theme: string,
+    shortDescription: string,
+    longDescription: string,
     category: string,
-    total_time_minutes: number,
+    totalTimeMinutes: number,
     difficulty: string,
+    distanceMeters: number,
+    thumbnailUrl: string,
+    isPublished: boolean,
+    stylePreset: string,
+    makerIconUrl: string,
+    createBy:string,
+    createdAt: number
+    updatedAt: number,
     stops: RouteStopType[]
 }
 

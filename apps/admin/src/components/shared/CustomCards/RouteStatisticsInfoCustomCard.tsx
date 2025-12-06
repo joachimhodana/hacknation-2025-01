@@ -1,17 +1,17 @@
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card.tsx";
 import type {RoutesObjectType} from "@/types/RoutesType.tsx";
 
-type CustomCardProps = {
+type RouteStatisticsInfoCustomCardProps = {
     route: RoutesObjectType,
 }
 
-const StatisticsInfoCustomCard = ({route}:CustomCardProps) => {
+const RouteStatisticsInfoCustomCard = ({route}:RouteStatisticsInfoCustomCardProps) => {
 
-    const description = route.theme.length > 70 ? route.theme.slice(0,70)+"..." : route.theme
+    const description = route.shortDescription.length > 70 ? route.shortDescription.slice(0,70)+"..." : route.shortDescription
 
     return(
         <Card
-            key={route.route_id}
+            key={route.pathId}
             className="border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600 transition-colors"
         >
             <CardHeader>
@@ -23,7 +23,7 @@ const StatisticsInfoCustomCard = ({route}:CustomCardProps) => {
                     <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Czas trasy:</span>
                         <span className="font-medium text-blue-600">
-                      {route.total_time_minutes}min
+                      {route.totalTimeMinutes}min
                     </span>
                     </div>
                     <div className="flex justify-between text-sm">
@@ -44,4 +44,4 @@ const StatisticsInfoCustomCard = ({route}:CustomCardProps) => {
     )
 }
 
-export default StatisticsInfoCustomCard
+export default RouteStatisticsInfoCustomCard

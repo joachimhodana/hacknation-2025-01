@@ -1,12 +1,11 @@
-// import { useState } from "react"
-// import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card.tsx"
+
 import { Route, Users, CheckCircle, TrendingUp, BarChart3 } from "lucide-react"
-// import { Button } from "@/components/ui/button.tsx"
 import GeneralInfoCustomCard from "@/components/shared/CustomCards/GeneralInfoCustomCard.tsx"
-import StatisticsInfoCustomCard from "@/components/shared/CustomCards/StatisticsInfoCustomCard.tsx";
+import RouteStatisticsInfoCustomCard from "@/components/shared/CustomCards/RouteStatisticsInfoCustomCard.tsx";
 import InformationCard from "@/components/shared/CustomCards/InformationCard/InformationCard.tsx";
 
 import {mockedRoutesObject} from "@/mocked/MockedRoutes.ts";
+import type {RoutesObjectType, RouteStopType} from "@/types/RoutesType.tsx";
 
 
 
@@ -209,8 +208,8 @@ const DashboardPage = () => {
       <div>
         <h2 className="text-2xl font-semibold mb-4">Projekty tras</h2>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {mockedRoutesObject.map((route) => (
-              <StatisticsInfoCustomCard route={route}/>
+          {mockedRoutesObject.map((route: RoutesObjectType) => (
+              <RouteStatisticsInfoCustomCard route={route} key={route.pathId}/>
               ))}
         </div>
       </div>

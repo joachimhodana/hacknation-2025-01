@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+// import {useForm} from "react-hook-form"
 import { Button } from "@/components/ui/button.tsx"
 import { Input } from "@/components/ui/input.tsx"
 import { Label } from "@/components/ui/label.tsx"
@@ -24,6 +25,12 @@ const RouteCreatorPage =() => {
   const [selectedPoint, setSelectedPoint] = useState<RoutePoint | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [mounted, setMounted] = useState(false)
+
+  // const form = useForm();
+  //
+  // const onSubmit= (value) => {
+  //   console.log(value)
+  // }
 
   useEffect(() => {
     // Opóźnij montowanie mapy, aby uniknąć problemów z inicjalizacją
@@ -121,7 +128,22 @@ const RouteCreatorPage =() => {
 
   return (
     <div className="flex h-[calc(100vh-64px)]">
-      {/* Lewa strona - Panel nawigacji i edycji */}
+      {/*Lewa strona - Mapa*/}
+      <div className="flex-1 relative">
+        {mounted ? (
+            <MapComponent points={points} onMapClick={handleMapClick} />
+        ) : (
+            <div className="flex items-center justify-center h-full bg-muted">
+              <div className="text-center">
+                <MapPin className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
+                <p className="text-muted-foreground">Ładowanie mapy...</p>
+              </div>
+            </div>
+        )}
+      </div>
+
+
+      {/* Prawa strona - Panel nawigacji i edycji */}
       <div className="w-1/3 border-r  overflow-y-auto">
         <div className="p-4 space-y-4">
 
@@ -334,20 +356,6 @@ const RouteCreatorPage =() => {
             Zapisz trasę
           </Button>
         </div>
-      </div>
-
-      {/* Prawa strona - Mapa */}
-      <div className="flex-1 relative">
-        {mounted ? (
-          <MapComponent points={points} onMapClick={handleMapClick} />
-        ) : (
-          <div className="flex items-center justify-center h-full bg-muted">
-            <div className="text-center">
-              <MapPin className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
-              <p className="text-muted-foreground">Ładowanie mapy...</p>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )
