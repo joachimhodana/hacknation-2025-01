@@ -28,7 +28,6 @@ services:
       - core_node_modules:/app/node_modules
     ports:
       - "8080:8080"
-      - "4983:4983"  # Drizzle Studio
     environment:
       - WATCH_FILES=true
       - PORT=${PORT:-8080}
@@ -38,6 +37,23 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    restart: unless-stopped
+
+  drizzle-studio:
+    image: oven/bun:latest
+    container_name: hacknation-drizzle-studio
+    working_dir: /app
+    volumes:
+      - ./apps/core:/app
+      - drizzle_studio_node_modules:/app/node_modules
+    ports:
+      - "4983:4983"
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/hacknation}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: sh -c "cd /app && bun install && bunx drizzle-kit studio --port 4983 --host 0.0.0.0"
     restart: unless-stopped
 
   landing:
@@ -55,8 +71,25 @@ services:
       - PORT=${PORT:-3000}
     restart: unless-stopped
 
+  admin:
+    build:
+      context: ./apps/admin
+      dockerfile: Dockerfile
+    container_name: hacknation-admin
+    volumes:
+      - ./apps/admin:/app
+      - admin_node_modules:/app/node_modules
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - PORT=${PORT:-3001}
+    restart: unless-stopped
+
 volumes:
   core_node_modules:
   landing_node_modules:
+  admin_node_modules:
+  drizzle_studio_node_modules:
   postgres_data:
 
