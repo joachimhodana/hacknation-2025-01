@@ -71,9 +71,25 @@ services:
       - PORT=${PORT:-3000}
     restart: unless-stopped
 
+  admin:
+    build:
+      context: ./apps/admin
+      dockerfile: Dockerfile
+    container_name: hacknation-admin
+    volumes:
+      - ./apps/admin:/app
+      - admin_node_modules:/app/node_modules
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - PORT=${PORT:-3001}
+    restart: unless-stopped
+
 volumes:
   core_node_modules:
   landing_node_modules:
+  admin_node_modules:
   drizzle_studio_node_modules:
   postgres_data:
 

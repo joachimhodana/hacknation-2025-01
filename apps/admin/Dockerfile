@@ -11,5 +11,5 @@ EXPOSE 3001
 
 ENV PORT=3001
 
-CMD ["npm", "run", "dev", "--", "--host"]
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3001"]
 
