@@ -10,8 +10,7 @@ services:
     working_dir: /app
     volumes:
       - ./core:/app
-      - /app/node_modules
-      - /app/dist
+      - core_node_modules:/app/node_modules
     ports:
       - "3000:3000"
     environment:
@@ -25,11 +24,15 @@ services:
     container_name: hacknation-landing
     volumes:
       - ./landing:/app
-      - /app/node_modules
+      - landing_node_modules:/app/node_modules
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=development
       - PORT=3000
     restart: unless-stopped
+
+volumes:
+  core_node_modules:
+  landing_node_modules:
 
