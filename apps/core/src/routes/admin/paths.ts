@@ -63,7 +63,7 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
           distanceMeters: mockDistanceMeters,
           thumbnailUrl,
           markerIconUrl,
-          createdBy: 'qfJBN4SC5nbceb4M4VQj7wTXGAVkrKYJ',
+          createdBy: user.id,
         })
         .returning();
 
