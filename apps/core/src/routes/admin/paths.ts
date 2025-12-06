@@ -360,4 +360,48 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
       success: true,
       message: "Path deleted successfully",
     };
-  });
+  }).patch("/:id/toggle", async (context: any) => {
+    const { params, user } = context;
+    if (!user) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    // Get the current isPublished value
+    const [existingPath] = await db
+      .select({ isPublished: paths.isPublished })
+      .from(paths)
+      .where(
+        and(
+          eq(paths.id, Number(params.id)),
+          eq(paths.createdBy, user.id)
+        )
+      )
+      .limit(1);
+
+    if (!existingPath) {
+      return { success: false, error: "Path not found or you don't have permission" };
+    }
+
+    const newIsPublished = !existingPath.isPublished;
+
+    const [updatedPath] = await db
+      .update(paths)
+      .set({
+        isPublished: newIsPublished,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(paths.id, Number(params.id)),
+          eq(paths.createdBy, user.id)
+        )
+      )
+      .returning();
+
+    return {
+      success: true,
+      data: updatedPath,
+    };
+  }, {
+    auth: true
+  })
