@@ -39,6 +39,23 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  drizzle-studio:
+    image: oven/bun:latest
+    container_name: hacknation-drizzle-studio
+    working_dir: /app
+    volumes:
+      - ./apps/core:/app
+      - drizzle_studio_node_modules:/app/node_modules
+    ports:
+      - "4983:4983"
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/hacknation}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: sh -c "cd /app && bun install && bunx drizzle-kit studio --port 4983 --host 0.0.0.0"
+    restart: unless-stopped
+
   landing:
     build:
       context: ./apps/landing
@@ -57,5 +74,6 @@ services:
 volumes:
   core_node_modules:
   landing_node_modules:
+  drizzle_studio_node_modules:
   postgres_data:
 
