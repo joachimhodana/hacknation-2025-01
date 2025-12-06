@@ -131,4 +131,3 @@ export const adminCharactersRoutes = new Elysia({ prefix: "/characters" })
       message: "Character deleted successfully",
     };
   });
-

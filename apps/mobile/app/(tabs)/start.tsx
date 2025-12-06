@@ -76,9 +76,9 @@ export default function StartScreen() {
               </View>
             </View>
 
-            <Text style={styles.title}>Zacznij miejską grę w Bydgoszczy</Text>
+            <Text style={styles.title}>Zacznij odkrywanie Bydgoszczy</Text>
             <Text style={styles.subtitle}>
-              Odkrywaj muzea, mosty, pomniki i ukryte miejsca. Możesz zacząć
+              Odkrywaj muzea, pomniki i ukryte tajemnice miasta. Możesz zacząć
               od razu albo zalogować się, żeby zapisywać swój postęp.
             </Text>
           </View>
@@ -100,8 +100,8 @@ export default function StartScreen() {
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Jak chcesz zacząć?</Text>
               <Text style={styles.cardSubtitle}>
-                Możesz wejść do gry bez konta albo zalogować się, żeby zbierać
-                punkty na stałe.
+                Możesz wejść do gry bez konta albo zalogować się, aby zapisywać
+                swój postęp oraz zbierać punkty.
               </Text>
 
               <TouchableOpacity
@@ -140,10 +140,6 @@ export default function StartScreen() {
                 style={[styles.footerNode, { backgroundColor: COLORS.blue }]}
               />
             </View>
-            <Text style={styles.footerText}>
-              Pierwszy krok: pozwól na dostęp do lokalizacji – aplikacja
-              doprowadzi Cię do najbliższej misji.
-            </Text>
           </View>
         </View>
       </KeyboardAvoidingView>

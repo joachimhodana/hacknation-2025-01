@@ -1,4 +1,4 @@
-import { user } from "@/db/auth-schema";
+import { user, session, account, verification } from "@/db/auth-schema";
 import {
     pgTable,
     text,
@@ -9,8 +9,8 @@ import {
     serial,
 } from "drizzle-orm/pg-core";
 
-// Re-export user from auth-schema for convenience
-export { user };
+// Re-export all auth tables for Better Auth adapter
+export { user, session, account, verification };
 
 
 // Main routes (paths)
@@ -55,7 +55,6 @@ export const characters = pgTable("characters", {
     name: text("name").notNull(),
     avatarUrl: text("avatar_url"),
     description: text("description"),
-    voicePreset: text("voice_preset"), // optional TTS preset
 
     // Admin who created this character
     createdBy: text("created_by")
@@ -86,11 +85,7 @@ export const points = pgTable("points", {
     // Short narration (auto-triggered on entering geofence)
     narrationText: text("narration_text").notNull(),
 
-    // Extended narration/dialog shown after clicking
-    fullNarrationText: text("full_narration_text"),
-
     audioUrl: text("audio_url"),
-    triggerQuestion: text("trigger_question"),
 
     // Reward obtained when a user enters this point
     rewardLabel: text("reward_label"),

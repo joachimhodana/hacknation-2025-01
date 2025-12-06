@@ -14,5 +14,15 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    conditions: ['import', 'module', 'browser', 'default'],
+  },
+  optimizeDeps: {
+    include: ['better-auth/client', 'better-auth/client/plugins'],
+    esbuildOptions: {
+      conditions: ['import', 'module', 'browser', 'default'],
+    },
+  },
+  ssr: {
+    noExternal: ['better-auth'],
   },
 })
