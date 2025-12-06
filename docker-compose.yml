@@ -34,6 +34,9 @@ services:
       - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/hacknation}
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
       - BETTER_AUTH_URL=${BETTER_AUTH_URL:-http://localhost:8080}
+      - DEFAULT_ADMIN_EMAIL=${DEFAULT_ADMIN_EMAIL:-admin@admin.com}
+      - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD:-admin123}
+      - DEFAULT_ADMIN_NAME=${DEFAULT_ADMIN_NAME:-Admin}
     depends_on:
       postgres:
         condition: service_healthy
@@ -84,6 +87,7 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - PORT=${PORT:-3001}
+      - VITE_BETTER_AUTH_URL=${VITE_BETTER_AUTH_URL:-http://localhost:8080}
     restart: unless-stopped
 
 volumes:

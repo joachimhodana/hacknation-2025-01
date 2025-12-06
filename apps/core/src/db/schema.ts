@@ -1,4 +1,4 @@
-import { user } from "@/db/auth-schema";
+import { user, session, account, verification } from "@/db/auth-schema";
 import {
     pgTable,
     text,
@@ -9,8 +9,8 @@ import {
     serial,
 } from "drizzle-orm/pg-core";
 
-// Re-export user from auth-schema for convenience
-export { user };
+// Re-export all auth tables for Better Auth adapter
+export { user, session, account, verification };
 
 
 // Main routes (paths)

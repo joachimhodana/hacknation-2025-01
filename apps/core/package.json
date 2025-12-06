@@ -10,7 +10,8 @@
     "db:push": "bunx drizzle-kit push",
     "better-auth:secret": "bunx @better-auth/cli secret",
     "better-auth:generate": "bunx @better-auth/cli generate",
-    "better-auth:migrate": "bunx @better-auth/cli migrate"
+    "better-auth:migrate": "bunx @better-auth/cli migrate",
+    "create-admin": "bun run scripts/create-admin.ts"
   },
   "dependencies": {
     "@elysiajs/cors": "^1.4.0",
