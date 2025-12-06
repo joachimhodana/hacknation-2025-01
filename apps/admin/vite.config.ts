@@ -7,7 +7,8 @@ import tailwindcss from "@tailwindcss/vite"
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    port: 3001 // Ustawia port na 3001
+    port: 3001,
+    host: true, // Pozwala na dostęp z zewnątrz kontenera
   },
   resolve: {
     alias: {
