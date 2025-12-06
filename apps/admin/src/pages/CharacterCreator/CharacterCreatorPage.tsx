@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
-import { useSearchParams } from "react-router-dom"
+import { useSearchParams, useNavigate } from "react-router-dom"
 import { yupResolver } from "@hookform/resolvers/yup"
 import * as yup from "yup"
 import { Button } from "@/components/ui/button.tsx"
@@ -13,6 +13,7 @@ import InformationCard from "@/components/shared/CustomCards/InformationCard/Inf
 import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from "@/components/ui/form.tsx"
 import CustomUsualInput from "@/components/shared/CustomCards/CustomInput/CustomUsualInput.tsx"
 import CustomFileInput from "@/components/shared/CustomCards/CustomInput/CustomFileInput.tsx"
+import { getCharacterById, createCharacter, updateCharacter } from "@/services/charactersApi.ts"
 import type { CharacterType } from "@/types/CharactersType.tsx"
 
 interface DefaultPosition {
@@ -24,47 +25,8 @@ interface DefaultPosition {
 type CharacterFormData = {
   name: string
   avatarFile: File | null
+  description?: string
 }
-
-// Mock data - w prawdziwej aplikacji dane będą z API
-// Używamy tego samego mock data co w CharactersListPage
-const getMockCharacters = (): CharacterType[] => [
-  {
-    id: "1",
-    name: "Historyk",
-    avatar: null as any,
-    createdBy: "admin",
-    createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-    lastModifiedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-    deafultPosition: {
-      latitude: 52.2297,
-      longitude: 21.0122,
-      description: "Muzeum Historii"
-    }
-  },
-  {
-    id: "2",
-    name: "Przewodnik",
-    avatar: null as any,
-    createdBy: "admin",
-    createdAt: new Date(Date.now() - 86400000 * 10).toISOString(),
-    lastModifiedAt: new Date(Date.now() - 86400000 * 1).toISOString(),
-    deafultPosition: {
-      latitude: 52.2300,
-      longitude: 21.0130,
-      description: "Centrum miasta"
-    }
-  },
-  {
-    id: "3",
-    name: "Mieszkaniec",
-    avatar: null as any,
-    createdBy: "admin",
-    createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-    lastModifiedAt: new Date(Date.now() - 3600000).toISOString(),
-    deafultPosition: null as any,
-  },
-]
 
 // Schemat walidacji Yup
 const characterFormSchema = yup.object({
@@ -76,19 +38,22 @@ const characterFormSchema = yup.object({
   avatarFile: yup
     .mixed<File>()
     .nullable()
-    .required("Avatar jest wymagany")
     .test("fileType", "Plik musi być obrazem", (value) => {
-      if (!value) return false
+      if (!value) return true // Avatar jest opcjonalny
       return value instanceof File && value.type.startsWith("image/")
     })
     .test("fileSize", "Plik nie może być większy niż 5MB", (value) => {
-      if (!value) return false
+      if (!value) return true
       return value instanceof File && value.size <= 5 * 1024 * 1024
     }),
+  description: yup
+    .string()
+    .max(500, "Opis może mieć maksymalnie 500 znaków"),
 })
 
 const CharacterCreatorPage = () => {
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const editCharacterId = searchParams.get("edit")
 
   const [currentStep, setCurrentStep] = useState<1 | 2>(1)
@@ -97,6 +62,8 @@ const CharacterCreatorPage = () => {
   const [isFormValid, setIsFormValid] = useState(false)
   const [defaultPosition, setDefaultPosition] = useState<DefaultPosition | null>(null)
   const [isSelectingPosition, setIsSelectingPosition] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
   const form = useForm<CharacterFormData>({
     resolver: yupResolver(characterFormSchema),
@@ -104,6 +71,7 @@ const CharacterCreatorPage = () => {
     defaultValues: {
       name: "",
       avatarFile: null,
+      description: "",
     },
   })
 
@@ -111,41 +79,41 @@ const CharacterCreatorPage = () => {
 
   // Ładowanie danych postaci do edycji
   useEffect(() => {
-    if (editCharacterId) {
-      const mockCharacters = getMockCharacters()
-      const character = mockCharacters.find((c) => c.id === editCharacterId)
+    const loadCharacter = async () => {
+      if (editCharacterId) {
+        try {
+          setIsLoading(true)
+          const character = await getCharacterById(Number(editCharacterId))
 
-      if (character) {
-        // Wypełnij formularz
-        setTimeout(() => {
+          // Wypełnij formularz
           form.reset({
             name: character.name,
             avatarFile: null, // Pliki trzeba będzie załadować osobno z URL
+            description: character.description || "",
           })
 
-          // Ustaw pozycję domyślną jeśli istnieje
-          if (character.deafultPosition) {
-            setDefaultPosition({
-              latitude: character.deafultPosition.latitude,
-              longitude: character.deafultPosition.longitude,
-              description: character.deafultPosition.description || "",
-            })
-            // Przejdź do kroku 2 jeśli jest pozycja
-            setCurrentStep(2)
-          } else {
-            setDefaultPosition(null)
-          }
-        }, 100)
+          // Note: defaultPosition nie jest częścią API response, więc pomijamy to
+          setDefaultPosition(null)
+          setCurrentStep(1)
+        } catch (error) {
+          console.error("Failed to load character:", error)
+          setValidationError("Nie udało się załadować postaci do edycji")
+        } finally {
+          setIsLoading(false)
+        }
+      } else {
+        // Reset formularza jeśli nie edytujemy
+        form.reset({
+          name: "",
+          avatarFile: null,
+          description: "",
+        })
+        setDefaultPosition(null)
+        setCurrentStep(1)
       }
-    } else {
-      // Reset formularza jeśli nie edytujemy
-      form.reset({
-        name: "",
-        avatarFile: null,
-      })
-      setDefaultPosition(null)
-      setCurrentStep(1)
     }
+
+    loadCharacter()
   }, [editCharacterId, form])
 
   useEffect(() => {
@@ -194,15 +162,38 @@ const CharacterCreatorPage = () => {
       return
     }
 
-    const formValues = form.getValues()
-    const characterData = {
-      name: formValues.name,
-      avatarFile: formValues.avatarFile,
-      defaultPosition: defaultPosition,
-    }
+    try {
+      setIsSaving(true)
+      const formValues = form.getValues()
 
-    console.log(characterData)
-    // TODO: stworzyć fetch post
+      // TODO: Handle avatar file upload - for now we'll skip it
+      // You'll need to implement file upload endpoint first
+      const characterData = {
+        name: formValues.name,
+        description: formValues.description || undefined,
+        // avatarUrl: await uploadAvatar(formValues.avatarFile) // When file upload is implemented
+      }
+
+      if (editCharacterId) {
+        // Update existing character
+        await updateCharacter(Number(editCharacterId), characterData)
+      } else {
+        // Create new character
+        await createCharacter(characterData)
+      }
+
+      // Redirect to characters list after successful save
+      navigate("/characters")
+    } catch (error) {
+      console.error("Failed to save character:", error)
+      setValidationError(
+        error instanceof Error 
+          ? error.message 
+          : "Nie udało się zapisać postaci. Spróbuj ponownie."
+      )
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const handleRemovePosition = () => {
@@ -210,12 +201,14 @@ const CharacterCreatorPage = () => {
     setIsSelectingPosition(false)
   }
 
-  if (!mounted) {
+  if (!mounted || isLoading) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-64px)]">
         <div className="text-center">
           <MapPin className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
-          <p className="text-muted-foreground">Ładowanie kreatora...</p>
+          <p className="text-muted-foreground">
+            {isLoading ? "Ładowanie postaci..." : "Ładowanie kreatora..."}
+          </p>
         </div>
       </div>
     )
@@ -302,9 +295,15 @@ const CharacterCreatorPage = () => {
                         placeholder="Podaj nazwę postaci"
                       />
 
+                      <CustomUsualInput
+                        name="description"
+                        label="Opis postaci (opcjonalnie)"
+                        placeholder="Podaj opis postaci"
+                      />
+
                       <CustomFileInput
                         name="avatarFile"
-                        label="Avatar"
+                        label="Avatar (opcjonalnie)"
                         description="Przeciągnij i upuść plik obrazu lub kliknij, aby wybrać"
                         accept="image/*"
                       />
@@ -415,9 +414,10 @@ const CharacterCreatorPage = () => {
                 onClick={handleSaveCharacter}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 size="lg"
+                disabled={isSaving}
               >
                 <Save className="h-4 w-4 mr-2" />
-                Zapisz postać
+                {isSaving ? "Zapisywanie..." : editCharacterId ? "Zaktualizuj postać" : "Zapisz postać"}
               </Button>
             </div>
           )}

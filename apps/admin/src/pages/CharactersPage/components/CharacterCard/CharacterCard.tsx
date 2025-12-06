@@ -35,25 +35,24 @@ const CharacterCard = ({ character, viewMode, formatDate }: CharacterCardProps) 
             ? "flex items-center gap-6 flex-wrap"
             : "space-y-2"
           }>
-            {character.deafultPosition ? (
-              <div className="flex items-center gap-2 text-sm">
-                <MapPin className="h-4 w-4 text-blue-600" />
-                <span className="text-muted-foreground">
-                  {character.deafultPosition.latitude.toFixed(4)}, {character.deafultPosition.longitude.toFixed(4)}
-                </span>
-                {character.deafultPosition.description && (
-                  <span className="text-muted-foreground">- {character.deafultPosition.description}</span>
-                )}
+            {character.description ? (
+              <div className="text-sm text-muted-foreground">
+                {character.description}
               </div>
             ) : (
               <div className="text-sm text-muted-foreground">
-                Brak pozycji domyślnej
+                Brak opisu
+              </div>
+            )}
+            {character.avatarUrl && (
+              <div className="text-xs text-muted-foreground">
+                Avatar: {character.avatarUrl}
               </div>
             )}
           </div>
 
           <div className={`text-xs text-muted-foreground ${viewMode === "list" ? "mt-2" : "border-t pt-3"}`}>
-            Ostatnia edycja: {formatDate(character.lastModifiedAt)}
+            Ostatnia edycja: {formatDate(character.updatedAt)}
           </div>
 
           <div className={`flex gap-2 ${viewMode === "list" ? "mt-4" : "pt-2"}`}>

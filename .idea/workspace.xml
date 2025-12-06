@@ -5,11 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1df88e0a-f3b6-4388-84f9-5fc94cf4eac0" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/apps/admin/src/types/CharactersType.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/App.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/components/shared/Header/Navigation.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/components/shared/Header/Navigation.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/Documentation.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/Documentation.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/CharacterCreator/CharacterCreatorPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/CharacterCreator/CharacterCreatorPage.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/CharactersPage/CharactersPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/CharactersPage/CharactersPage.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/CharactersPage/components/CharacterCard/CharacterCard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/CharactersPage/components/CharacterCard/CharacterCard.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/src/types/CharactersType.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/types/CharactersType.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -33,22 +33,22 @@
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "Pawel-Serkowski"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;Pawel-Serkowski&quot;
   }
-}]]></component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/joachimhodana/hacknation-2025-01.git",
-    "accountId": "684295ee-d9d6-4cc6-992c-d29d4030223d"
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/joachimhodana/hacknation-2025-01.git&quot;,
+    &quot;accountId&quot;: &quot;684295ee-d9d6-4cc6-992c-d29d4030223d&quot;
   }
-}]]></component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "customColor": "",
-  "associatedIndex": 6
-}]]></component>
+}</component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 6
+}</component>
   <component name="ProjectId" id="36U3l2rDuP2kC0C8kyguTRFc3R8" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -60,7 +60,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "master",
+    "git-widget-placeholder": "admin/characters.v2",
     "node.js.detected.package.eslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
@@ -71,11 +71,11 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/apps/admin/src/pages/CharactersList/components" />
+      <recent name="$PROJECT_DIR$/apps/admin/src/pages/Dashboard/components/DashboardCustomStatsCard" />
+      <recent name="$PROJECT_DIR$/apps/admin/src/pages/Dashboard/components" />
       <recent name="$PROJECT_DIR$/apps/admin/src/components/shared/CustomCards/InformationCard" />
       <recent name="$PROJECT_DIR$/apps/admin/src/components/shared/CustomCards" />
-      <recent name="$PROJECT_DIR$/apps/admin/src/pages/RouteCreator" />
-      <recent name="$PROJECT_DIR$/apps/admin/src/components/shared/Header" />
-      <recent name="$PROJECT_DIR$/apps/admin/src/pages/Dashboards" />
     </key>
   </component>
   <component name="SharedIndexes">
@@ -93,6 +93,7 @@
       <option name="presentableId" value="Default" />
       <updated>1765047470528</updated>
       <workItem from="1765047472214" duration="5320000" />
+      <workItem from="1765057019044" duration="1404000" />
     </task>
     <servers />
   </component>
