@@ -11,7 +11,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 SplashScreen.preventAutoHideAsync();
 
 export const unstable_settings = {
-  initialRouteName: 'start',
+  initialRouteName: 'splash',
 };
 
 export default function RootLayout() {
@@ -31,7 +31,13 @@ export default function RootLayout() {
           headerShown: false,
         }}>
         <Stack.Screen name="splash" />
-        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="index" />
+        <Stack.Screen name="login" />
+        <Stack.Screen name="signup" />
+        <Stack.Screen name="map" />
+        <Stack.Screen name="explore" />
+        <Stack.Screen name="profile" />
+        <Stack.Screen name="collections" />
         <Stack.Screen name="route-details" />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>

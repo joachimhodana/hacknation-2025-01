@@ -14,6 +14,7 @@
     "create-admin": "bun run scripts/create-admin.ts"
   },
   "dependencies": {
+    "@better-auth/expo": "^1.4.5",
     "@elysiajs/cors": "^1.4.0",
     "@elysiajs/openapi": "^1.4.11",
     "@elysiajs/server-timing": "^1.4.0",

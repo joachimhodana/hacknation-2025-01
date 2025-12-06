@@ -59,7 +59,7 @@ export default function SplashScreen() {
     ]).start();
 
     const timer = setTimeout(() => {
-      router.replace('/(tabs)/start');
+      router.replace('/');
     }, 3000);
 
     return () => clearTimeout(timer);
