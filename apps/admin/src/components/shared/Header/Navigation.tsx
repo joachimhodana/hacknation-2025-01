@@ -50,10 +50,12 @@ export function Navigation() {
               <ul className="grid w-[200px] gap-1 p-2 text-gray-500">
                 <li>
                   <NavigationMenuLink asChild>
-                    <Link to="/routes/create">Stwórz trasę</Link>
+                    <Link to="/routes">Lista tras</Link>
                   </NavigationMenuLink>
-                  <NavigationMenuLink asChild >
-                    <Link to="/routes/list">Lista tras</Link>
+                </li>
+                <li>
+                  <NavigationMenuLink asChild>
+                    <Link to="/routes/create">Stwórz trasę</Link>
                   </NavigationMenuLink>
                 </li>
               </ul>
