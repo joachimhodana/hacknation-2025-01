@@ -16,6 +16,10 @@ app.get("/health", () => "OK")
 
 app.mount(auth.handler)
 
-app.listen(process.env.PORT || 8080, () => {
-  console.log(`🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`)
+const port = Number(process.env.PORT) || 8080;
+app.listen({
+  port,
+  hostname: "0.0.0.0"
+}, () => {
+  console.log(`🦊 Elysia is running at 0.0.0.0:${port}`)
 })
