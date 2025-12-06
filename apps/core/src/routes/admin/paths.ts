@@ -46,14 +46,24 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
 
       // Step 3: Create path with basic info
       const { thumbnailFile, markerIconFile, ...pathData } = body;
-      
+      // Calculate mock total time and distance (mock: 65 min, 2100 meters)
+      // Replace with real calculation later
+      const mockTotalTimeMinutes = 65;
+      const mockDistanceMeters = 2100;
       const [newPath] = await db
         .insert(paths)
         .values({
-          ...pathData,
+          pathId: crypto.randomUUID(),
+          title: pathData.title,
+          shortDescription: pathData.shortDescription,
+          longDescription: pathData.longDescription,
+          category: pathData.category,
+          difficulty: pathData.difficulty,
+          totalTimeMinutes: mockTotalTimeMinutes,
+          distanceMeters: mockDistanceMeters,
           thumbnailUrl,
           markerIconUrl,
-          createdBy: user.id,
+          createdBy: 'qfJBN4SC5nbceb4M4VQj7wTXGAVkrKYJ',
         })
         .returning();
 
