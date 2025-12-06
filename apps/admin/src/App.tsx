@@ -1,18 +1,37 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom"
-import { Navigation } from "@/components/Navigation"
-import { Dashboard } from "@/pages/Dashboard"
-import { RouteCreator } from "@/pages/RouteCreator"
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
+import DashboardPage from "@/pages/Dashboard/DashboardPage.tsx"
+import RouteCreatorPage  from "@/pages/RouteCreator/RouteCreatorPage.tsx"
+import RoutesListPage from "@/pages/RoutesList/RoutesListPage.tsx"
+import CharacterCreatorPage from "@/pages/CharacterCreator/CharacterCreatorPage.tsx"
+import CharactersListPage from "@/pages/CharactersList/CharactersListPage.tsx"
 import { Documentation } from "@/pages/Documentation"
+// import { Login } from "@/pages/Login/Login"
+import { ProtectedRoute } from "@/components/ProtectedRoute"
+import Header from "@/components/shared/Header/Header.tsx";
 
 function App() {
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-background">
-        <Navigation />
         <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/routes/create" element={<RouteCreator />} />
-          <Route path="/documentation" element={<Documentation />} />
+          {/*<Route path="/login" element={<Login />} />*/}
+          <Route
+            path="/*"
+            element={
+              <ProtectedRoute>
+                <Header />
+                <Routes>
+                  <Route path="/" element={<DashboardPage />} />
+                  <Route path="/routes" element={<RoutesListPage />} />
+                  <Route path="/routes/create" element={<RouteCreatorPage />} />
+                  <Route path="/characters" element={<CharactersListPage />} />
+                  <Route path="/characters/create" element={<CharacterCreatorPage />} />
+                  <Route path="/documentation" element={<Documentation />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </div>
     </BrowserRouter>

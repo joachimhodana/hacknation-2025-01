@@ -5,14 +5,22 @@ echo "Installing dependencies..."
 bun install
 
 echo "Pushing Drizzle schema to database (development mode)..."
+echo "This will create/update all tables including Better Auth tables (user, session, account, verification)..."
 bun run db:push || echo "Warning: Drizzle push failed, but continuing..."
 
-echo "Generating Better Auth..."
+echo "Running Better Auth migrations..."
 if [ -z "$BETTER_AUTH_SECRET" ]; then
-    echo "Warning: BETTER_AUTH_SECRET is not set. Better Auth generation may fail."
+    echo "Warning: BETTER_AUTH_SECRET is not set. Better Auth migration may fail."
+    echo "Skipping Better Auth migrations..."
 else
-    bun run better-auth:generate || echo "Warning: Better Auth generation failed, but continuing..."
+    bun run better-auth:migrate || echo "Warning: Better Auth migration failed, but continuing..."
 fi
+
+echo "Creating default admin user (if not exists)..."
+bun run create-admin || echo "Warning: Failed to create default admin user, but continuing..."
+
+echo "Creating resources directories..."
+mkdir -p resources/thumbnails resources/marker_icons resources/audio || echo "Warning: Failed to create resources directories, but continuing..."
 
 echo "Starting application..."
 exec "$@"

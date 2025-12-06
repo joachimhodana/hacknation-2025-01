@@ -1,112 +1,204 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { StyleSheet, ScrollView, View, Text } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { RouteCard } from '@/components/route-card';
+import { routes } from '@/data/routes';
 
-import { Collapsible } from '@/components/ui/collapsible';
-import { ExternalLink } from '@/components/external-link';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Fonts } from '@/constants/theme';
+const COLORS = {
+  red: '#ED1C24',
+  yellow: '#FFDE00',
+  blue: '#0095DA',
+  textDark: '#111827',
+  textMuted: '#6B7280',
+  border: '#E5E7EB',
+  bgSoft: '#F3F4F6',
+};
 
-export default function TabTwoScreen() {
+export default function ExploreScreen() {
+  const router = useRouter();
+
+  const handleRoutePress = (routeId: string) => {
+    router.push(`/route-details?routeId=${routeId}`);
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText
-          type="title"
-          style={{
-            fontFamily: Fonts.rounded,
-          }}>
-          Explore
-        </ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image
-          source={require('@/assets/images/react-logo.png')}
-          style={{ width: 100, height: 100, alignSelf: 'center' }}
-        />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful{' '}
-          <ThemedText type="defaultSemiBold" style={{ fontFamily: Fonts.mono }}>
-            react-native-reanimated
-          </ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+    <SafeAreaView style={styles.safeArea}>
+      {/* Decorative background blobs - jak w start.tsx */}
+      <View style={[styles.blob, styles.blobRed]} />
+      <View style={[styles.blob, styles.blobBlue]} />
+      <View style={[styles.blob, styles.blobYellow]} />
+
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.badgeRow}>
+            <View
+              style={[
+                styles.badgePill,
+                { backgroundColor: 'rgba(237, 28, 36, 0.08)', borderWidth: 0 },
+              ]}>
+              <View style={styles.badgeColorDots}>
+                <View
+                  style={[styles.badgeDot, { backgroundColor: COLORS.red }]}
+                />
+                <View
+                  style={[styles.badgeDot, { backgroundColor: COLORS.yellow }]}
+                />
+                <View
+                  style={[styles.badgeDot, { backgroundColor: COLORS.blue }]}
+                />
+              </View>
+              <Text style={styles.badgeTextGhost}>
+                Odkryj Bydgoszcz na nowo
+              </Text>
+            </View>
+          </View>
+
+          <Text style={styles.title}>Wybierz Ścieżkę</Text>
+          <Text style={styles.subtitle}>
+            Każda trasa to inna opowieść. Wybierz temat, który Cię
+            interesuje i rozpocznij podróż.
+          </Text>
+        </View>
+
+        {/* Routes List */}
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}>
+          {[...routes].reverse().map((route) => (
+            <RouteCard
+              key={route.route_id}
+              route={route}
+              onPress={() => handleRoutePress(route.route_id)}
+            />
+          ))}
+        </ScrollView>
+
+        {/* Footer path - jak w start.tsx */}
+        <View style={styles.footer}>
+          <View style={styles.footerPath}>
+            <View
+              style={[styles.footerNode, { backgroundColor: COLORS.red }]}
+            />
+            <View style={styles.footerLine} />
+            <View
+              style={[styles.footerNode, { backgroundColor: COLORS.yellow }]}
+            />
+            <View style={styles.footerLine} />
+            <View
+              style={[styles.footerNode, { backgroundColor: COLORS.blue }]}
+            />
+          </View>
+        </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FEFEFE',
   },
-  titleContainer: {
+  container: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 16,
+  },
+  // Decorative blobs
+  blob: {
+    position: 'absolute',
+    opacity: 0.28,
+    borderRadius: 999,
+  },
+  blobRed: {
+    width: 160,
+    height: 160,
+    backgroundColor: COLORS.red,
+    top: -30,
+    right: -30,
+  },
+  blobBlue: {
+    width: 120,
+    height: 120,
+    backgroundColor: COLORS.blue,
+    bottom: 100,
+    left: -40,
+  },
+  blobYellow: {
+    width: 90,
+    height: 90,
+    backgroundColor: COLORS.yellow,
+    top: 200,
+    left: -15,
+  },
+  header: {
+    gap: 14,
+    marginBottom: 20,
+  },
+  badgeRow: {
     flexDirection: 'row',
     gap: 8,
+  },
+  badgePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(15,23,42,0.05)',
+  },
+  badgeTextGhost: {
+    color: COLORS.textDark,
+    fontSize: 11,
+    fontWeight: '500',
+    letterSpacing: 0.4,
+  },
+  badgeColorDots: {
+    flexDirection: 'row',
+    gap: 4,
+    marginRight: 6,
+  },
+  badgeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 999,
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: '700',
+    color: COLORS.textDark,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: COLORS.textMuted,
+    lineHeight: 20,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 20,
+  },
+  footer: {
+    marginTop: 16,
+    marginBottom: 8,
+    gap: 10,
+  },
+  footerPath: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  footerNode: {
+    width: 10,
+    height: 10,
+    borderRadius: 999,
+  },
+  footerLine: {
+    flex: 1,
+    height: 2,
+    backgroundColor: COLORS.bgSoft,
   },
 });

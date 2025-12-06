@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { MapPin } from "lucide-react"
+import { Icon } from "@iconify/react"
 
 interface RoutePoint {
   id: string
@@ -136,7 +136,7 @@ export default function MapComponent({ points, onMapClick }: MapComponentProps) 
             }}
           >
             <div className="relative">
-              <MapPin className="h-8 w-8 text-blue-600 dark:text-blue-400 drop-shadow-lg group-hover:text-blue-800 dark:group-hover:text-blue-300 transition-colors" />
+              <Icon icon="solar:map-point-bold-duotone" className="h-8 w-8 text-blue-600 dark:text-blue-400 drop-shadow-lg group-hover:text-blue-800 dark:group-hover:text-blue-300 transition-colors" />
               <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full bg-blue-600 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center -mt-1 shadow-md">
                 {point.order}
               </div>
