@@ -13,7 +13,7 @@ import MapComponent from "./MapComponent.tsx"
 import InformationCard from "@/components/shared/CustomCards/InformationCard/InformationCard.tsx";
 import GeneralRouteForm from "./components/GeneralRouteForm/GeneralRouteForm.tsx";
 import { calculateEstimatedTime, formatTime } from "@/lib/route-utils.ts";
-import { createPath, createPoint, getCharacters } from "@/lib/api-client.ts";
+import { createPath, getCharacters } from "@/lib/api-client.ts";
 
 interface RoutePoint {
   id: string
@@ -572,7 +572,26 @@ const RouteCreatorPage = () => {
       const totalTimeMinutes = Math.round(estimatedTimeHours * 60)
       const distanceMeters = Math.round(routeDistance * 1000)
 
-      // Step 1: Create the path
+      // Prepare points data
+      const sortedPoints = [...points].sort((a, b) => a.order - b.order)
+      const pointsData = sortedPoints.map((point) => {
+        // Map character name to character ID
+        const characterId = point.characterName
+          ? characterMap.get(point.characterName.toLowerCase())
+          : undefined
+
+        return {
+          latitude: point.lat,
+          longitude: point.lng,
+          radiusMeters: 50, // Default radius, can be made configurable
+          locationLabel: point.name,
+          narrationText: point.dialog || point.description,
+          characterId: characterId ? Number(characterId) : undefined,
+          audioFile: point.hasCustomAudio && point.audioFile ? point.audioFile : undefined,
+        }
+      })
+
+      // Create the path with all points in one request
       const pathResponse = await createPath({
         pathId,
         title: formValues.title,
@@ -585,45 +604,13 @@ const RouteCreatorPage = () => {
         thumbnailFile: formValues.thumbnailFile,
         markerIconFile: formValues.makerIconFile instanceof File ? formValues.makerIconFile : undefined,
         stylePreset: formValues.stylePreset || undefined,
+        points: pointsData,
       })
 
       if (!pathResponse.success || !pathResponse.data) {
         setValidationError(pathResponse.error || "Nie udało się utworzyć trasy")
         setIsSaving(false)
         return
-      }
-
-      const createdPath = pathResponse.data
-      const pathIdNumber = createdPath.id
-
-      // Step 2: Create points and link them to the path
-      const sortedPoints = [...points].sort((a, b) => a.order - b.order)
-
-      for (const point of sortedPoints) {
-        // Map character name to character ID
-        const characterId = point.characterName
-          ? characterMap.get(point.characterName.toLowerCase())
-          : undefined
-
-        // Create point with audio file if provided
-        const pointResponse = await createPoint({
-          latitude: point.lat,
-          longitude: point.lng,
-          radiusMeters: 50, // Default radius, can be made configurable
-          locationLabel: point.name,
-          narrationText: point.dialog || point.description,
-          fullNarrationText: point.description,
-          characterId: characterId ? Number(characterId) : undefined,
-          audioFile: point.hasCustomAudio && point.audioFile ? point.audioFile : undefined,
-          pathId: pathIdNumber,
-          orderIndex: point.order - 1, // API uses 0-based index
-        })
-
-        if (!pointResponse.success) {
-          setValidationError(`Nie udało się utworzyć punktu "${point.name}": ${pointResponse.error}`)
-          setIsSaving(false)
-          return
-        }
       }
 
       // Success!
@@ -662,6 +649,7 @@ const RouteCreatorPage = () => {
             onRouteDistanceChange={setRouteDistance}
             onMarkerMove={handleMarkerMove}
             onMarkerDelete={handleDeletePoint}
+            selectedPointId={selectedPoint?.id || null}
           />
         ) : (
           <div className="flex items-center justify-center h-full bg-muted">

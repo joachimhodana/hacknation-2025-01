@@ -8,9 +8,8 @@ export const adminCharactersRoutes = new Elysia({ prefix: "/characters" })
   .use(adminMiddleware)
   .post(
     "/",
-    async (context: any) => {
+    async ({ body, user: adminUser }) => {
       // Create a new character
-      const { body, user: adminUser } = context;
       if (!adminUser) {
         return { success: false, error: "Unauthorized" };
       }
@@ -28,6 +27,7 @@ export const adminCharactersRoutes = new Elysia({ prefix: "/characters" })
       };
     },
     {
+      auth: true, // Use macro for authentication
       body: t.Object({
         name: t.String(),
         avatarUrl: t.Optional(t.String()),

@@ -19,6 +19,9 @@ fi
 echo "Creating default admin user (if not exists)..."
 bun run create-admin || echo "Warning: Failed to create default admin user, but continuing..."
 
+echo "Creating resources directories..."
+mkdir -p resources/thumbnails resources/marker_icons resources/audio || echo "Warning: Failed to create resources directories, but continuing..."
+
 echo "Starting application..."
 exec "$@"
 

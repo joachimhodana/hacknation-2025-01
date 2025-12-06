@@ -26,6 +26,7 @@ interface MapComponentProps {
   onRouteDistanceChange?: (distanceKm: number) => void
   onMarkerMove?: (pointId: string, lat: number, lng: number) => void
   onMarkerDelete?: (pointId: string) => void
+  selectedPointId?: string | null
 }
 
 // Fix for default marker icons in Leaflet with Vite
@@ -46,18 +47,107 @@ const DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon
 
+// Function to create icon with number badge
+function createIconWithNumber(baseIcon: L.Icon, order: number, isSelected: boolean = false): L.DivIcon {
+  // Get icon size from base icon - handle both array and PointExpression types
+  const iconSizeValue = baseIcon.options.iconSize
+  const baseIconSize: [number, number] = Array.isArray(iconSizeValue) 
+    ? [iconSizeValue[0], iconSizeValue[1]]
+    : [25, 41]
+  
+  // Make selected marker larger
+  const iconSize: [number, number] = isSelected
+    ? [baseIconSize[0] * 1.4, baseIconSize[1] * 1.4]
+    : baseIconSize
+  
+  const iconAnchorValue = baseIcon.options.iconAnchor
+  const baseIconAnchor: [number, number] = Array.isArray(iconAnchorValue)
+    ? [iconAnchorValue[0], iconAnchorValue[1]]
+    : [12, 41]
+  
+  // Adjust anchor for larger selected marker
+  const iconAnchor: [number, number] = isSelected
+    ? [baseIconAnchor[0] * 1.4, baseIconAnchor[1] * 1.4]
+    : baseIconAnchor
+  
+  const popupAnchorValue = baseIcon.options.popupAnchor
+  const popupAnchor: [number, number] = Array.isArray(popupAnchorValue)
+    ? [popupAnchorValue[0], popupAnchorValue[1]]
+    : [0, -iconSize[1]]
+  
+  // Selected marker styling
+  const borderStyle = isSelected
+    ? `border: 3px solid #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3), 0 4px 8px rgba(0,0,0,0.3);`
+    : `box-shadow: 0 2px 4px rgba(0,0,0,0.2);`
+  
+  const animationStyle = isSelected
+    ? `animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;`
+    : ``
+  
+  // Create a div icon with the base icon image and a number badge
+  return L.divIcon({
+    html: `
+      <style>
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.8;
+            transform: scale(1.05);
+          }
+        }
+      </style>
+      <div style="position: relative; width: ${iconSize[0]}px; height: ${iconSize[1]}px; ${animationStyle}">
+        <img 
+          src="${baseIcon.options.iconUrl}" 
+          style="width: ${iconSize[0]}px; height: ${iconSize[1]}px; ${borderStyle} border-radius: ${isSelected ? '8px' : '0'};"
+          alt="Marker"
+        />
+        <div style="
+          position: absolute;
+          top: -4px;
+          left: -4px;
+          width: ${isSelected ? '22px' : '18px'};
+          height: ${isSelected ? '22px' : '18px'};
+          background-color: ${isSelected ? '#2563eb' : '#3b82f6'};
+          border: 2px solid white;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: ${isSelected ? '12px' : '10px'};
+          font-weight: bold;
+          color: white;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          z-index: 1000;
+        ">${order}</div>
+      </div>
+    `,
+    className: `custom-marker-with-number ${isSelected ? 'selected-marker' : ''}`,
+    iconSize: iconSize,
+    iconAnchor: iconAnchor,
+    popupAnchor: popupAnchor,
+  })
+}
+
 // Draggable marker component with click-to-select, drag-to-move functionality
 function DraggableMarker({
   point,
   icon,
+  isSelected,
   onMarkerMove,
   onMarkerDelete,
 }: {
   point: RoutePoint
   icon: L.Icon
+  isSelected?: boolean
   onMarkerMove?: (pointId: string, lat: number, lng: number) => void
   onMarkerDelete?: (pointId: string) => void
 }) {
+  // Create icon with number badge - update when selection changes
+  const iconWithNumber = createIconWithNumber(icon, point.order, isSelected)
   const [isDragEnabled, setIsDragEnabled] = useState(false)
   const clickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const markerRef = useRef<L.Marker | null>(null)
@@ -111,6 +201,14 @@ function DraggableMarker({
     }
   }, [isDragEnabled])
 
+  // Update icon when selection changes
+  useEffect(() => {
+    if (markerRef.current) {
+      const newIcon = createIconWithNumber(icon, point.order, isSelected)
+      markerRef.current.setIcon(newIcon)
+    }
+  }, [isSelected, icon, point.order])
+
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
@@ -123,7 +221,7 @@ function DraggableMarker({
   return (
     <Marker
       position={[point.lat, point.lng]}
-      icon={icon}
+      icon={iconWithNumber}
       draggable={isDragEnabled}
       eventHandlers={{
         click: handleClick,
@@ -203,6 +301,28 @@ function MapBounds({ points }: { points: RoutePoint[] }) {
       map.fitBounds(bounds, { padding: [50, 50] })
     }
   }, [map, points])
+
+  return null
+}
+
+// Component to focus on selected point
+function FocusOnSelectedPoint({ 
+  selectedPoint
+}: { 
+  selectedPoint: RoutePoint | null
+}) {
+  const map = useMap()
+
+  useEffect(() => {
+    if (selectedPoint) {
+      // Smoothly pan and zoom to selected point
+      map.setView(
+        [selectedPoint.lat, selectedPoint.lng],
+        Math.max(map.getZoom(), 16), // Zoom in at least to level 16
+        { animate: true, duration: 0.5 }
+      )
+    }
+  }, [map, selectedPoint])
 
   return null
 }
@@ -299,6 +419,7 @@ export default function MapComponent({
   onRouteDistanceChange,
   onMarkerMove,
   onMarkerDelete,
+  selectedPointId,
 }: MapComponentProps) {
   // Create custom icon if markerIconUrl is provided
   const customIcon = markerIconUrl
@@ -320,6 +441,11 @@ export default function MapComponent({
       ? [points[0].lat, points[0].lng]
       : defaultCenter
 
+  // Find selected point
+  const selectedPoint = selectedPointId
+    ? points.find(p => p.id === selectedPointId) || null
+    : null
+
   return (
     <div className="w-full h-full relative" style={{ height: '100%', width: '100%' }}>
       <MapContainer
@@ -335,6 +461,7 @@ export default function MapComponent({
         />
         <MapClickHandler onMapClick={onMapClick} />
         <MapBounds points={points} />
+        <FocusOnSelectedPoint selectedPoint={selectedPoint} />
         <RouteRenderer points={points} onRouteDistanceChange={onRouteDistanceChange} />
 
         {/* Markers for each point */}
@@ -345,6 +472,7 @@ export default function MapComponent({
               key={point.id}
               point={point}
               icon={customIcon}
+              isSelected={selectedPointId === point.id}
               onMarkerMove={onMarkerMove}
               onMarkerDelete={onMarkerDelete}
             />
@@ -352,7 +480,7 @@ export default function MapComponent({
       </MapContainer>
 
       {/* Instructions overlay */}
-      <div className="absolute top-4 left-4 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg p-3 shadow-lg border border-gray-200 dark:border-gray-700 z-[1000]">
+      <div className="absolute top-4 left-4 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg p-3 shadow-lg border border-gray-200 dark:border-gray-700 z-1000">
         <p className="text-xs text-gray-600 dark:text-gray-400">
           <strong className="text-gray-900 dark:text-gray-100">Kliknij</strong> na mapie, aby dodać punkt
         </p>
