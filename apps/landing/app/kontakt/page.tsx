@@ -67,13 +67,14 @@ export default function ContactPage() {
       <div
         className="pointer-events-none absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: "url('/bydgoszcz.jpg')" }}
+        aria-hidden="true"
       />
-
-      <div className="pointer-events-none absolute inset-0 bg-black/20 backdrop-blur-sm" />
+      <div className="pointer-events-none absolute inset-0 bg-linear-to-r from-background via-background/95 to-background/10" />
+      <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-background/95 via-background/10 to-transparent" />
 
       <Navbar />
 
-      <div className="absolute top-1/2 left-1/2 w-full max-w-xl -translate-x-1/2 -translate-y-1/2 px-6">
+      <div className="absolute top-1/2 w-full max-w-xl md:ml-48 -translate-y-1/2 px-6">
         <div
           className="
             bg-background/50 backdrop-blur-xl rounded-3xl border border-border 
@@ -81,7 +82,7 @@ export default function ContactPage() {
             p-8 md:p-10 space-y-8
           "
         >
-          <h1 className="text-3xl font-semibold text-white">
+          <h1 className="text-3xl font-semibold text-foreground">
             Skontaktuj się z nami
           </h1>
 
@@ -93,17 +94,17 @@ export default function ContactPage() {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-white/80">Imię</FormLabel>
+                    <FormLabel className="text-foreground/80">Imię</FormLabel>
                     <FormControl>
                       <InputGroup className="bg-background/25">
                         <InputGroupInput
                           type="text"
                           placeholder="Twoje imię"
-                          className="placeholder:text-white/75"
+                          className="placeholder:text-foreground/75"
                           {...field}
                         />
                         <InputGroupAddon>
-                          <UserIcon className="text-white/50" />
+                          <UserIcon className="text-foreground/50" />
                         </InputGroupAddon>
                       </InputGroup>
                     </FormControl>
@@ -118,17 +119,17 @@ export default function ContactPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-white/80">Email</FormLabel>
+                    <FormLabel className="text-foreground/80">Email</FormLabel>
                     <FormControl>
                       <InputGroup className="bg-background/25">
                         <InputGroupInput
                           type="email"
                           placeholder="Twój adres email"
-                          className="placeholder:text-white/75"
+                          className="placeholder:text-foreground/75"
                           {...field}
                         />
                         <InputGroupAddon>
-                          <MailIcon className="text-white/50" />
+                          <MailIcon className="text-foreground/50" />
                         </InputGroupAddon>
                       </InputGroup>
                     </FormControl>
@@ -142,12 +143,12 @@ export default function ContactPage() {
                 name="message"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-white/80">Wiadomość</FormLabel>
+                    <FormLabel className="text-foreground/80">Wiadomość</FormLabel>
                     <FormControl>
                       <InputGroup className="bg-background/25">
                         <InputGroupTextarea
                           placeholder="Napisz nam, jak możemy pomóc..."
-                          className="min-h-[140px] placeholder:text-white/75"
+                          className="min-h-[140px] placeholder:text-foreground/75"
                           {...field}
                         />
                       </InputGroup>
