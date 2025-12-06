@@ -1,4 +1,20 @@
 import { Elysia } from "elysia";
-import { auth } from "./auth";
+import { auth } from "./lib/auth";
+import { cors } from '@elysiajs/cors'
+import { serverTiming } from '@elysiajs/server-timing'
+import { openapi } from '@elysiajs/openapi'
 
-const app = new Elysia().mount(auth.handler)
+
+const app = new Elysia()
+
+// plugins
+app.use(cors())
+app.use(serverTiming())
+app.use(openapi())
+
+// routes
+app.mount(auth.handler)
+
+app.listen(3000, () => {
+  console.log(`🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`)
+})
