@@ -2,43 +2,80 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
+import { Icon } from "@iconify/react";
+import Link from "next/link";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 24);
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
-    <div className="fixed top-0 left-0 w-full flex items-center justify-center z-50 transition-all">
+    <div className="fixed inset-x-0 top-0 z-50 flex justify-center">
       <nav
         className={[
-          "backdrop-blur-md rounded-full transition-all duration-300",
+          "flex w-full items-center justify-between rounded-full transition-all duration-300",
           scrolled
-            ? "max-w-7xl w-full border border-border py-2 px-6 mt-3"
-            : "w-full py-6 px-12"
+            ? "mt-4 border border-border/80 py-2 px-4 bg-background/25 backdrop-blur-2xl max-w-4xl"
+            : "border border-transparent py-4 px-8 bg-transparent max-w-6xl",
         ].join(" ")}
       >
-        <div className="flex items-center justify-between w-full">
-          <div>
-            <h1 className="font-semibold">BydGO</h1>
-          </div>
+        <Link href="/" className="flex items-center gap-2">
+          <img src="logo.png" alt="BydGO logo" height={48} width={48} />
+          <h1 className="font-semibold text-black text-2xl [font-family:var(--font-reenie)]">
+            BydGO
+          </h1>
+        </Link>
 
-          <div className="hidden md:flex md:absolute left-1/2 -translate-x-1/2 items-center gap-10">
-            <a href="#o-nas" className="text-foreground/80 hover:text-foreground transition">
-              O nas
-            </a>
-            <a href="#funkcje" className="text-foreground/80 hover:text-foreground transition">
-              Funkcje
-            </a>
-            <a href="#kontakt" className="text-foreground/80 hover:text-foreground transition">
-              Kontakt
-            </a>
-          </div>
+        <div className="hidden md:flex md:absolute left-1/2 -translate-x-1/2 items-center gap-10 text-sm">
+          <a
+            href="#funkcje"
+            className="text-foreground/70 hover:text-[#0095DA] transition-colors font-medium"
+          >
+            Funkcje
+          </a>
+          <a
+            href="#dzialanie"
+            className="text-foreground/70 hover:text-[#0095DA] transition-colors font-medium"
+          >
+            Jak to działa
+          </a>
+          <a
+            href="#faq"
+            className="text-foreground/70 hover:text-[#0095DA] transition-colors font-medium"
+          >
+            FAQ
+          </a>
+          <a
+            href="/kontakt"
+            className="text-foreground/70 hover:text-[#0095DA] transition-colors font-medium"
+          >
+            Kontakt
+          </a>
+        </div>
 
-          <div>
-            <Button variant="outline" className="px-6">
+        {/* CTA */}
+        <div>
+          <Button
+            className="rounded-full bg-[#0095DA] hover:bg-[#007ec0] text-white w-48 text-sm font-medium"
+            asChild
+          >
+            <Link href="/#pobierz">
+              <Icon
+                icon="material-symbols-light:download-rounded"
+                className="size-6"
+              />
               Pobierz aplikację
-            </Button>
-          </div>
+            </Link>
+          </Button>
         </div>
       </nav>
     </div>

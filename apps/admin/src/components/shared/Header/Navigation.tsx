@@ -1,4 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom"
+import { Icon } from "@iconify/react"
 import { Home, Route, FileText, LogOut, User } from "lucide-react"
 import {
   NavigationMenu,
@@ -36,14 +37,14 @@ export function Navigation() {
               isActive("/") && "underline underline-offset-4"
             )}
           >
-            <Home className="h-4 w-4" />
+            <Icon icon="solar:home-bold-duotone" className="h-4 w-4" />
             Home
           </Link>
         </NavigationMenuItem>
 
         <NavigationMenuItem>
             <NavigationMenuTrigger className="gap-2">
-              <Route className="h-4 w-4" />
+              <Icon icon="solar:route-bold-duotone" className="h-4 w-4" />
               Trasy
             </NavigationMenuTrigger>
             <NavigationMenuContent >
@@ -92,7 +93,7 @@ export function Navigation() {
               isActive("/documentation") && "underline underline-offset-4"
             )}
           >
-            <FileText className="h-4 w-4" />
+            <Icon icon="solar:document-bold-duotone" className="h-4 w-4" />
             Dokumentacja
           </Link>
         </NavigationMenuItem>
@@ -103,7 +104,7 @@ export function Navigation() {
             onClick={handleLogout}
             className="gap-2 text-blue-500 hover:text-blue-700"
           >
-            <LogOut className="h-4 w-4" />
+            <Icon icon="solar:logout-bold-duotone" className="h-4 w-4" />
             Logout
           </Button>
         </NavigationMenuItem>

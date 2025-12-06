@@ -65,7 +65,7 @@ const DashboardPage = () => {
       <InformationCard
           title={"Panel administracyjny"}
           description={"Tutaj możesz zarządzać trasami, przeglądać statystyki i monitorować aktywność użytkowników. \n Wykres poniżej można przełączać, aby wyświetlać różne metryki."}
-          icon={<BarChart3 className="h-5 w-5 text-blue-600" />}
+          icon={<Icon icon="solar:chart-2-bold-duotone" className="h-5 w-5 text-blue-600" />}
       />
 
       <DashboardStats />

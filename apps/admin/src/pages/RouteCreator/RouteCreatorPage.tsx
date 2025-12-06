@@ -7,10 +7,13 @@ import { Input } from "@/components/ui/input.tsx"
 import { Label } from "@/components/ui/label.tsx"
 import { Textarea } from "@/components/ui/textarea.tsx"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx"
-import {Save, Plus, GripVertical, Trash2, Edit2, MapPin, Settings, ArrowLeft, ArrowRight, CheckCircle2} from "lucide-react"
-import MapComponent from "../MapComponent.tsx"
+import { Icon } from "@iconify/react"
+import { cn } from "@/lib/utils.ts"
+import MapComponent from "./MapComponent.tsx"
 import InformationCard from "@/components/shared/CustomCards/InformationCard/InformationCard.tsx";
 import GeneralRouteForm from "./components/GeneralRouteForm/GeneralRouteForm.tsx";
+import { calculateEstimatedTime, formatTime } from "@/lib/route-utils.ts";
+import { createPath, getCharacters } from "@/lib/api-client.ts";
 
 interface RoutePoint {
   id: string
@@ -20,6 +23,7 @@ interface RoutePoint {
   lng: number
   order: number
   hasCustomAudio: boolean
+  audioFile: File | null
   characterName: string
   dialog: string
 }
@@ -112,16 +116,140 @@ const convertStopToPoint = (stop: RouteStopType, order: number): RoutePoint => {
     lat: stop.map_marker.coordinates.latitude,
     lng: stop.map_marker.coordinates.longitude,
     order: order,
-    hasCustomAudio: false, // Domyślnie false, można później dodać do typu
-    characterName: "", // Domyślnie puste, można później dodać do typu
+    hasCustomAudio: false,
+    audioFile: null,
+    characterName: "",
     dialog: stop.voice_over_text,
   }
 }
 
-const RouteCreatorPage =() => {
+// Audio file input component
+function AudioFileInput({
+  id,
+  file,
+  onFileChange,
+}: {
+  id: string
+  file: File | null
+  onFileChange: (file: File | null) => void
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0]
+    if (selectedFile) {
+      // Validate file type
+      const validTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/webm', 'audio/x-m4a']
+      const fileExtension = selectedFile.name.split('.').pop()?.toLowerCase()
+      const isValidType = validTypes.includes(selectedFile.type) ||
+        ['mp3', 'wav', 'ogg', 'webm', 'm4a'].includes(fileExtension || '')
+
+      if (!isValidType) {
+        alert('Nieprawidłowy format pliku. Dozwolone formaty: MP3, WAV, OGG, WEBM, M4A')
+        return
+      }
+      // Validate file size (10MB)
+      if (selectedFile.size > 10 * 1024 * 1024) {
+        alert('Plik jest za duży. Maksymalny rozmiar: 10MB')
+        return
+      }
+      onFileChange(selectedFile)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    const droppedFile = e.dataTransfer.files[0]
+    if (droppedFile) {
+      const validTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/webm', 'audio/x-m4a']
+      const fileExtension = droppedFile.name.split('.').pop()?.toLowerCase()
+      const isValidType = validTypes.includes(droppedFile.type) ||
+        ['mp3', 'wav', 'ogg', 'webm', 'm4a'].includes(fileExtension || '')
+
+      if (!isValidType) {
+        alert('Nieprawidłowy format pliku. Dozwolone formaty: MP3, WAV, OGG, WEBM, M4A')
+        return
+      }
+      if (droppedFile.size > 10 * 1024 * 1024) {
+        alert('Plik jest za duży. Maksymalny rozmiar: 10MB')
+        return
+      }
+      onFileChange(droppedFile)
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+  }
+
+  const handleRemove = () => {
+    onFileChange(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return bytes + ' B'
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+  }
+
+  return (
+    <div>
+      <div
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        className={cn(
+          "border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors",
+          file ? "border-blue-500 bg-blue-50/50" : "border-gray-300 hover:border-blue-400 hover:bg-blue-50/30"
+        )}
+        onClick={() => fileInputRef.current?.click()}
+      >
+        <input
+          ref={fileInputRef}
+          id={id}
+          type="file"
+          accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/webm"
+          onChange={handleFileChange}
+          className="hidden"
+        />
+        {file ? (
+          <div className="relative">
+            <div className="flex items-center justify-center gap-3">
+              <Icon icon="solar:music-note-bold-duotone" className="h-12 w-12 text-blue-600" />
+              <div className="text-left">
+                <p className="text-sm font-medium text-gray-900">{file.name}</p>
+                <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleRemove()
+              }}
+              className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+            >
+              <Icon icon="solar:close-circle-bold-duotone" className="h-4 w-4" />
+            </button>
+          </div>
+        ) : (
+          <div>
+            <Icon icon="solar:upload-bold-duotone" className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+            <p className="text-sm text-gray-600">
+              Kliknij lub przeciągnij plik audio tutaj
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+const RouteCreatorPage = () => {
   const [searchParams] = useSearchParams()
   const editPathId = searchParams.get("edit")
-  
   const [currentStep, setCurrentStep] = useState<1 | 2>(1)
   const [points, setPoints] = useState<RoutePoint[]>([])
   const [selectedPoint, setSelectedPoint] = useState<RoutePoint | null>(null)
@@ -129,6 +257,9 @@ const RouteCreatorPage =() => {
   const [mounted, setMounted] = useState(false)
   const [validationError, setValidationError] = useState<string | null>(null)
   const [isFormValid, setIsFormValid] = useState(false)
+  const [markerIconUrl, setMarkerIconUrl] = useState<string | null>(null)
+  const [routeDistance, setRouteDistance] = useState<number>(0)
+  const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const formRef = useRef<ReturnType<typeof useForm<any>> | null>(null)
 
@@ -187,10 +318,75 @@ const RouteCreatorPage =() => {
     return () => clearTimeout(timer)
   }, [])
 
+  // Watch for marker icon changes in form
+  useEffect(() => {
+    if (!formRef.current) return
+
+    const checkMarkerIcon = () => {
+      const formValues = formRef.current?.getValues()
+      if (formValues?.makerIconFile instanceof File) {
+        // Cleanup previous URL if it exists
+        setMarkerIconUrl((prevUrl) => {
+          if (prevUrl) {
+            URL.revokeObjectURL(prevUrl)
+          }
+          // Create object URL for the marker icon
+          return URL.createObjectURL(formValues.makerIconFile)
+        })
+      } else if (!formValues?.makerIconFile) {
+        // Cleanup if icon was removed
+        setMarkerIconUrl((prevUrl) => {
+          if (prevUrl) {
+            URL.revokeObjectURL(prevUrl)
+          }
+          return null
+        })
+      }
+    }
+
+    // Check initially
+    checkMarkerIcon()
+
+    // Subscribe to form changes
+    const subscription = formRef.current.watch(() => {
+      checkMarkerIcon()
+    })
+
+    return () => {
+      subscription.unsubscribe()
+      // Cleanup on unmount
+      setMarkerIconUrl((prevUrl) => {
+        if (prevUrl) {
+          URL.revokeObjectURL(prevUrl)
+        }
+        return null
+      })
+    }
+  }, [formRef.current, isFormValid])
+
+  // Also check when form becomes valid (file might have been selected)
+  useEffect(() => {
+    if (isFormValid && formRef.current) {
+      const formValues = formRef.current.getValues()
+      if (formValues?.makerIconFile instanceof File) {
+        setMarkerIconUrl((prevUrl) => {
+          if (prevUrl) {
+            URL.revokeObjectURL(prevUrl)
+          }
+          return URL.createObjectURL(formValues.makerIconFile)
+        })
+      }
+    }
+  }, [isFormValid])
+
+  // Calculate estimated time based on actual route distance
+  const estimatedTimeHours = calculateEstimatedTime(routeDistance, 3) // 3 km/h walking speed
+  const formattedTime = formatTime(estimatedTimeHours)
+
   const handleMapClick = (lat: number, lng: number) => {
     // Blokuj tworzenie punktów w kroku 1
     if (currentStep === 1) return;
-    
+
     const newPoint: RoutePoint = {
       id: Date.now().toString(),
       name: `Punkt ${points.length + 1}`,
@@ -199,6 +395,7 @@ const RouteCreatorPage =() => {
       lng,
       order: points.length + 1,
       hasCustomAudio: false,
+      audioFile: null,
       characterName: "",
       dialog: "",
     }
@@ -246,10 +443,22 @@ const RouteCreatorPage =() => {
     setValidationError(null) // Wyczyść błąd po zapisaniu punktu
   }
 
+  const handleMarkerMove = (pointId: string, lat: number, lng: number) => {
+    const updatedPoints = points.map((p) =>
+      p.id === pointId ? { ...p, lat, lng } : p
+    )
+    setPoints(updatedPoints)
+
+    // Update selected point if it's the one being moved
+    if (selectedPoint?.id === pointId) {
+      setSelectedPoint({ ...selectedPoint, lat, lng })
+    }
+  }
+
   // Walidacja punktów - sprawdza czy wszystkie wymagane pola są wypełnione
   const validatePoints = (): boolean => {
     setValidationError(null)
-    
+
     if (points.length === 0) {
       setValidationError("Musisz dodać przynajmniej jeden punkt")
       return false
@@ -289,7 +498,7 @@ const RouteCreatorPage =() => {
   // Obsługa przejścia do kroku 2 z walidacją
   const handleNextStep = async () => {
     setValidationError(null)
-    
+
     if (!formRef.current) {
       setValidationError("Formularz nie jest jeszcze gotowy")
       return
@@ -297,7 +506,7 @@ const RouteCreatorPage =() => {
 
     // Sprawdź walidację formularza
     const isValid = await formRef.current.trigger()
-    
+
     if (!isValid) {
       setValidationError("Proszę wypełnić wszystkie wymagane pola w ustawieniach ogólnych. Sprawdź komunikaty błędów pod polami.")
       return
@@ -308,68 +517,120 @@ const RouteCreatorPage =() => {
 
   const handleSaveRoute = async () => {
     setValidationError(null)
-    
-    // Walidacja punktów
-    if (!validatePoints()) {
-      return
-    }
+    setIsSaving(true)
 
-    // Walidacja formularza ustawień ogólnych
-    if (!formRef.current) {
-      setValidationError("Formularz ustawień ogólnych nie jest jeszcze gotowy")
-      return
-    }
-
-    const isFormValid = await formRef.current.trigger()
-    if (!isFormValid) {
-      setValidationError("Proszę wypełnić wszystkie wymagane pola w ustawieniach ogólnych. Sprawdź komunikaty błędów pod polami.")
-      setCurrentStep(1) // Przejdź do kroku 1, aby pokazać błędy
-      return
-    }
-
-    // Pobierz dane z formularza ustawień ogólnych
-    const formValues = formRef.current.getValues()
-    const generalData: any = {};
-    
-    Object.keys(formValues).forEach((key) => {
-      const value = formValues[key];
-      if (value instanceof File) {
-        generalData[key] = {
-          name: value.name,
-          size: value.size,
-          type: value.type,
-          // W rzeczywistej aplikacji trzeba by przesłać plik do serwera
-        };
-      } else {
-        generalData[key] = value;
+    try {
+      // Walidacja punktów
+      if (!validatePoints()) {
+        setIsSaving(false)
+        return
       }
-    });
 
-    const routeData = {
-      ...generalData,
-      points: points.map(p => ({
-        id: p.id,
-        name: p.name,
-        description: p.description,
-        lat: p.lat,
-        lng: p.lng,
-        order: p.order,
-        hasCustomAudio: p.hasCustomAudio,
-        characterName: p.characterName,
-        dialog: p.dialog,
-      })),
-      createdAt: new Date().toISOString(),
+      // Walidacja formularza ustawień ogólnych
+      if (!formRef.current) {
+        setValidationError("Formularz ustawień ogólnych nie jest jeszcze gotowy")
+        setIsSaving(false)
+        return
+      }
+
+      const isFormValid = await formRef.current.trigger()
+      if (!isFormValid) {
+        setValidationError("Proszę wypełnić wszystkie wymagane pola w ustawieniach ogólnych. Sprawdź komunikaty błędów pod polami.")
+        setCurrentStep(1) // Przejdź do kroku 1, aby pokazać błędy
+        setIsSaving(false)
+        return
+      }
+
+      // Pobierz dane z formularza ustawień ogólnych
+      const formValues = formRef.current.getValues()
+
+      // Validate required files
+      if (!formValues.thumbnailFile || !(formValues.thumbnailFile instanceof File)) {
+        setValidationError("Miniatura jest wymagana")
+        setCurrentStep(1)
+        setIsSaving(false)
+        return
+      }
+
+      // Get characters to map character names to IDs
+      const charactersResponse = await getCharacters()
+      if (!charactersResponse.success || !charactersResponse.data) {
+        setValidationError("Nie udało się pobrać listy postaci")
+        setIsSaving(false)
+        return
+      }
+
+      const characterMap = new Map(
+        charactersResponse.data.map((char: any) => [char.name.toLowerCase(), char.id])
+      )
+
+      // Generate pathId if not provided
+      const pathId = formValues.pathId || `route_${Date.now()}`
+
+      // Calculate time in minutes
+      const estimatedTimeHours = calculateEstimatedTime(routeDistance, 3)
+      const totalTimeMinutes = Math.round(estimatedTimeHours * 60)
+      const distanceMeters = Math.round(routeDistance * 1000)
+
+      // Prepare points data
+      const sortedPoints = [...points].sort((a, b) => a.order - b.order)
+      const pointsData = sortedPoints.map((point) => {
+        // Map character name to character ID
+        const characterId = point.characterName
+          ? characterMap.get(point.characterName.toLowerCase())
+          : undefined
+
+        return {
+          latitude: point.lat,
+          longitude: point.lng,
+          radiusMeters: 50, // Default radius, can be made configurable
+          locationLabel: point.name,
+          narrationText: point.dialog || point.description,
+          characterId: characterId ? Number(characterId) : undefined,
+          audioFile: point.hasCustomAudio && point.audioFile ? point.audioFile : undefined,
+        }
+      })
+
+      // Create the path with all points in one request
+      const pathResponse = await createPath({
+        pathId,
+        title: formValues.title,
+        shortDescription: formValues.shortDescription,
+        longDescription: formValues.longDescription || undefined,
+        category: formValues.category,
+        difficulty: formValues.difficulty,
+        totalTimeMinutes,
+        distanceMeters,
+        thumbnailFile: formValues.thumbnailFile,
+        markerIconFile: formValues.makerIconFile instanceof File ? formValues.makerIconFile : undefined,
+        stylePreset: formValues.stylePreset || undefined,
+        points: pointsData,
+      })
+
+      if (!pathResponse.success || !pathResponse.data) {
+        setValidationError(pathResponse.error || "Nie udało się utworzyć trasy")
+        setIsSaving(false)
+        return
+      }
+
+      // Success!
+      alert("Trasa została pomyślnie zapisana!")
+      // Optionally redirect or reset form
+      // window.location.href = "/routes"
+
+    } catch (error: any) {
+      console.error("Error saving route:", error)
+      setValidationError(error?.message || "Wystąpił błąd podczas zapisywania trasy")
+    } finally {
+      setIsSaving(false)
     }
-    console.log(routeData)
-    // localStorage.setItem(`route_preview_${Date.now()}`, JSON.stringify(routeData, null, 2));
-    //TODO stworzyć fetch post
   }
 
   if (!mounted) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-64px)]">
         <div className="text-center">
-          <MapPin className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
+          <Icon icon="solar:map-point-bold-duotone" className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
           <p className="text-muted-foreground">Ładowanie kreatora...</p>
         </div>
       </div>
@@ -381,14 +642,64 @@ const RouteCreatorPage =() => {
       {/*Lewa strona - Mapa*/}
       <div className="flex-1 relative">
         {mounted ? (
-            <MapComponent points={points} onMapClick={handleMapClick} />
+          <MapComponent
+            points={points}
+            onMapClick={handleMapClick}
+            markerIconUrl={markerIconUrl}
+            onRouteDistanceChange={setRouteDistance}
+            onMarkerMove={handleMarkerMove}
+            onMarkerDelete={handleDeletePoint}
+            selectedPointId={selectedPoint?.id || null}
+          />
         ) : (
-            <div className="flex items-center justify-center h-full bg-muted">
-              <div className="text-center">
-                <MapPin className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
-                <p className="text-muted-foreground">Ładowanie mapy...</p>
+          <div className="flex items-center justify-center h-full bg-muted">
+            <div className="text-center">
+              <Icon icon="solar:map-point-bold-duotone" className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
+              <p className="text-muted-foreground">Ładowanie mapy...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Route statistics overlay */}
+        {points.length >= 2 && (
+          <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-sm 
+                  rounded-lg p-4 shadow-sm border border-neutral-200 z-1000">
+
+            <div className="space-y-4">
+
+              {/* Distance */}
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Icon icon="solar:route-bold-duotone" className="h-4 w-4 text-neutral-700" />
+                  <span className="text-sm font-medium text-neutral-900 ">
+                    Długość trasy
+                  </span>
+                </div>
+                <div className="text-lg font-semibold text-neutral-900 tracking-tight">
+                  {routeDistance.toFixed(2)} km
+                </div>
+              </div>
+
+              {/* Time */}
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Icon icon="solar:clock-circle-bold-duotone" className="h-4 w-4 text-neutral-700" />
+                  <span className="text-sm font-medium text-neutral-900">
+                    Szacowany czas
+                  </span>
+                </div>
+                <div className="text-lg font-semibold text-neutral-900 tracking-tight">
+                  {formattedTime}
+                </div>
+              </div>
+
+              {/* Footnote */}
+              <div className="text-xs text-neutral-500 pt-2 border-t border-neutral-200">
+                (przy prędkości 3 km/h)
               </div>
             </div>
+
+          </div>
         )}
       </div>
 
@@ -408,63 +719,68 @@ const RouteCreatorPage =() => {
             </div>
             <div className="flex items-center gap-2">
               <div className={`flex items-center gap-1 px-2 py-1 rounded ${currentStep === 1 ? 'bg-blue-100 text-blue-900' : 'bg-gray-100 text-gray-600'}`}>
-                <CheckCircle2 className={`h-4 w-4 ${currentStep === 1 ? 'text-blue-600' : 'text-gray-400'}`} />
+                <Icon icon="solar:check-circle-bold-duotone" className={`h-4 w-4 ${currentStep === 1 ? 'text-blue-600' : 'text-gray-400'}`} />
                 <span className="text-sm font-medium">Krok 1</span>
               </div>
               <div className={`flex items-center gap-1 px-2 py-1 rounded ${currentStep === 2 ? 'bg-blue-100 text-blue-900' : 'bg-gray-100 text-gray-600'}`}>
-                <CheckCircle2 className={`h-4 w-4 ${currentStep === 2 ? 'text-blue-600' : 'text-gray-400'}`} />
+                <Icon icon="solar:check-circle-bold-duotone" className={`h-4 w-4 ${currentStep === 2 ? 'text-blue-600' : 'text-gray-400'}`} />
                 <span className="text-sm font-medium">Krok 2</span>
               </div>
             </div>
           </div>
 
-          {currentStep === 1 ? (
-            /* Krok 1 - Ustawienia ogólne */
-            <div className="space-y-4">
-              <InformationCard
-                title="Krok 1: Ustawienia ogólne"
-                description="Wypełnij podstawowe informacje o trasie. Po ukończeniu przejdź do kroku 2, aby dodać punkty."
-                icon={<Settings className="h-5 w-5 text-blue-600"/>}
-              />
-              {validationError && (
-                <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                  <p className="text-sm text-red-800 dark:text-red-200">{validationError}</p>
-                </div>
-              )}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Ustawienia ogólne</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {isLoading ? (
-                    <div className="text-center py-8">
-                      <p className="text-muted-foreground">Ładowanie danych trasy...</p>
-                    </div>
-                  ) : (
-                    <GeneralRouteForm 
-                      onFormReady={(form) => { formRef.current = form }} 
-                      onValidationChange={(isValid) => setIsFormValid(isValid)}
-                    />
-                  )}
-                </CardContent>
-              </Card>
-              <Button 
-                onClick={handleNextStep} 
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                size="lg"
-                disabled={!isFormValid}
-              >
-                Przejdź do kroku 2
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-              {!isFormValid && (
-                <p className="text-sm text-muted-foreground text-center">
-                  Wypełnij wszystkie wymagane pola, aby przejść do następnego kroku
-                </p>
-              )}
-            </div>
-          ) : (
-            /* Krok 2 - Punkty trasy */
+          {/* Keep form mounted to preserve state */}
+          <div className={currentStep === 1 ? "space-y-4" : "hidden"}>
+            {/* Krok 1 - Ustawienia ogólne */}
+            <InformationCard
+              title="Krok 1: Ustawienia ogólne"
+              description="Wypełnij podstawowe informacje o trasie. Po ukończeniu przejdź do kroku 2, aby dodać punkty."
+              icon={<Icon icon="solar:settings-bold-duotone" className="h-5 w-5 text-blue-600" />}
+            />
+            {validationError && currentStep === 1 && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-sm text-red-800">{validationError}</p>
+              </div>
+            )}
+            <Card>
+              <CardHeader>
+                <CardTitle>Ustawienia ogólne</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">Ładowanie danych trasy...</p>
+                  </div>
+                ) : (
+                  <GeneralRouteForm
+                    onFormReady={(form) => { formRef.current = form }}
+                    onValidationChange={(isValid) => setIsFormValid(isValid)}
+                  />
+                )}
+              </CardContent>
+            </Card>
+            {currentStep === 1 && (
+              <>
+                <Button
+                  onClick={handleNextStep}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  size="lg"
+                  disabled={!isFormValid}
+                >
+                  Przejdź do kroku 2
+                  <Icon icon="solar:alt-arrow-right-bold-duotone" className="h-4 w-4 ml-2" />
+                </Button>
+                {!isFormValid && (
+                  <p className="text-sm text-muted-foreground text-center">
+                    Wypełnij wszystkie wymagane pola, aby przejść do następnego kroku
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Krok 2 - Punkty trasy */}
+          {currentStep === 2 && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-4">
                 <Button
@@ -473,14 +789,14 @@ const RouteCreatorPage =() => {
                   onClick={() => setCurrentStep(1)}
                   className="gap-2"
                 >
-                  <ArrowLeft className="h-4 w-4" />
+                  <Icon icon="solar:alt-arrow-left-bold-duotone" className="h-4 w-4" />
                   Powrót do kroku 1
                 </Button>
               </div>
               <InformationCard
                 title="Krok 2: Punkty trasy"
                 description="Kliknij na mapie, aby dodać punkty trasy. Następnie kliknij na punkt w liście, aby go edytować."
-                icon={<MapPin className="h-5 w-5 text-blue-600"/>}
+                icon={<Icon icon="solar:map-point-bold-duotone" className="h-5 w-5 text-blue-600" />}
               />
 
               <Card>
@@ -491,25 +807,25 @@ const RouteCreatorPage =() => {
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        const centerLat = 52.2297
-                        const centerLng = 21.0122
+                        const centerLat = 53.1235 // Bydgoszcz
+                        const centerLng = 18.0084
                         handleMapClick(centerLat, centerLng)
                       }}
-                      className="bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/20 dark:hover:bg-blue-950/40 border-blue-200 dark:border-blue-800"
+                      className="bg-blue-50 hover:bg-blue-100 border-blue-200"
                     >
-                      <Plus className="h-4 w-4 mr-2" />
+                      <Icon icon="solar:add-circle-bold-duotone" className="h-4 w-4 mr-2" />
                       Dodaj punkt
                     </Button>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {points.length === 0 ? (
-                    <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 text-center">
-                      <MapPin className="h-8 w-8 mx-auto mb-2 text-blue-600 dark:text-blue-400" />
-                      <p className="text-sm text-blue-800 dark:text-blue-200 font-medium mb-1">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+                      <Icon icon="solar:map-point-bold-duotone" className="h-8 w-8 mx-auto mb-2 text-blue-600" />
+                      <p className="text-sm text-blue-800 font-medium mb-1">
                         Brak punktów
                       </p>
-                      <p className="text-xs text-blue-600 dark:text-blue-300">
+                      <p className="text-xs text-blue-600">
                         Kliknij na mapie, aby dodać pierwszy punkt
                       </p>
                     </div>
@@ -519,11 +835,10 @@ const RouteCreatorPage =() => {
                       .map((point) => (
                         <div
                           key={point.id}
-                          className={`p-3 border rounded-lg cursor-pointer transition-all ${
-                            selectedPoint?.id === point.id
-                              ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30 shadow-md ring-2 ring-blue-200 dark:ring-blue-800"
-                              : "hover:bg-blue-50/50 dark:hover:bg-blue-950/10 border-border"
-                          }`}
+                          className={`p-3 border rounded-lg cursor-pointer transition-all ${selectedPoint?.id === point.id
+                              ? "border-blue-500 bg-blue-50 shadow-md ring-2 ring-blue-200"
+                              : "hover:bg-blue-50/50 border-border"
+                            }`}
                           onClick={() => {
                             setSelectedPoint(point)
                             setIsEditing(true)
@@ -531,7 +846,7 @@ const RouteCreatorPage =() => {
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 flex-1">
-                              <GripVertical className="h-4 w-4 text-muted-foreground" />
+                              <Icon icon="solar:menu-dots-vertical-bold-duotone" className="h-4 w-4 text-muted-foreground" />
                               <div className="flex-1">
                                 <div className="font-medium">{point.name}</div>
                                 <div className="text-xs text-muted-foreground">
@@ -573,7 +888,7 @@ const RouteCreatorPage =() => {
                                 }}
                                 className="h-8 w-8 text-destructive hover:text-destructive"
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <Icon icon="solar:trash-bin-trash-bold-duotone" className="h-4 w-4" />
                               </Button>
                             </div>
                           </div>
@@ -585,10 +900,10 @@ const RouteCreatorPage =() => {
 
               {/* Panel edycji punktu */}
               {selectedPoint && isEditing && (
-                <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/30 dark:bg-blue-950/20">
+                <Card className="border-blue-200 bg-blue-50/30">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
-                      <Edit2 className="h-4 w-4" />
+                    <CardTitle className="flex items-center gap-2">
+                      <Icon icon="solar:pen-bold-duotone" className="h-4 w-4" />
                       Edycja punktu
                     </CardTitle>
                   </CardHeader>
@@ -665,9 +980,17 @@ const RouteCreatorPage =() => {
                       </Label>
                     </div>
                     {selectedPoint.hasCustomAudio && (
-                      <div className="bg-blue-50  border border-blue-200  rounded-lg p-3">
-                        <p className="text-xs text-blue-800 ">
-                          Możesz wgrać własne audio dla tego punktu. Format: MP3, WAV, OGG
+                      <div>
+                        <Label htmlFor="point-audio-file">Plik audio</Label>
+                        <AudioFileInput
+                          id="point-audio-file"
+                          file={selectedPoint.audioFile}
+                          onFileChange={(file) =>
+                            setSelectedPoint({ ...selectedPoint, audioFile: file })
+                          }
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Format: MP3, WAV, OGG (maks. 10MB)
                         </p>
                       </div>
                     )}
@@ -702,8 +1025,8 @@ const RouteCreatorPage =() => {
                         className="bg-background"
                       />
                     </div>
-                    <Button 
-                      onClick={handleSavePoint} 
+                    <Button
+                      onClick={handleSavePoint}
                       className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                     >
                       Zapisz zmiany
@@ -717,14 +1040,23 @@ const RouteCreatorPage =() => {
                   <p className="text-sm text-red-800">{validationError}</p>
                 </div>
               )}
-              <Button 
-                onClick={handleSaveRoute} 
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed" 
+              <Button
+                onClick={handleSaveRoute}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 size="lg"
-                disabled={points.length === 0}
+                disabled={points.length === 0 || isSaving}
               >
-                <Save className="h-4 w-4 mr-2" />
-                Zapisz trasę
+                {isSaving ? (
+                  <>
+                    <Icon icon="solar:refresh-bold-duotone" className="h-4 w-4 mr-2 animate-spin" />
+                    Zapisywanie...
+                  </>
+                ) : (
+                  <>
+                    <Icon icon="solar:diskette-bold-duotone" className="h-4 w-4 mr-2" />
+                    Zapisz trasę
+                  </>
+                )}
               </Button>
             </div>
           )}

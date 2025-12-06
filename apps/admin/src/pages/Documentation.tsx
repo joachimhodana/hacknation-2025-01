@@ -1,5 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { MapPin, Plus, Edit2, GripVertical, Trash2, Save, ArrowUp, ArrowDown, Settings, List, Grid3x3, Eye, EyeOff, FileText, CheckCircle2, User } from "lucide-react"
+import { Icon } from "@iconify/react"
+import { MapPin, Plus, Edit2, GripVertical, Trash2, Save, Settings, List, Grid3x3, Eye, EyeOff, FileText, CheckCircle2, User } from "lucide-react"
 
 export function Documentation() {
   return (
@@ -599,11 +600,11 @@ export function Documentation() {
                 <span>Edytuj</span>
               </div>
               <div className="flex items-center gap-2">
-                <ArrowUp className="h-4 w-4 text-blue-600" />
+                <Icon icon="solar:alt-arrow-up-bold-duotone" className="h-4 w-4 text-blue-600" />
                 <span>Przesuń punkt w górę</span>
               </div>
               <div className="flex items-center gap-2">
-                <ArrowDown className="h-4 w-4 text-blue-600" />
+                <Icon icon="solar:alt-arrow-down-bold-duotone" className="h-4 w-4 text-blue-600" />
                 <span>Przesuń punkt w dół</span>
               </div>
               <div className="flex items-center gap-2">

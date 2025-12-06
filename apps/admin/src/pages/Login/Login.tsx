@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { authClient, useSession } from "@/lib/auth-client";
-import { Route } from "lucide-react";
+import { Icon } from "@iconify/react";
 
 export function Login() {
   const [email, setEmail] = useState("");
@@ -103,45 +103,67 @@ export function Login() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Route className="h-8 w-8 text-blue-500" />
-            <CardTitle className="text-2xl font-bold text-blue-500">
-              BydGO Admin
-            </CardTitle>
+          <div className="flex flex-col items-center justify-center gap-3 mb-4">
+            <img 
+              src="/logo.png" 
+              alt="BydGO Logo" 
+              className="h-16 w-16 object-contain"
+            />
           </div>
-          <CardDescription>
+          <CardDescription className="text-center">
             Enter your credentials to access the admin panel
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="admin@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={loading}
-              />
+              <Label htmlFor="email" className="flex items-center gap-2">
+                <Icon icon="solar:letter-bold-duotone" className="h-4 w-4" />
+                Email
+              </Label>
+              <div className="relative">
+                <Icon 
+                  icon="solar:letter-bold-duotone" 
+                  className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" 
+                />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="admin@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={loading}
+                  className="pl-10"
+                />
+              </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={loading}
-              />
+              <Label htmlFor="password" className="flex items-center gap-2">
+                <Icon icon="solar:lock-password-bold-duotone" className="h-4 w-4" />
+                Password
+              </Label>
+              <div className="relative">
+                <Icon 
+                  icon="solar:lock-password-bold-duotone" 
+                  className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" 
+                />
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={loading}
+                  className="pl-10"
+                />
+              </div>
             </div>
             {error && (
-              <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
-                {error}
+              <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md flex items-center gap-2">
+                <Icon icon="solar:danger-triangle-bold-duotone" className="h-4 w-4 shrink-0" />
+                <span>{error}</span>
               </div>
             )}
             <Button
@@ -149,7 +171,17 @@ export function Login() {
               className="w-full bg-blue-600 hover:bg-blue-700"
               disabled={loading}
             >
-              {loading ? "Signing in..." : "Sign In"}
+              {loading ? (
+                <>
+                  <Icon icon="solar:refresh-bold-duotone" className="h-4 w-4 mr-2 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                <>
+                  <Icon icon="solar:login-3-bold-duotone" className="h-4 w-4 mr-2" />
+                  Sign In
+                </>
+              )}
             </Button>
           </form>
         </CardContent>

@@ -1,6 +1,6 @@
 import {FormField, FormLabel, FormItem, FormControl, FormDescription, FormMessage} from "@/components/ui/form.tsx";
 import {useState, useRef} from "react";
-import {Upload, X} from "lucide-react";
+import { Icon } from "@iconify/react";
 import {cn} from "@/lib/utils";
 
 type CustomFileInputProps = {
@@ -93,12 +93,12 @@ const CustomFileInput = ({name, label, description="", accept="image/*"}:CustomF
                                                 }}
                                                 className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
                                             >
-                                                <X className="h-4 w-4" />
+                                                <Icon icon="solar:close-circle-bold-duotone" className="h-4 w-4" />
                                             </button>
                                         </div>
                                     ) : (
                                         <div>
-                                            <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                                            <Icon icon="solar:upload-bold-duotone" className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                                             <p className="text-sm text-gray-600">
                                                 Kliknij lub przeciągnij plik tutaj
                                             </p>
