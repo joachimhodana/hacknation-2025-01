@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react"
 import { useForm } from "react-hook-form"
+import { useSearchParams } from "react-router-dom"
 import { Button } from "@/components/ui/button.tsx"
+import type { RoutesObjectType, RouteStopType } from "@/types/RoutesType.tsx"
 import { Input } from "@/components/ui/input.tsx"
 import { Label } from "@/components/ui/label.tsx"
 import { Textarea } from "@/components/ui/textarea.tsx"
@@ -34,7 +36,92 @@ const characterOptions = [
   { value: "explorer", label: "Odkrywca" },
 ];
 
+// Mock data - w prawdziwej aplikacji dane będą z API
+const mockRoutes: RoutesObjectType[] = [
+  {
+    pathId: "1",
+    title: "Trasa po Warszawie",
+    shortDescription: "Piękna trasa po stolicy",
+    longDescription: "Szczegółowy opis trasy po Warszawie...",
+    category: "walking",
+    totalTimeMinutes: 120,
+    difficulty: "easy",
+    distanceMeters: 5000,
+    thumbnailUrl: "",
+    isPublished: true,
+    stylePreset: "modern",
+    makerIconUrl: "",
+    createBy: "admin",
+    createdAt: Date.now() - 86400000 * 5,
+    updatedAt: Date.now() - 86400000 * 2,
+    stops: [
+      { stop_id: 1, name: "Punkt 1", map_marker: { display_name: "Punkt 1", address: "Warszawa", coordinates: { latitude: 52.2297, longitude: 21.0122 } }, place_description: "Opis punktu 1", voice_over_text: "Dialog punktu 1" },
+      { stop_id: 2, name: "Punkt 2", map_marker: { display_name: "Punkt 2", address: "Warszawa", coordinates: { latitude: 52.2300, longitude: 21.0130 } }, place_description: "Opis punktu 2", voice_over_text: "Dialog punktu 2" },
+    ]
+  },
+  {
+    pathId: "2",
+    title: "Szlak górski Beskidy",
+    shortDescription: "Trasa górska dla zaawansowanych",
+    longDescription: "Szczegółowy opis trasy górskiej...",
+    category: "hiking",
+    totalTimeMinutes: 300,
+    difficulty: "hard",
+    distanceMeters: 15000,
+    thumbnailUrl: "",
+    isPublished: false,
+    stylePreset: "classic",
+    makerIconUrl: "",
+    createBy: "admin",
+    createdAt: Date.now() - 86400000 * 10,
+    updatedAt: Date.now() - 86400000 * 1,
+    stops: [
+      { stop_id: 1, name: "Punkt 1", map_marker: { display_name: "Punkt 1", address: "Beskidy", coordinates: { latitude: 49.5, longitude: 19.0 } }, place_description: "Opis", voice_over_text: "Dialog" },
+    ]
+  },
+  {
+    pathId: "3",
+    title: "Wycieczka rowerowa",
+    shortDescription: "Trasa rowerowa po okolicy",
+    longDescription: "Szczegółowy opis trasy rowerowej...",
+    category: "cycling",
+    totalTimeMinutes: 90,
+    difficulty: "medium",
+    distanceMeters: 20000,
+    thumbnailUrl: "",
+    isPublished: true,
+    stylePreset: "colorful",
+    makerIconUrl: "",
+    createBy: "admin",
+    createdAt: Date.now() - 86400000 * 3,
+    updatedAt: Date.now() - 3600000,
+    stops: [
+      { stop_id: 1, name: "Punkt 1", map_marker: { display_name: "Punkt 1", address: "Okolica", coordinates: { latitude: 52.0, longitude: 21.0 } }, place_description: "Opis", voice_over_text: "Dialog" },
+      { stop_id: 2, name: "Punkt 2", map_marker: { display_name: "Punkt 2", address: "Okolica", coordinates: { latitude: 52.1, longitude: 21.1 } }, place_description: "Opis", voice_over_text: "Dialog" },
+      { stop_id: 3, name: "Punkt 3", map_marker: { display_name: "Punkt 3", address: "Okolica", coordinates: { latitude: 52.2, longitude: 21.2 } }, place_description: "Opis", voice_over_text: "Dialog" },
+    ]
+  },
+]
+
+// Funkcja do konwersji RouteStopType na RoutePoint
+const convertStopToPoint = (stop: RouteStopType, order: number): RoutePoint => {
+  return {
+    id: stop.stop_id.toString(),
+    name: stop.name,
+    description: stop.place_description,
+    lat: stop.map_marker.coordinates.latitude,
+    lng: stop.map_marker.coordinates.longitude,
+    order: order,
+    hasCustomAudio: false, // Domyślnie false, można później dodać do typu
+    characterName: "", // Domyślnie puste, można później dodać do typu
+    dialog: stop.voice_over_text,
+  }
+}
+
 const RouteCreatorPage =() => {
+  const [searchParams] = useSearchParams()
+  const editPathId = searchParams.get("edit")
+  
   const [currentStep, setCurrentStep] = useState<1 | 2>(1)
   const [points, setPoints] = useState<RoutePoint[]>([])
   const [selectedPoint, setSelectedPoint] = useState<RoutePoint | null>(null)
@@ -42,7 +129,55 @@ const RouteCreatorPage =() => {
   const [mounted, setMounted] = useState(false)
   const [validationError, setValidationError] = useState<string | null>(null)
   const [isFormValid, setIsFormValid] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const formRef = useRef<ReturnType<typeof useForm<any>> | null>(null)
+
+  // Ładowanie danych trasy do edycji
+  useEffect(() => {
+    if (editPathId) {
+      setIsLoading(true)
+      // W prawdziwej aplikacji tutaj będzie fetch z API
+      const route = mockRoutes.find(r => r.pathId === editPathId)
+      
+      if (route) {
+        // Poczekaj aż formularz będzie gotowy
+        const loadData = () => {
+          if (formRef.current) {
+            // Wypełnij formularz
+            formRef.current.reset({
+              title: route.title,
+              shortDescription: route.shortDescription,
+              longDescription: route.longDescription,
+              category: route.category,
+              difficulty: route.difficulty,
+              thumbnailFile: null, // Pliki trzeba będzie załadować osobno z URL
+              stylePreset: route.stylePreset,
+              makerIconFile: null, // Pliki trzeba będzie załadować osobno z URL
+            })
+
+            // Konwertuj stops na points
+            const convertedPoints = route.stops.map((stop, index) => 
+              convertStopToPoint(stop, index + 1)
+            )
+            setPoints(convertedPoints)
+            
+            // Jeśli są punkty, przejdź do kroku 2
+            if (convertedPoints.length > 0) {
+              setCurrentStep(2)
+            }
+            setIsLoading(false)
+          } else {
+            // Spróbuj ponownie za chwilę
+            setTimeout(loadData, 100)
+          }
+        }
+        
+        loadData()
+      } else {
+        setIsLoading(false)
+      }
+    }
+  }, [editPathId])
 
   useEffect(() => {
     // Opóźnij montowanie mapy, aby uniknąć problemów z inicjalizacją
@@ -263,7 +398,14 @@ const RouteCreatorPage =() => {
         <div className="p-4 space-y-4">
           {/* Header z krokami */}
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold">Kreator trasy</h2>
+            <div>
+              <h2 className="text-xl font-bold">
+                {editPathId ? "Edytuj trasę" : "Kreator trasy"}
+              </h2>
+              {editPathId && (
+                <p className="text-sm text-muted-foreground">ID: {editPathId}</p>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               <div className={`flex items-center gap-1 px-2 py-1 rounded ${currentStep === 1 ? 'bg-blue-100 text-blue-900' : 'bg-gray-100 text-gray-600'}`}>
                 <CheckCircle2 className={`h-4 w-4 ${currentStep === 1 ? 'text-blue-600' : 'text-gray-400'}`} />
@@ -294,10 +436,16 @@ const RouteCreatorPage =() => {
                   <CardTitle>Ustawienia ogólne</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <GeneralRouteForm 
-                    onFormReady={(form) => { formRef.current = form }} 
-                    onValidationChange={(isValid) => setIsFormValid(isValid)}
-                  />
+                  {isLoading ? (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">Ładowanie danych trasy...</p>
+                    </div>
+                  ) : (
+                    <GeneralRouteForm 
+                      onFormReady={(form) => { formRef.current = form }} 
+                      onValidationChange={(isValid) => setIsFormValid(isValid)}
+                    />
+                  )}
                 </CardContent>
               </Card>
               <Button 
