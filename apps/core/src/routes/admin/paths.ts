@@ -4,6 +4,7 @@ import { paths, pathPoints, points } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { adminMiddleware } from "@/lib/admin-middleware";
 import { join } from "path";
+import { mkdir } from "fs/promises";
 
 export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
   .use(adminMiddleware)
@@ -25,6 +26,9 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         const fileName = `${thumbnailUUID}${extension}`;
         const filePath = join(process.cwd(), "resources", "thumbnails", fileName);
         
+        // Ensure directory exists
+        await mkdir(join(process.cwd(), "resources", "thumbnails"), { recursive: true });
+        
         await Bun.write(filePath, thumbnailBuffer);
         thumbnailUrl = `/resources/thumbnails/${fileName}`;
       }
@@ -40,19 +44,49 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         const fileName = `${markerIconUUID}${extension}`;
         const filePath = join(process.cwd(), "resources", "marker_icons", fileName);
         
+        // Ensure directory exists
+        await mkdir(join(process.cwd(), "resources", "marker_icons"), { recursive: true });
+        
         await Bun.write(filePath, markerIconBuffer);
         markerIconUrl = `/resources/marker_icons/${fileName}`;
       }
 
       // Step 3: Create path with basic info
-      const { thumbnailFile, markerIconFile, ...pathData } = body;
+      const { thumbnailFile, markerIconFile, totalTimeMinutes, distanceMeters, ...pathData } = body;
+      
+      // Convert FormData strings to numbers if needed
+      const totalTime = totalTimeMinutes 
+        ? (typeof totalTimeMinutes === 'string' ? Number(totalTimeMinutes) : totalTimeMinutes)
+        : 0;
+      const distance = distanceMeters !== undefined && distanceMeters !== null
+        ? (typeof distanceMeters === 'string' ? Number(distanceMeters) : distanceMeters)
+        : null;
+      
+      // Extract only valid path fields to avoid passing invalid data
+      const {
+        pathId,
+        title,
+        shortDescription,
+        longDescription,
+        category,
+        difficulty,
+        stylePreset,
+      } = pathData;
       
       const [newPath] = await db
         .insert(paths)
         .values({
-          ...pathData,
+          pathId,
+          title,
+          shortDescription,
+          longDescription: longDescription || null,
+          category,
+          difficulty,
+          totalTimeMinutes: totalTime,
+          distanceMeters: distance,
           thumbnailUrl,
-          markerIconUrl,
+          markerIconUrl: markerIconUrl || null,
+          stylePreset: stylePreset || null,
           createdBy: user.id,
         })
         .returning();
@@ -71,6 +105,8 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         longDescription: t.Optional(t.String()),
         category: t.String(),
         difficulty: t.String(),
+        totalTimeMinutes: t.Optional(t.Union([t.Number(), t.String()])),
+        distanceMeters: t.Optional(t.Union([t.Number(), t.String()])),
         thumbnailFile: t.File({
           maxFileSize: "20MB",
           allowedMimeTypes: ["image/jpeg", "image/png"],

@@ -1,5 +1,5 @@
 
-import { Route, Users, CheckCircle, TrendingUp, BarChart3 } from "lucide-react"
+import { Icon } from "@iconify/react"
 import GeneralInfoCustomCard from "@/components/shared/CustomCards/GeneralInfoCustomCard.tsx"
 import RouteStatisticsInfoCustomCard from "@/components/shared/CustomCards/RouteStatisticsInfoCustomCard.tsx";
 import InformationCard from "@/components/shared/CustomCards/InformationCard/InformationCard.tsx";
@@ -71,14 +71,14 @@ const DashboardPage = () => {
       <InformationCard
           title={"Panel administracyjny"}
           description={"Tutaj możesz zarządzać trasami, przeglądać statystyki i monitorować aktywność użytkowników. \n Wykres poniżej można przełączać, aby wyświetlać różne metryki."}
-          icon={<BarChart3 className="h-5 w-5 text-blue-600" />}
+          icon={<Icon icon="solar:chart-2-bold-duotone" className="h-5 w-5 text-blue-600" />}
       />
 
       {/* Statystyki ogólne */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <GeneralInfoCustomCard
           title="Wszystkie trasy"
-          icon={<Route className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
+          icon={<Icon icon="solar:route-bold-duotone" className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
           // statsData={totalStats.totalRoutes}
           statsData={512}
           description="Aktywne projekty"
@@ -86,7 +86,7 @@ const DashboardPage = () => {
 
         <GeneralInfoCustomCard
           title="Uczestnicy"
-          icon={<Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
+          icon={<Icon icon="solar:users-group-two-rounded-bold-duotone" className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
           statsData={215}
           // statsData={totalStats.totalParticipants}
           description="Wszystkich uczestników"
@@ -94,7 +94,7 @@ const DashboardPage = () => {
 
         <GeneralInfoCustomCard
           title="Ukończone"
-          icon={<CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
+          icon={<Icon icon="solar:check-circle-bold-duotone" className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
           // statsData={totalStats.totalCompleted}
           statsData={2137}
           description="Zakończone trasy"
@@ -102,7 +102,7 @@ const DashboardPage = () => {
 
         <GeneralInfoCustomCard
           title="Wskaźnik ukończenia"
-          icon={<TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
+          icon={<Icon icon="solar:graph-up-bold-duotone" className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
           statsData={69}
           // statsData={totalStats.completionRate}
           description="Średnia ukończenia"

@@ -95,7 +95,7 @@ const routeFormSchema = yup.object({
     makerIconFile: yup
         .mixed<File>()
         .nullable()
-        .required("Ikona twórcy jest wymagana")
+        .required("Ikona na mapie jest wymagana")
         .test("fileType", "Plik musi być obrazem", (value) => {
             if (!value) return false;
             return value instanceof File && value.type.startsWith("image/");
@@ -205,7 +205,7 @@ const GeneralRouteForm = ({onFormReady, onValidationChange}: GeneralRouteFormPro
                 
                 <CustomFileInput 
                     name="makerIconFile" 
-                    label="Ikona twórcy" 
+                    label="Ikona na mapie" 
                     description="Przeciągnij i upuść plik obrazu lub kliknij, aby wybrać"
                     accept="image/*"
                 />

@@ -1,6 +1,6 @@
 import {FormField, FormLabel, FormItem, FormControl, FormDescription, FormMessage} from "@/components/ui/form.tsx";
 import {useState, useRef, useEffect} from "react";
-import {ChevronDown, X} from "lucide-react";
+import { Icon } from "@iconify/react";
 import {cn} from "@/lib/utils";
 
 type CustomSearchableSelectProps = {
@@ -62,7 +62,8 @@ const CustomSearchableSelect = ({name, label, placeholder="", description="", op
                                     <span>{selectedOption?.label || placeholder}</span>
                                     <div className="flex items-center gap-1">
                                         {selectedValue && (
-                                            <X
+                                            <Icon
+                                                icon="solar:close-circle-bold-duotone"
                                                 className="h-4 w-4 text-muted-foreground hover:text-foreground"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -70,7 +71,7 @@ const CustomSearchableSelect = ({name, label, placeholder="", description="", op
                                                 }}
                                             />
                                         )}
-                                        <ChevronDown className="h-4 w-4 opacity-50" />
+                                        <Icon icon="solar:alt-arrow-down-bold-duotone" className="h-4 w-4 opacity-50" />
                                     </div>
                                 </button>
                                 {isOpen && (

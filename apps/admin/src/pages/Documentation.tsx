@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { MapPin, Plus, Edit2, GripVertical, Trash2, Save, ArrowUp, ArrowDown } from "lucide-react"
+import { Icon } from "@iconify/react"
 
 export function Documentation() {
   return (
@@ -13,7 +13,7 @@ export function Documentation() {
       <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
         <div className="flex items-start gap-3">
           <div className="bg-blue-100 dark:bg-blue-900/40 rounded-full p-2">
-            <MapPin className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <Icon icon="solar:map-point-bold-duotone" className="h-5 w-5 text-blue-600 dark:text-blue-400" />
           </div>
           <div className="flex-1">
             <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
@@ -31,7 +31,7 @@ export function Documentation() {
         <Card className="border-blue-200 dark:border-blue-800">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <Icon icon="solar:map-point-bold-duotone" className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               Dashboard
             </CardTitle>
             <CardDescription>Przegląd statystyk</CardDescription>
@@ -54,7 +54,7 @@ export function Documentation() {
         <Card className="border-blue-200 dark:border-blue-800 md:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <Icon icon="solar:map-point-bold-duotone" className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               Kreator tras - Kompletny przewodnik
             </CardTitle>
             <CardDescription>Szczegółowa instrukcja tworzenia i edycji tras</CardDescription>
@@ -75,7 +75,7 @@ export function Documentation() {
             {/* Sekcja 2: Tworzenie trasy */}
             <div>
               <h3 className="font-semibold mb-3 flex items-center gap-2">
-                <Plus className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <Icon icon="solar:add-circle-bold-duotone" className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                 2. Tworzenie nowej trasy
               </h3>
               <div className="space-y-3 text-sm text-muted-foreground">
@@ -129,7 +129,7 @@ export function Documentation() {
             {/* Sekcja 4: Edycja punktów */}
             <div>
               <h3 className="font-semibold mb-3 flex items-center gap-2">
-                <Edit2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <Icon icon="solar:pen-bold-duotone" className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                 4. Edycja szczegółów punktu
               </h3>
               <div className="space-y-3 text-sm text-muted-foreground">
@@ -164,7 +164,7 @@ export function Documentation() {
             {/* Sekcja 5: Zmiana kolejności */}
             <div>
               <h3 className="font-semibold mb-3 flex items-center gap-2">
-                <GripVertical className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <Icon icon="solar:menu-dots-vertical-bold-duotone" className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                 5. Zmiana kolejności punktów
               </h3>
               <div className="space-y-3 text-sm text-muted-foreground">
@@ -192,7 +192,7 @@ export function Documentation() {
             {/* Sekcja 6: Usuwanie punktów */}
             <div>
               <h3 className="font-semibold mb-3 flex items-center gap-2">
-                <Trash2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <Icon icon="solar:trash-bin-trash-bold-duotone" className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                 6. Usuwanie punktów
               </h3>
               <div className="space-y-3 text-sm text-muted-foreground">
@@ -215,7 +215,7 @@ export function Documentation() {
             {/* Sekcja 7: Zapisywanie trasy */}
             <div>
               <h3 className="font-semibold mb-3 flex items-center gap-2">
-                <Save className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <Icon icon="solar:diskette-bold-duotone" className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                 7. Zapisywanie trasy
               </h3>
               <div className="space-y-3 text-sm text-muted-foreground">
@@ -302,15 +302,15 @@ export function Documentation() {
             </p>
             <div className="space-y-2 text-sm">
               <div className="flex items-center gap-2">
-                <ArrowUp className="h-4 w-4 text-blue-600" />
+                <Icon icon="solar:alt-arrow-up-bold-duotone" className="h-4 w-4 text-blue-600" />
                 <span>Przesuń punkt w górę</span>
               </div>
               <div className="flex items-center gap-2">
-                <ArrowDown className="h-4 w-4 text-blue-600" />
+                <Icon icon="solar:alt-arrow-down-bold-duotone" className="h-4 w-4 text-blue-600" />
                 <span>Przesuń punkt w dół</span>
               </div>
               <div className="flex items-center gap-2">
-                <Trash2 className="h-4 w-4 text-red-600" />
+                <Icon icon="solar:trash-bin-trash-bold-duotone" className="h-4 w-4 text-red-600" />
                 <span>Usuń punkt z trasy</span>
               </div>
             </div>

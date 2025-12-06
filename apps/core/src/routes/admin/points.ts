@@ -3,6 +3,8 @@ import { db } from "@/db";
 import { points, pathPoints } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { adminMiddleware } from "@/lib/admin-middleware";
+import { join } from "path";
+import { mkdir } from "fs/promises";
 
 export const adminPointsRoutes = new Elysia({ prefix: "/points" })
   .use(adminMiddleware)
@@ -14,14 +16,66 @@ export const adminPointsRoutes = new Elysia({ prefix: "/points" })
         return { success: false, error: "Unauthorized" };
       }
 
+      // Handle audio file upload if provided
+      let audioUrl: string | undefined = undefined;
+      if (body.audioFile) {
+        const audioUUID = crypto.randomUUID();
+        const audioBuffer = await body.audioFile.arrayBuffer();
+        const mimeType = body.audioFile.type;
+        // Determine extension from mime type or filename
+        let extension = ".mp3";
+        if (mimeType.includes("wav")) extension = ".wav";
+        else if (mimeType.includes("ogg")) extension = ".ogg";
+        else if (mimeType.includes("webm")) extension = ".webm";
+        else if (mimeType.includes("m4a")) extension = ".m4a";
+        
+        const fileName = `${audioUUID}${extension}`;
+        const filePath = join(process.cwd(), "resources", "audio", fileName);
+        
+        // Ensure directory exists
+        await mkdir(join(process.cwd(), "resources", "audio"), { recursive: true });
+        
+        await Bun.write(filePath, audioBuffer);
+        audioUrl = `/resources/audio/${fileName}`;
+      }
+
       // Extract path-related fields if provided
-      const { pathId, orderIndex, ...pointData } = body;
+      // Handle both JSON and FormData (for file uploads)
+      const pathId = typeof body.pathId === 'string' ? Number(body.pathId) : body.pathId;
+      const orderIndex = typeof body.orderIndex === 'string' ? Number(body.orderIndex) : body.orderIndex;
+      const latitude = typeof body.latitude === 'string' ? Number(body.latitude) : body.latitude;
+      const longitude = typeof body.longitude === 'string' ? Number(body.longitude) : body.longitude;
+      const radiusMeters = typeof body.radiusMeters === 'string' ? Number(body.radiusMeters) : body.radiusMeters;
+      const characterId = body.characterId ? (typeof body.characterId === 'string' ? Number(body.characterId) : body.characterId) : undefined;
+      const isPublic = body.isPublic === 'true' || body.isPublic === true || body.isPublic === '1' || body.isPublic === 1;
+      
+      // Extract only valid point fields
+      const {
+        locationLabel,
+        narrationText,
+        fullNarrationText,
+        audioUrl: audioUrlFromBody,
+        triggerQuestion,
+        rewardLabel,
+        rewardIconUrl,
+      } = body;
 
       // Step 2: Create point (can be created standalone or as part of path)
       const [newPoint] = await db
         .insert(points)
         .values({
-          ...pointData,
+          latitude,
+          longitude,
+          radiusMeters,
+          locationLabel: locationLabel || null,
+          narrationText: narrationText || '',
+          fullNarrationText: fullNarrationText || null,
+          characterId: characterId || null,
+          audioUrl: audioUrl || audioUrlFromBody || null,
+          triggerQuestion: triggerQuestion || null,
+          rewardLabel: rewardLabel || null,
+          rewardIconUrl: rewardIconUrl || null,
+          isPublic: isPublic,
           createdBy: user.id,
         })
         .returning();
@@ -49,22 +103,29 @@ export const adminPointsRoutes = new Elysia({ prefix: "/points" })
       };
     },
     {
+      type: "multipart/form-data",
       body: t.Object({
-        latitude: t.Number(),
-        longitude: t.Number(),
-        radiusMeters: t.Number(),
+        latitude: t.Union([t.Number(), t.String()]),
+        longitude: t.Union([t.Number(), t.String()]),
+        radiusMeters: t.Union([t.Number(), t.String()]),
         locationLabel: t.Optional(t.String()),
-        characterId: t.Optional(t.Number()),
+        characterId: t.Optional(t.Union([t.Number(), t.String()])),
         narrationText: t.String(),
         fullNarrationText: t.Optional(t.String()),
         audioUrl: t.Optional(t.String()),
+        audioFile: t.Optional(
+          t.File({
+            maxFileSize: "10MB",
+            allowedMimeTypes: ["audio/mpeg", "audio/mp3", "audio/wav", "audio/ogg", "audio/webm", "audio/x-m4a"],
+          })
+        ),
         triggerQuestion: t.Optional(t.String()),
         rewardLabel: t.Optional(t.String()),
         rewardIconUrl: t.Optional(t.String()),
-        isPublic: t.Optional(t.Boolean()),
+        isPublic: t.Optional(t.Union([t.Boolean(), t.String()])),
         // Optional: if provided, point will be added to path
-        pathId: t.Optional(t.Number()),
-        orderIndex: t.Optional(t.Number()),
+        pathId: t.Optional(t.Union([t.Number(), t.String()])),
+        orderIndex: t.Optional(t.Union([t.Number(), t.String()])),
       }),
     }
   )
