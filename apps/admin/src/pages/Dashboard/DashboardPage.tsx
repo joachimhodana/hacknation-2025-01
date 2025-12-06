@@ -1,11 +1,8 @@
-
-import { Route, Users, CheckCircle, TrendingUp, BarChart3 } from "lucide-react"
-import GeneralInfoCustomCard from "@/components/shared/CustomCards/GeneralInfoCustomCard.tsx"
-import RouteStatisticsInfoCustomCard from "@/components/shared/CustomCards/RouteStatisticsInfoCustomCard.tsx";
-import InformationCard from "@/components/shared/CustomCards/InformationCard/InformationCard.tsx";
-
-import {mockedRoutesObject} from "@/mocked/MockedRoutes.ts";
-import type {RoutesObjectType} from "@/types/RoutesType.tsx";
+import { BarChart3 } from "lucide-react"
+import InformationCard from "@/components/shared/CustomCards/InformationCard/InformationCard.tsx"
+import DashboardHeader from "@/pages/Dashboard/components/DashboardHeader/DashboardHeader.tsx"
+import DashboardStats from "./components/DashboardStats/DashboardStats"
+import DashboardRoutes from "@/pages/Dashboard/components/DashboardRoutes/DashboardRoutes.tsx"
 
 
 
@@ -63,10 +60,7 @@ const DashboardPage = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Admin Panel</h1>
-        <p className="text-muted-foreground">Przegląd statystyk i projektów tras</p>
-      </div>
+      <DashboardHeader />
 
       <InformationCard
           title={"Panel administracyjny"}
@@ -74,41 +68,7 @@ const DashboardPage = () => {
           icon={<BarChart3 className="h-5 w-5 text-blue-600" />}
       />
 
-      {/* Statystyki ogólne */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <GeneralInfoCustomCard
-          title="Wszystkie trasy"
-          icon={<Route className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
-          // statsData={totalStats.totalRoutes}
-          statsData={512}
-          description="Aktywne projekty"
-        />
-
-        <GeneralInfoCustomCard
-          title="Uczestnicy"
-          icon={<Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
-          statsData={215}
-          // statsData={totalStats.totalParticipants}
-          description="Wszystkich uczestników"
-        />
-
-        <GeneralInfoCustomCard
-          title="Ukończone"
-          icon={<CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
-          // statsData={totalStats.totalCompleted}
-          statsData={2137}
-          description="Zakończone trasy"
-        />
-
-        <GeneralInfoCustomCard
-          title="Wskaźnik ukończenia"
-          icon={<TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
-          statsData={69}
-          // statsData={totalStats.completionRate}
-          description="Średnia ukończenia"
-          suffix="%"
-        />
-      </div>
+      <DashboardStats />
 
       {/* Wykres */}
       {/*<Card className="border-blue-200 dark:border-blue-800">*/}
@@ -204,15 +164,7 @@ const DashboardPage = () => {
       {/*  </CardContent>*/}
       {/*</Card>*/}
 
-      {/* Sekcja z projektami tras */}
-      <div>
-        <h2 className="text-2xl font-semibold mb-4">Projekty tras</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {mockedRoutesObject.map((route: RoutesObjectType) => (
-              <RouteStatisticsInfoCustomCard route={route} key={route.pathId}/>
-              ))}
-        </div>
-      </div>
+      <DashboardRoutes />
     </div>
   )
 }
