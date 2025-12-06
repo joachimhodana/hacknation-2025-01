@@ -5,7 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1df88e0a-f3b6-4388-84f9-5fc94cf4eac0" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/apps/admin/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/package-lock.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apps/admin/src/types/CharactersType.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/App.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/src/components/shared/Header/Navigation.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/components/shared/Header/Navigation.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/Documentation.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/Documentation.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -24,18 +28,47 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="admin/navbar" />
+        <entry key="$PROJECT_DIR$" value="admin/routesPage" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;ts.external.directory.path&quot;: &quot;/Users/pawelserkowski/WebstormProjects/hacknation-2025-01/apps/admin/node_modules/typescript/lib&quot;
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "Pawel-Serkowski"
   }
-}</component>
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/joachimhodana/hacknation-2025-01.git",
+    "accountId": "684295ee-d9d6-4cc6-992c-d29d4030223d"
+  }
+}]]></component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "customColor": "",
+  "associatedIndex": 6
+}]]></component>
+  <component name="ProjectId" id="36U3l2rDuP2kC0C8kyguTRFc3R8" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "master",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "ts.external.directory.path": "/Users/pawelserkowski/WebstormProjects/hacknation-2025-01/apps/admin/node_modules/typescript/lib",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/apps/admin/src/components/shared/CustomCards/InformationCard" />
@@ -45,7 +78,35 @@
       <recent name="$PROJECT_DIR$/apps/admin/src/pages/Dashboards" />
     </key>
   </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-a71380e98a7c-JavaScript-WS-252.28238.10" />
+      </set>
+    </attachedChunks>
+  </component>
   <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="1df88e0a-f3b6-4388-84f9-5fc94cf4eac0" name="Changes" comment="" />
+      <created>1765047470528</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1765047470528</updated>
+      <workItem from="1765047472214" duration="5320000" />
+    </task>
     <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/apps/admin/src/App.tsx</url>
+          <option name="timeStamp" value="6" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

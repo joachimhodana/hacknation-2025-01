@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import DashboardPage from "@/pages/Dashboard/DashboardPage.tsx"
 import RouteCreatorPage  from "@/pages/RouteCreator/RouteCreatorPage.tsx"
 import RoutesListPage from "@/pages/RoutesList/RoutesListPage.tsx"
+import CharacterCreatorPage from "@/pages/CharacterCreator/CharacterCreatorPage.tsx"
+import CharactersListPage from "@/pages/CharactersList/CharactersListPage.tsx"
 import { Documentation } from "@/pages/Documentation"
 // import { Login } from "@/pages/Login/Login"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
@@ -22,6 +24,8 @@ function App() {
                   <Route path="/" element={<DashboardPage />} />
                   <Route path="/routes" element={<RoutesListPage />} />
                   <Route path="/routes/create" element={<RouteCreatorPage />} />
+                  <Route path="/characters" element={<CharactersListPage />} />
+                  <Route path="/characters/create" element={<CharacterCreatorPage />} />
                   <Route path="/documentation" element={<Documentation />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>

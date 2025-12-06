@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom"
-import { Home, Route, FileText, LogOut } from "lucide-react"
+import { Home, Route, FileText, LogOut, User } from "lucide-react"
 import {
   NavigationMenu,
   NavigationMenuList,
@@ -60,6 +60,27 @@ export function Navigation() {
                 </li>
               </ul>
             </NavigationMenuContent>
+        </NavigationMenuItem>
+
+        <NavigationMenuItem>
+          <NavigationMenuTrigger className="gap-2">
+            <User className="h-4 w-4" />
+            Postacie
+          </NavigationMenuTrigger>
+          <NavigationMenuContent>
+            <ul className="grid w-[200px] gap-1 p-2 text-gray-500">
+              <li>
+                <NavigationMenuLink asChild>
+                  <Link to="/characters">Lista postaci</Link>
+                </NavigationMenuLink>
+              </li>
+              <li>
+                <NavigationMenuLink asChild>
+                  <Link to="/characters/create">Stwórz postać</Link>
+                </NavigationMenuLink>
+              </li>
+            </ul>
+          </NavigationMenuContent>
         </NavigationMenuItem>
 
         <NavigationMenuItem>
