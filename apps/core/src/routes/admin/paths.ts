@@ -23,7 +23,7 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         const mimeType = body.thumbnailFile.type;
         const extension = mimeType === "image/jpeg" ? ".jpg" : ".png";
         const fileName = `${thumbnailUUID}${extension}`;
-        const filePath = join(process.cwd(), "resources", "thumbnails", fileName);
+        const filePath = join(process.cwd(), "public", "resources", "thumbnails", fileName);
         
         await Bun.write(filePath, thumbnailBuffer);
         thumbnailUrl = `/resources/thumbnails/${fileName}`;

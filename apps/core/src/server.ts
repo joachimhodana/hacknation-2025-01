@@ -10,6 +10,7 @@ const app = new Elysia();
 app.use(cors());
 app.use(serverTiming());
 app.use(openapi({ provider: "swagger-ui" }));
+app.use(staticPlugin());
 
 // routes
 app.get("/health", () => "OK");
@@ -18,6 +19,7 @@ app.mount(auth.handler);
 
 // Admin routes
 import { adminRoutes } from "./routes/admin";
+import staticPlugin from "@elysiajs/static";
 app.use(adminRoutes);
 
 const port = Number(process.env.PORT) || 8080;
