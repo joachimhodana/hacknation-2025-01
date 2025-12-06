@@ -85,13 +85,33 @@ export const adminCharactersRoutes = new Elysia({ prefix: "/characters" })
       data: character,
     };
   }, { auth: true })
-  .put(
+  .patch(
     "/:id",
     async (context: any) => {
       const { params, body, user: adminUser } = context;
       if (!adminUser) {
         return { success: false, error: "Unauthorized" };
       }
+
+      // Handle avatar file update if present
+      let avatarUrl = undefined;
+      if (body.avatarFile) {
+        const avatarUUID = crypto.randomUUID();
+        const avatarBuffer = await body.avatarFile.arrayBuffer();
+        const mimeType = body.avatarFile.type;
+        const extension = mimeType === "image/jpeg" ? ".jpg" : ".png";
+        const fileName = `${avatarUUID}${extension}`;
+        const filePath = join(process.cwd(),"public", "resources", "avatars", fileName);
+        await Bun.write(filePath, avatarBuffer);
+        avatarUrl = `/resources/avatars/${fileName}`;
+      }
+
+      // Prepare update object, removing avatarFile, and updating updatedAt
+      const { avatarFile, ...updateData } = body;
+      if (avatarUrl !== undefined) {
+        updateData.avatarUrl = avatarUrl;
+      }
+      updateData.updatedAt = new Date();
       const [updatedCharacter] = await db
         .update(characters)
         .set({
@@ -119,6 +139,7 @@ export const adminCharactersRoutes = new Elysia({ prefix: "/characters" })
       };
     },
     {
+      auth: true,
       body: t.Object({
         name: t.Optional(t.String()),
         avatarUrl: t.Optional(t.String()),
