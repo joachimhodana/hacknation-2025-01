@@ -42,7 +42,7 @@ package-lock.json
 **/*.bun
 
 .env
-/src/generated/prisma
+/src/db/migrations
 
 # Elysia binary
 core

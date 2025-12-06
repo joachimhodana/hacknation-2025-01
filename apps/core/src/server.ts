@@ -12,8 +12,10 @@ app.use(serverTiming())
 app.use(openapi())
 
 // routes
+app.get("/health", () => "OK")
+
 app.mount(auth.handler)
 
-app.listen(process.env.PORT || 3000, () => {
+app.listen(process.env.PORT || 8080, () => {
   console.log(`🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`)
 })
