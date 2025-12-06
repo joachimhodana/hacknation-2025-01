@@ -1,14 +1,14 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom"
-import { Navigation } from "@/components/Navigation"
-import { Dashboard } from "@/pages/Dashboard"
+import { Dashboard } from "@/pages/Dashboard/Dashboard.tsx"
 import { RouteCreator } from "@/pages/RouteCreator"
 import { Documentation } from "@/pages/Documentation"
+import Header from "@/components/shared/Header/Header.tsx";
 
 function App() {
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-background">
-        <Navigation />
+        <Header />
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/routes/create" element={<RouteCreator />} />

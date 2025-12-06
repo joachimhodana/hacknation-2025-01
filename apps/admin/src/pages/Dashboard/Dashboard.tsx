@@ -1,13 +1,16 @@
 import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card.tsx"
 import { Route, Users, CheckCircle, TrendingUp, BarChart3 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-
+import { Button } from "@/components/ui/button.tsx"
+import GeneralInfoCustomCard from "@/components/shared/GeneralInfoCustomCard/GeneralInfoCustomCard.tsx"
+import StatisticsInfoCustomCard from "@/components/shared/GeneralInfoCustomCard/StatisticsInfoCustomCard.tsx";
+import type {RoutesObjectType} from "@/types/RoutesType.tsx";
 // Mock data - w prawdziwej aplikacji dane będą z API
-const mockRoutes = [
+const mockRoutes : RoutesObjectType[]  = [
   {
     id: 1,
     name: "Trasa po Warszawie",
+    description: "Lorem ipsum zwiedzanie warszawy w gdańsku",
     totalParticipants: 245,
     completed: 189,
     inProgress: 56,
@@ -15,6 +18,7 @@ const mockRoutes = [
   {
     id: 2,
     name: "Szlak górski Beskidy",
+    description: "Lorem ipsum zwiedzanie warszawy w gdańsku za pomocą pięknej aplikacji bydgo która jest dziwnym porjektem naszgo zespołu",
     totalParticipants: 132,
     completed: 98,
     inProgress: 34,
@@ -22,6 +26,7 @@ const mockRoutes = [
   {
     id: 3,
     name: "Wycieczka rowerowa",
+    description: "Lorem ipsum zwiedzanie warszawy w gdańsku",
     totalParticipants: 78,
     completed: 65,
     inProgress: 13,
@@ -88,16 +93,16 @@ export function Dashboard() {
       </div>
 
       {/* Niebieska wstawka informacyjna */}
-      <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+      <div className="bg-blue-50 border border-blue-500  rounded-lg p-4">
         <div className="flex items-start gap-3">
-          <div className="bg-blue-100 dark:bg-blue-900/40 rounded-full p-2">
-            <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          <div className="bg-blue-100  rounded-full p-2">
+            <BarChart3 className="h-5 w-5 text-blue-600" />
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
+            <h3 className="font-semibold text-blue-900  mb-1">
               Panel administracyjny
             </h3>
-            <p className="text-sm text-blue-800 dark:text-blue-200">
+            <p className="text-sm text-blue-800">
               Tutaj możesz zarządzać trasami, przeglądać statystyki i monitorować aktywność użytkowników.
               Wykres poniżej można przełączać, aby wyświetlać różne metryki.
             </p>
@@ -107,57 +112,34 @@ export function Dashboard() {
 
       {/* Statystyki ogólne */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/30 dark:bg-blue-950/10">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Wszystkie trasy</CardTitle>
-            <Route className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-              {totalStats.totalRoutes}
-            </div>
-            <p className="text-xs text-blue-700 dark:text-blue-300">Aktywne projekty</p>
-          </CardContent>
-        </Card>
+        <GeneralInfoCustomCard
+          title="Wszystkie trasy"
+          icon={<Route className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
+          statsData={totalStats.totalRoutes}
+          description="Aktywne projekty"
+        />
 
-        <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/30 dark:bg-blue-950/10">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Uczestnicy</CardTitle>
-            <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-              {totalStats.totalParticipants}
-            </div>
-            <p className="text-xs text-blue-700 dark:text-blue-300">Wszystkich uczestników</p>
-          </CardContent>
-        </Card>
+        <GeneralInfoCustomCard
+          title="Uczestnicy"
+          icon={<Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
+          statsData={totalStats.totalParticipants}
+          description="Wszystkich uczestników"
+        />
 
-        <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/30 dark:bg-blue-950/10">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ukończone</CardTitle>
-            <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-              {totalStats.totalCompleted}
-            </div>
-            <p className="text-xs text-blue-700 dark:text-blue-300">Zakończone trasy</p>
-          </CardContent>
-        </Card>
+        <GeneralInfoCustomCard
+          title="Ukończone"
+          icon={<CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
+          statsData={totalStats.totalCompleted}
+          description="Zakończone trasy"
+        />
 
-        <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/30 dark:bg-blue-950/10">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Wskaźnik ukończenia</CardTitle>
-            <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-              {totalStats.completionRate}%
-            </div>
-            <p className="text-xs text-blue-700 dark:text-blue-300">Średnia ukończenia</p>
-          </CardContent>
-        </Card>
+        <GeneralInfoCustomCard
+          title="Wskaźnik ukończenia"
+          icon={<TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
+          statsData={totalStats.completionRate}
+          description="Średnia ukończenia"
+          suffix="%"
+        />
       </div>
 
       {/* Wykres */}
@@ -258,46 +240,8 @@ export function Dashboard() {
         <h2 className="text-2xl font-semibold mb-4">Projekty tras</h2>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {mockRoutes.map((route) => (
-            <Card
-              key={route.id}
-              className="border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600 transition-colors"
-            >
-              <CardHeader>
-                <CardTitle className="text-blue-900 dark:text-blue-100">{route.name}</CardTitle>
-                <CardDescription>ID: {route.id}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Uczestnicy:</span>
-                    <span className="font-medium text-blue-900 dark:text-blue-100">
-                      {route.totalParticipants}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Ukończone:</span>
-                    <span className="font-medium text-green-600 dark:text-green-400">
-                      {route.completed}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">W trakcie:</span>
-                    <span className="font-medium text-blue-600 dark:text-blue-400">
-                      {route.inProgress}
-                    </span>
-                  </div>
-                  <div className="pt-2 border-t border-blue-200 dark:border-blue-800">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Wskaźnik ukończenia:</span>
-                      <span className="font-bold text-blue-900 dark:text-blue-100">
-                        {Math.round((route.completed / route.totalParticipants) * 100)}%
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+              <StatisticsInfoCustomCard route={route}/>
+              ))}
         </div>
       </div>
     </div>
