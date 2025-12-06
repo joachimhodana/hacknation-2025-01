@@ -15,6 +15,6 @@ RUN bun run better-auth:migrate
 
 COPY . .
 
-EXPOSE 3000
+EXPOSE 8080
 
 CMD ["bun", "run", "dev"]
