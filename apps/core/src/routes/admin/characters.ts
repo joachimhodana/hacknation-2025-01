@@ -14,13 +14,6 @@ export const adminCharactersRoutes = new Elysia({ prefix: "/characters" })
       if (!adminUser) {
         return { success: false, error: "Unauthorized" };
       }
-      const [newCharacter] = await db
-        .insert(characters)
-        .values({
-          ...body,
-          createdBy: adminUser.id,
-        })
-        .returning();
 
       let avatarUrl: string | undefined;
       const avatarUUID = crypto.randomUUID();
@@ -29,10 +22,22 @@ export const adminCharactersRoutes = new Elysia({ prefix: "/characters" })
         const mimeType = body.avatarFile.type;
         const extension = mimeType === "image/jpeg" ? ".jpg" : ".png";
         const fileName = `${avatarUUID}${extension}`;
-        const filePath = join(process.cwd(), "resources", "avatars", fileName);
+        const filePath = join(process.cwd(), "public", "resources", "avatars", fileName);
         await Bun.write(filePath, avatarBuffer);
-        avatarUrl = `/resources/avatars/${fileName}`;
+        avatarUrl = `/public/resources/avatars/${fileName}`;
       }
+
+
+      const [newCharacter] = await db
+        .insert(characters)
+        .values({
+          ...body,
+          createdBy: adminUser.id,
+          avatarUrl: avatarUrl
+        })
+        .returning();
+
+
 
       
 
