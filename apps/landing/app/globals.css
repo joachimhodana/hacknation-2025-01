@@ -36,62 +36,7 @@
   --sidebar-accent-foreground: oklch(0.2207 0.0307 259.0197);
   --sidebar-border: oklch(0.8809 0.0093 258.3379);
   --sidebar-ring: oklch(0.6992 0.0405 260.6547);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  --radius: 0.625rem;
-  --shadow-x: 0;
-  --shadow-y: 1px;
-  --shadow-blur: 3px;
-  --shadow-spread: 0px;
-  --shadow-opacity: 0.1;
-  --shadow-color: #000000;
-  --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-  --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-  --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
-  --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
-  --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 2px 4px -1px hsl(0 0% 0% / 0.10);
-  --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 4px 6px -1px hsl(0 0% 0% / 0.10);
-  --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 8px 10px -1px hsl(0 0% 0% / 0.10);
-  --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
-  --tracking-normal: 0em;
-  --spacing: 0.25rem;
-}
-
-.dark {
-  --background: oklch(0.9911 0 0);
-  --foreground: oklch(0.1816 0.0296 259.8006);
-  --card: oklch(1.0000 0 0);
-  --card-foreground: oklch(0.1816 0.0296 259.8006);
-  --popover: oklch(1.0000 0 0);
-  --popover-foreground: oklch(0.1816 0.0296 259.8006);
-  --primary: oklch(0.6289 0.1800 255.0207);
-  --primary-foreground: oklch(0.9911 0 0);
-  --secondary: oklch(0.8995 0.1601 95.0964);
-  --secondary-foreground: oklch(0.2207 0.0307 259.0197);
-  --muted: oklch(0.9601 0.0103 261.7889);
-  --muted-foreground: oklch(0.5493 0.0311 260.2703);
-  --accent: oklch(0.8505 0.0752 254.7424);
-  --accent-foreground: oklch(0.9911 0 0);
-  --destructive: oklch(0.5808 0.2383 29.2339);
-  --destructive-foreground: oklch(0.9911 0 0);
-  --border: oklch(0.8996 0.0105 261.7879);
-  --input: oklch(0.8996 0.0105 261.7879);
-  --ring: oklch(0.6992 0.0405 260.6547);
-  --chart-1: oklch(0.6289 0.1800 255.0207);
-  --chart-2: oklch(0.8995 0.1601 95.0964);
-  --chart-3: oklch(0.6404 0.2456 30.0441);
-  --chart-4: oklch(0.7795 0.0407 261.4888);
-  --chart-5: oklch(0.4999 0.0393 259.3606);
-  --sidebar: oklch(0.9691 0.0103 261.7891);
-  --sidebar-foreground: oklch(0.1816 0.0296 259.8006);
-  --sidebar-primary: oklch(0.6289 0.1800 255.0207);
-  --sidebar-primary-foreground: oklch(0.9911 0 0);
-  --sidebar-accent: oklch(0.8995 0.1601 95.0964);
-  --sidebar-accent-foreground: oklch(0.2207 0.0307 259.0197);
-  --sidebar-border: oklch(0.8809 0.0093 258.3379);
-  --sidebar-ring: oklch(0.6992 0.0405 260.6547);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
   --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   --radius: 0.625rem;
@@ -164,6 +109,24 @@
   --shadow-lg: var(--shadow-lg);
   --shadow-xl: var(--shadow-xl);
   --shadow-2xl: var(--shadow-2xl);
+  --animate-marquee: marquee var(--duration) infinite linear;
+  --animate-marquee-vertical: marquee-vertical var(--duration) linear infinite;
+  @keyframes marquee {
+  from {
+    transform: translateX(0);
+    }
+  to {
+    transform: translateX(calc(-100% - var(--gap)));
+    }
+  }
+  @keyframes marquee-vertical {
+  from {
+    transform: translateY(0);
+    }
+  to {
+    transform: translateY(calc(-100% - var(--gap)));
+    }
+  }
 }
 
 @layer base {

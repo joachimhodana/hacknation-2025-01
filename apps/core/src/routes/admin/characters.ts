@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { characters } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { adminMiddleware } from "@/lib/admin-middleware";
+import { join } from "path";
 
 export const adminCharactersRoutes = new Elysia({ prefix: "/characters" })
   .use(adminMiddleware)
@@ -21,16 +22,38 @@ export const adminCharactersRoutes = new Elysia({ prefix: "/characters" })
         })
         .returning();
 
+      let avatarUrl: string | undefined;
+      const avatarUUID = crypto.randomUUID();
+      if (body.avatarFile) {
+        const avatarBuffer = await body.avatarFile.arrayBuffer();
+        const mimeType = body.avatarFile.type;
+        const extension = mimeType === "image/jpeg" ? ".jpg" : ".png";
+        const fileName = `${avatarUUID}${extension}`;
+        const filePath = join(process.cwd(), "resources", "avatars", fileName);
+        await Bun.write(filePath, avatarBuffer);
+        avatarUrl = `/resources/avatars/${fileName}`;
+      }
+
+      
+
       return {
         success: true,
-        data: newCharacter,
+        data: {
+          id: newCharacter.id,
+          name: newCharacter.name,
+          avatarUrl: avatarUrl,
+          description: newCharacter.description,
+        },
       };
     },
     {
       auth: true, // Use macro for authentication
       body: t.Object({
         name: t.String(),
-        avatarUrl: t.Optional(t.String()),
+        avatarFile: t.Optional(t.File({
+          maxFileSize: "10MB",
+          allowedMimeTypes: ["image/jpeg", "image/png"],
+        })),
         description: t.Optional(t.String()),
         voicePreset: t.Optional(t.String()),
       }),
