@@ -1,7 +1,7 @@
 import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card.tsx"
 import { Route, Users, CheckCircle, TrendingUp, BarChart3 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button.tsx"
 
 // Mock data - w prawdziwej aplikacji dane będą z API
 const mockRoutes = [

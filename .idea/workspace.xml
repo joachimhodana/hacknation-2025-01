@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="1df88e0a-f3b6-4388-84f9-5fc94cf4eac0" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/apps/admin/src/components/shared/Header/Header.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/App.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/src/components/Navigation.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/components/shared/Header/Navigation.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/src/index.css" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/index.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/Dashboard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/Dashboard/Dashboard.tsx" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="TypeScript JSX File" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "git-widget-placeholder": "master",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "ts.external.directory.path": "/Users/pawelserkowski/WebstormProjects/hacknation-2025-01/apps/admin/node_modules/typescript/lib"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/apps/admin/src/components/shared/Header" />
+      <recent name="$PROJECT_DIR$/apps/admin/src/pages/Dashboards" />
+    </key>
+  </component>
+  <component name="TaskManager">
+    <servers />
+  </component>
+</project>
