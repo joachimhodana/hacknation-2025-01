@@ -28,7 +28,6 @@ services:
       - core_node_modules:/app/node_modules
     ports:
       - "8080:8080"
-      - "4983:4983"  # Drizzle Studio
     environment:
       - WATCH_FILES=true
       - PORT=${PORT:-8080}
