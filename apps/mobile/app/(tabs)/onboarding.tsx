@@ -57,7 +57,7 @@ export default function OnboardingScreen() {
         x: width * nextPage,
         animated: true,
       });
-      setPage(nextPage);
+      // Remove setPage here - let handleScroll update it
     } else {
       // TODO: navigate to start / login
       console.log("Finish onboarding → Start");

@@ -11,22 +11,17 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 SplashScreen.preventAutoHideAsync();
 
 export const unstable_settings = {
-  anchor: '(tabs)',
+  initialRouteName: 'start',
 };
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   useEffect(() => {
-    // Hide the native splash screen after a short delay
-    // This ensures the React Native splash screen (app/splash.tsx) is visible
-    const timer = setTimeout(() => {
-      SplashScreen.hideAsync().catch(() => {
-        // Ignore errors if splash screen is already hidden
-      });
-    }, 100);
-
-    return () => clearTimeout(timer);
+    // Hide the native splash screen immediately so our custom splash shows
+    SplashScreen.hideAsync().catch(() => {
+      // Ignore errors if splash screen is already hidden
+    });
   }, []);
 
   return (
@@ -34,8 +29,7 @@ export default function RootLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
-        }}
-        initialRouteName="splash">
+        }}>
         <Stack.Screen name="splash" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="route-details" />

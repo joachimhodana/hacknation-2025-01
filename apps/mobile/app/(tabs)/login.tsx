@@ -44,30 +44,6 @@ export default function LoginScreen() {
         <View style={styles.container}>
           {/* Top section */}
           <View style={styles.header}>
-            <View style={styles.badgeRow}>
-              {/* <View style={[styles.badgePill, { backgroundColor: COLORS.blue }]}>
-                <Text style={styles.badgeText}>Gra miejska</Text>
-              </View> */}
-              <View
-                style={[
-                  styles.badgePill,
-                  { backgroundColor: "rgba(237, 28, 36, 0.08)", borderWidth: 0 },
-                ]}
-              >
-                <View style={styles.badgeColorDots}>
-                  <View
-                    style={[styles.badgeDot, { backgroundColor: COLORS.red }]}
-                  />
-                  <View
-                    style={[styles.badgeDot, { backgroundColor: COLORS.yellow }]}
-                  />
-                  <View
-                    style={[styles.badgeDot, { backgroundColor: COLORS.blue }]}
-                  />
-                </View>
-                <Text style={[styles.badgeTextGhost]}>Twoja Bydgoszcz, Twoja ścieżka</Text>
-              </View>
-            </View>
           </View>
 
           {/* Card */}
@@ -142,7 +118,6 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
           </View>
-
           {/* Footer hint */}
           <View style={styles.footer}>
             <View style={styles.footerPath}>
@@ -158,10 +133,6 @@ export default function LoginScreen() {
                 style={[styles.footerNode, { backgroundColor: COLORS.blue }]}
               />
             </View>
-            <Text style={styles.footerText}>
-              Podpowiedź: włącz lokalizację i internet – aplikacja poprowadzi Cię
-              jak ścieżka questów po mieście.
-            </Text>
           </View>
         </View>
       </KeyboardAvoidingView>

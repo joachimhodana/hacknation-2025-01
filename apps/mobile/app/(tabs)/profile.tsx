@@ -250,21 +250,6 @@ const ProfileScreen: React.FC = () => {
                 </TouchableOpacity>
               </View>
             </View>
-
-            {/* Privacy row */}
-            <TouchableOpacity
-              style={styles.settingRow}
-              onPress={() => console.log("Open privacy settings")}
-            >
-              <View>
-                <Text style={styles.settingLabel}>Prywatność i dane</Text>
-                <Text style={styles.settingValue}>
-                  Zarządzaj tym, co zapisujemy.
-                </Text>
-              </View>
-              <Text style={styles.settingArrow}>›</Text>
-            </TouchableOpacity>
-
             <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
               <Text style={styles.logoutText}>Wyloguj się</Text>
             </TouchableOpacity>
