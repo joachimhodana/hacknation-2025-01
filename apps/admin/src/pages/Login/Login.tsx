@@ -13,7 +13,7 @@ export function Login() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { data: session, isPending, refetch } = useSession();
+  const { data: session, isPending } = useSession();
   const [hasCheckedSession, setHasCheckedSession] = useState(false);
 
   // Check session once on mount, don't re-check on every session change
@@ -25,15 +25,6 @@ export function Login() {
       }
     }
   }, [session, isPending, navigate, hasCheckedSession]);
-
-  // Watch for session changes after login to redirect
-  useEffect(() => {
-    if (session?.user?.role === "admin" && loading) {
-      // Session updated after login, redirect
-      setLoading(false);
-      navigate("/", { replace: true });
-    }
-  }, [session, loading, navigate]);
 
   // Show loading only on initial session check, not during form submission
   if (isPending && !hasCheckedSession && !loading) {
@@ -84,10 +75,7 @@ export function Login() {
 
       // Sign in successful, wait a bit for session to be set, then check role
       // Small delay to ensure cookies are set
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      // Refetch session to update state
-      await refetch();
+      await new Promise(resolve => setTimeout(resolve, 300));
       
       // Get the updated session to check role
       const sessionResult = await authClient.getSession();
@@ -101,11 +89,9 @@ export function Login() {
         return;
       }
 
-      // Success - the useEffect will handle the redirect when session updates
-      // Keep loading state true briefly to show success, then redirect
-      setTimeout(() => {
-        navigate("/", { replace: true });
-      }, 100);
+      // Success - use window.location for reliable redirect
+      // This ensures the page fully reloads with the new session
+      window.location.href = "/";
     } catch (err: any) {
       console.error("Login error:", err);
       setError(err?.message || "An unexpected error occurred. Please try again.");
