@@ -96,6 +96,7 @@ const RoutesListPage = () => {
           // Map API response to frontend format
           const mappedRoutes: RoutesObjectType[] = response.data.map((path: any) => ({
             pathId: path.pathId || path.id?.toString() || "",
+            id: path.id, // Store numeric ID for API calls
             title: path.title || "",
             shortDescription: path.shortDescription || "",
             longDescription: path.longDescription || "",
@@ -132,12 +133,43 @@ const RoutesListPage = () => {
   const endIndex = startIndex + ITEMS_PER_PAGE
   const currentRoutes = routes.slice(startIndex, endIndex)
 
-  const handleTogglePublish = (pathId: string) => {
-    setRoutes(routes.map(route => 
-      route.pathId === pathId 
-        ? { ...route, isPublished: !route.isPublished }
-        : route
-    ))
+  const handleTogglePublish = async (route: RoutesObjectType) => {
+    // Use numeric ID from API, fallback to pathId if id is not available
+    const routeId = route.id || route.pathId
+    
+    if (!routeId) {
+      setError("Nie można znaleźć ID trasy")
+      return
+    }
+
+    try {
+      const API_BASE_URL = import.meta.env.VITE_BETTER_AUTH_URL || "http://localhost:8080"
+      const response = await fetch(`${API_BASE_URL}/admin/paths/${routeId}/toggle`, {
+        method: 'PATCH',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      })
+
+      const result = await response.json()
+      
+      if (result.success && result.data) {
+        // Update local state with new publication status
+        setRoutes(routes.map(r => 
+          r.id === route.id || (r.id === undefined && r.pathId === route.pathId)
+            ? { ...r, isPublished: result.data.isPublished }
+            : r
+        ))
+        setError(null) // Clear any previous errors
+      } else {
+        setError(result.error || "Nie udało się zmienić statusu publikacji")
+      }
+    } catch (err: any) {
+      console.error("Error toggling publish status:", err)
+      setError(err?.message || "Wystąpił błąd podczas zmiany statusu publikacji")
+    }
   }
 
   const formatDate = (timestamp: number) => {
@@ -309,7 +341,7 @@ const RoutesListPage = () => {
                       <Button
                         variant={route.isPublished ? "outline" : "default"}
                         size="sm"
-                        onClick={() => handleTogglePublish(route.pathId)}
+                        onClick={() => handleTogglePublish(route)}
                         className={`${viewMode === "list" ? "flex-1" : "flex-1"} gap-2 ${
                           route.isPublished 
                             ? "border-red-200 text-red-700 hover:bg-red-50" 
