@@ -6,42 +6,37 @@ type CustomCardProps = {
 }
 
 const StatisticsInfoCustomCard = ({route}:CustomCardProps) => {
+
+    const description = route.theme.length > 70 ? route.theme.slice(0,70)+"..." : route.theme
+
     return(
         <Card
-            key={route.id}
+            key={route.route_id}
             className="border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600 transition-colors"
         >
             <CardHeader>
-                <CardTitle className="text-blue-900">{route.name}</CardTitle>
-                <CardDescription>{route.description.length > 70 ? route.description.slice(0,70)+"..." : route.description}</CardDescription>
+                <CardTitle className="text-blue-900">{route.title}</CardTitle>
+                <CardDescription>{description}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Uczestnicy:</span>
+                        <span className="text-muted-foreground">Czas trasy:</span>
                         <span className="font-medium text-blue-600">
-                      {route.totalParticipants}
+                      {route.total_time_minutes}min
                     </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Ukończone:</span>
+                        <span className="text-muted-foreground">Ilość przystanków:</span>
                         <span className="font-medium text-green-600 ">
-                      {route.completed}
+                      {route.stops.length}
                     </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Nieukończone:</span>
+                        <span className="text-muted-foreground">Trudność:</span>
                         <span className="font-medium text-red-600 ">
-                      {route.inProgress}
+                      {route.difficulty}
                     </span>
-                    </div>
-                    <div className="pt-2 border-t bborder-blue-800">
-                        <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Wskaźnik ukończenia:</span>
-                            <span className="font-bold text-blue-900 ">
-                        {Math.round((route.completed / route.totalParticipants) * 100)}%
-                      </span>
-                        </div>
                     </div>
                 </div>
             </CardContent>

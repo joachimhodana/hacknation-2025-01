@@ -5,10 +5,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1df88e0a-f3b6-4388-84f9-5fc94cf4eac0" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/apps/admin/src/components/shared/GeneralInfoCustomCard/GeneralInfoCustomCard.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/apps/admin/src/types/RoutesType.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apps/admin/src/components/shared/CustomCards/InformationCard/InformationCard.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apps/admin/src/mocked/MockedRoutes.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/Dashboard/Dashboard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/Dashboard/Dashboard.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/App.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/src/components/shared/GeneralInfoCustomCard/GeneralInfoCustomCard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/components/shared/CustomCards/GeneralInfoCustomCard.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/src/components/shared/GeneralInfoCustomCard/StatisticsInfoCustomCard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/components/shared/CustomCards/StatisticsInfoCustomCard.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/Dashboard/Dashboard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/Dashboard/DashboardPage.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/RouteCreator.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/RouteCreator/RouteCreatorPage.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/src/types/RoutesType.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/types/RoutesType.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -19,6 +24,7 @@
     <option name="RECENT_TEMPLATES">
       <list>
         <option value="JavaScript File" />
+        <option value="TypeScript File" />
         <option value="TypeScript JSX File" />
       </list>
     </option>
@@ -40,6 +46,8 @@
 }</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/apps/admin/src/components/shared/CustomCards/InformationCard" />
+      <recent name="$PROJECT_DIR$/apps/admin/src/components/shared/CustomCards" />
       <recent name="$PROJECT_DIR$/apps/admin/src/pages/RouteCreator" />
       <recent name="$PROJECT_DIR$/apps/admin/src/components/shared/Header" />
       <recent name="$PROJECT_DIR$/apps/admin/src/pages/Dashboards" />

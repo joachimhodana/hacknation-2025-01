@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Save, Plus, GripVertical, Trash2, Edit2, MapPin } from "lucide-react"
-import MapComponent from "./MapComponent"
+import { Button } from "@/components/ui/button.tsx"
+import { Input } from "@/components/ui/input.tsx"
+import { Label } from "@/components/ui/label.tsx"
+import { Textarea } from "@/components/ui/textarea.tsx"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx"
+import {Save, Plus, GripVertical, Trash2, Edit2, MapPin, Lightbulb} from "lucide-react"
+import MapComponent from "../MapComponent.tsx"
+import InformationCard from "@/components/shared/CustomCards/InformationCard/InformationCard.tsx";
 
 interface RoutePoint {
   id: string
@@ -17,7 +18,7 @@ interface RoutePoint {
 }
 
 
-export function RouteCreator() {
+const RouteCreatorPage =() => {
   const [routeName, setRouteName] = useState("")
   const [points, setPoints] = useState<RoutePoint[]>([])
   const [selectedPoint, setSelectedPoint] = useState<RoutePoint | null>(null)
@@ -121,20 +122,18 @@ export function RouteCreator() {
   return (
     <div className="flex h-[calc(100vh-64px)]">
       {/* Lewa strona - Panel nawigacji i edycji */}
-      <div className="w-1/3 border-r bg-card overflow-y-auto">
+      <div className="w-1/3 border-r  overflow-y-auto">
         <div className="p-4 space-y-4">
-          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
-            <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
-              💡 Instrukcja
-            </h3>
-            <p className="text-sm text-blue-800 dark:text-blue-200">
-              Kliknij na mapie po prawej stronie, aby dodać punkt trasy. Następnie kliknij na punkt w liście, aby go edytować.
-            </p>
-          </div>
+
+          <InformationCard
+              title={"Instrukcja"}
+              description={"Kliknij na mapie po prawej stronie, aby dodać punkt trasy. Następnie kliknij na punkt w liście, aby go edytować."}
+              icon={<Lightbulb className="h-5 w-5 text-blue-600"/>}
+          />
 
           <Card>
             <CardHeader>
-              <CardTitle>Nazwa trasy</CardTitle>
+              <CardTitle>Ogólne</CardTitle>
             </CardHeader>
             <CardContent>
               <Input
@@ -143,6 +142,8 @@ export function RouteCreator() {
                 placeholder="Wprowadź nazwę trasy"
                 className="bg-background"
               />
+
+
             </CardContent>
           </Card>
 
@@ -351,3 +352,5 @@ export function RouteCreator() {
     </div>
   )
 }
+
+export default RouteCreatorPage
