@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Icon } from "@iconify/react"
-import { MapPin, Plus, Edit2, GripVertical, Trash2, Save, ArrowUp, ArrowDown, Settings, List, Grid3x3, Eye, EyeOff, FileText, CheckCircle2, User } from "lucide-react"
+import { MapPin, Plus, Edit2, GripVertical, Trash2, Save, Settings, List, Grid3x3, Eye, EyeOff, FileText, CheckCircle2, User } from "lucide-react"
 
 export function Documentation() {
   return (
