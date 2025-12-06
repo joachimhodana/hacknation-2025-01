@@ -5,7 +5,7 @@ import RouteStatisticsInfoCustomCard from "@/components/shared/CustomCards/Route
 import InformationCard from "@/components/shared/CustomCards/InformationCard/InformationCard.tsx";
 
 import {mockedRoutesObject} from "@/mocked/MockedRoutes.ts";
-import type {RoutesObjectType, RouteStopType} from "@/types/RoutesType.tsx";
+import type {RoutesObjectType} from "@/types/RoutesType.tsx";
 
 
 
