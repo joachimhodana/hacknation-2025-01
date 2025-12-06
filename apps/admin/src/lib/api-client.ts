@@ -118,3 +118,39 @@ export async function createPath(data: {
   return result;
 }
 
+/**
+ * Get all paths/routes
+ */
+export async function getPaths(): Promise<ApiResponse<any[]>> {
+  const headers = await getAuthHeaders();
+  const response = await fetch(`${API_BASE_URL}/admin/paths`, {
+    method: 'GET',
+    headers: {
+      ...headers,
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+  });
+
+  const result: ApiResponse<any[]> = await response.json();
+  return result;
+}
+
+/**
+ * Get a specific path/route by ID
+ */
+export async function getPath(id: number | string): Promise<ApiResponse<any>> {
+  const headers = await getAuthHeaders();
+  const response = await fetch(`${API_BASE_URL}/admin/paths/${id}`, {
+    method: 'GET',
+    headers: {
+      ...headers,
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+  });
+
+  const result: ApiResponse<any> = await response.json();
+  return result;
+}
+

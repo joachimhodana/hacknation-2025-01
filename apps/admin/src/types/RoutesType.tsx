@@ -1,5 +1,6 @@
 export type RoutesObjectType = {
     pathId: string,
+    id?: number, // Numeric ID from database for API calls
     title: string,
     shortDescription: string,
     longDescription: string,
