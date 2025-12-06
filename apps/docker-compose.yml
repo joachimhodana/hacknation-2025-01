@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  core:
+    build:
+      context: ./core
+      dockerfile: Dockerfile
+    container_name: hacknation-core
+    volumes:
+      - ./core:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    command: bun run --watch src/index.ts
+    restart: unless-stopped
+
+  landing:
+    build:
+      context: ./landing
+      dockerfile: Dockerfile
+    container_name: hacknation-landing
+    volumes:
+      - ./landing:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+    command: npm run dev -- -H 0.0.0.0 -p 3000
+    restart: unless-stopped
+
