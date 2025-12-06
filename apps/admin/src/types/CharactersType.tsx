@@ -13,7 +13,7 @@ export type CharacterType = {
 // Type for creating/updating character
 export type CharacterCreateData = {
     name: string,
-    avatarUrl?: string,
+    avatarFile?: File,
     description?: string,
     voicePreset?: string,
 }

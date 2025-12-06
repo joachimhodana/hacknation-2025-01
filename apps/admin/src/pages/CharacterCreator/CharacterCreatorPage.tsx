@@ -8,24 +8,17 @@ import { Input } from "@/components/ui/input.tsx"
 import { Label } from "@/components/ui/label.tsx"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx"
 import { Save, MapPin, Settings, ArrowLeft, ArrowRight, CheckCircle2, X } from "lucide-react"
-import MapComponent from "../MapComponent.tsx"
+import MapComponent from "@/components/shared/MapComponent/MapComponent.tsx"
 import InformationCard from "@/components/shared/CustomCards/InformationCard/InformationCard.tsx"
-import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from "@/components/ui/form.tsx"
+import { Form } from "@/components/ui/form.tsx"
 import CustomUsualInput from "@/components/shared/CustomCards/CustomInput/CustomUsualInput.tsx"
 import CustomFileInput from "@/components/shared/CustomCards/CustomInput/CustomFileInput.tsx"
 import { getCharacterById, createCharacter, updateCharacter } from "@/services/charactersApi.ts"
-import type { CharacterType } from "@/types/CharactersType.tsx"
 
 interface DefaultPosition {
   latitude: number
   longitude: number
   description: string
-}
-
-type CharacterFormData = {
-  name: string
-  avatarFile: File | null
-  description?: string
 }
 
 // Schemat walidacji Yup
@@ -50,6 +43,8 @@ const characterFormSchema = yup.object({
     .string()
     .max(500, "Opis może mieć maksymalnie 500 znaków"),
 })
+
+type CharacterFormData = yup.InferType<typeof characterFormSchema>
 
 const CharacterCreatorPage = () => {
   const [searchParams] = useSearchParams()
@@ -129,7 +124,11 @@ const CharacterCreatorPage = () => {
   }, [formState.isValid])
 
   const handleMapClick = (lat: number, lng: number) => {
-    if (currentStep === 1 || !isSelectingPosition) return
+    // W kroku 1 nie pozwalamy na kliknięcie
+    if (currentStep === 1) return
+    
+    // W kroku 2 kliknięcie działa tylko gdy użytkownik kliknął "Wybierz pozycję"
+    if (currentStep === 2 && !isSelectingPosition) return
 
     setDefaultPosition({
       latitude: lat,
@@ -166,19 +165,22 @@ const CharacterCreatorPage = () => {
       setIsSaving(true)
       const formValues = form.getValues()
 
-      // TODO: Handle avatar file upload - for now we'll skip it
-      // You'll need to implement file upload endpoint first
       const characterData = {
         name: formValues.name,
+        avatarFile: formValues.avatarFile || undefined,
         description: formValues.description || undefined,
-        // avatarUrl: await uploadAvatar(formValues.avatarFile) // When file upload is implemented
       }
 
       if (editCharacterId) {
         // Update existing character
-        await updateCharacter(Number(editCharacterId), characterData)
+        // Note: PUT endpoint doesn't support file upload, only avatarUrl
+        await updateCharacter(Number(editCharacterId), {
+          name: characterData.name,
+          description: characterData.description,
+          // avatarUrl is not updated here as PUT endpoint doesn't support file upload
+        })
       } else {
-        // Create new character
+        // Create new character with file upload
         await createCharacter(characterData)
       }
 
@@ -217,7 +219,7 @@ const CharacterCreatorPage = () => {
   return (
     <div className="flex h-[calc(100vh-64px)]">
       {/* Lewa strona - Mapa */}
-      <div className="flex-1 relative">
+      <div className="flex-1 relative h-full">
         {mounted ? (
           <MapComponent
             points={defaultPosition ? [{
@@ -227,6 +229,10 @@ const CharacterCreatorPage = () => {
               lat: defaultPosition.latitude,
               lng: defaultPosition.longitude,
               order: 1,
+              hasCustomAudio: false,
+              audioFile: null,
+              characterName: "",
+              dialog: "",
             }] : []}
             onMapClick={handleMapClick}
           />

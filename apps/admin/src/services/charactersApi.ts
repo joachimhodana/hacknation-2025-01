@@ -68,11 +68,29 @@ export const getCharacterById = async (id: number): Promise<CharacterType> => {
 // Create new character
 export const createCharacter = async (data: CharacterCreateData): Promise<CharacterType> => {
   try {
+    const formData = new FormData()
+    formData.append('name', data.name)
+    
+    if (data.avatarFile) {
+      formData.append('avatarFile', data.avatarFile)
+    }
+    
+    if (data.description) {
+      formData.append('description', data.description)
+    }
+    
+    if (data.voicePreset) {
+      formData.append('voicePreset', data.voicePreset)
+    }
+
     const response = await fetch(ADMIN_CHARACTERS_ENDPOINT, {
       method: "POST",
-      headers: getAuthHeaders(),
+      headers: {
+        // Don't set Content-Type header - browser will set it with boundary for FormData
+        'Accept': 'application/json',
+      },
       credentials: "include",
-      body: JSON.stringify(data),
+      body: formData,
     })
 
     if (!response.ok) {

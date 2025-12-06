@@ -9,11 +9,13 @@ import { Textarea } from "@/components/ui/textarea.tsx"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx"
 import { Icon } from "@iconify/react"
 import { cn } from "@/lib/utils.ts"
-import MapComponent from "./MapComponent.tsx"
+import MapComponent from "@/components/shared/MapComponent/MapComponent.tsx"
 import InformationCard from "@/components/shared/CustomCards/InformationCard/InformationCard.tsx";
 import GeneralRouteForm from "./components/GeneralRouteForm/GeneralRouteForm.tsx";
 import { calculateEstimatedTime, formatTime } from "@/lib/route-utils.ts";
-import { createPath, getCharacters } from "@/lib/api-client.ts";
+import { createPath, getPath } from "@/lib/api-client.ts";
+import { getCharacters as getCharactersFromApi } from "@/services/charactersApi.ts";
+import type { CharacterType } from "@/types/CharactersType.tsx";
 
 interface RoutePoint {
   id: string
@@ -24,21 +26,11 @@ interface RoutePoint {
   order: number
   hasCustomAudio: boolean
   audioFile: File | null
-  characterName: string
+  characterId: number | null
   dialog: string
 }
 
 
-// Mock data dla postaci
-const characterOptions = [
-  { value: "historian", label: "Historyk" },
-  { value: "guide", label: "Przewodnik" },
-  { value: "local", label: "Mieszkaniec" },
-  { value: "artist", label: "Artysta" },
-  { value: "scientist", label: "Naukowiec" },
-  { value: "writer", label: "Pisarz" },
-  { value: "explorer", label: "Odkrywca" },
-];
 
 // Mock data - w prawdziwej aplikacji dane będą z API
 const mockRoutes: RoutesObjectType[] = [
@@ -118,7 +110,7 @@ const convertStopToPoint = (stop: RouteStopType, order: number): RoutePoint => {
     order: order,
     hasCustomAudio: false,
     audioFile: null,
-    characterName: "",
+    characterId: null, // Character ID will need to be loaded from API if available
     dialog: stop.voice_over_text,
   }
 }
@@ -261,52 +253,81 @@ const RouteCreatorPage = () => {
   const [routeDistance, setRouteDistance] = useState<number>(0)
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [characters, setCharacters] = useState<CharacterType[]>([])
+  const [isLoadingCharacters, setIsLoadingCharacters] = useState(false)
   const formRef = useRef<ReturnType<typeof useForm<any>> | null>(null)
 
   // Ładowanie danych trasy do edycji
   useEffect(() => {
     if (editPathId) {
-      setIsLoading(true)
-      // W prawdziwej aplikacji tutaj będzie fetch z API
-      const route = mockRoutes.find(r => r.pathId === editPathId)
-      
-      if (route) {
-        // Poczekaj aż formularz będzie gotowy
-        const loadData = () => {
-          if (formRef.current) {
-            // Wypełnij formularz
-            formRef.current.reset({
-              title: route.title,
-              shortDescription: route.shortDescription,
-              longDescription: route.longDescription,
-              category: route.category,
-              difficulty: route.difficulty,
-              thumbnailFile: null, // Pliki trzeba będzie załadować osobno z URL
-              stylePreset: route.stylePreset,
-              makerIconFile: null, // Pliki trzeba będzie załadować osobno z URL
-            })
-
-            // Konwertuj stops na points
-            const convertedPoints = route.stops.map((stop, index) => 
-              convertStopToPoint(stop, index + 1)
-            )
-            setPoints(convertedPoints)
+      const loadRouteData = async () => {
+        try {
+          setIsLoading(true)
+          const response = await getPath(editPathId)
+          
+          if (response.success && response.data) {
+            const route = response.data
             
-            // Jeśli są punkty, przejdź do kroku 2
-            if (convertedPoints.length > 0) {
-              setCurrentStep(2)
+            // Poczekaj aż formularz będzie gotowy
+            const loadData = () => {
+              if (formRef.current) {
+                // Wypełnij formularz
+                formRef.current.reset({
+                  pathId: route.pathId || editPathId,
+                  title: route.title,
+                  shortDescription: route.shortDescription,
+                  longDescription: route.longDescription || "",
+                  category: route.category,
+                  difficulty: route.difficulty,
+                  thumbnailFile: null, // Pliki trzeba będzie załadować osobno z URL
+                  stylePreset: route.stylePreset || "",
+                  makerIconFile: null, // Pliki trzeba będzie załadować osobno z URL
+                })
+
+                // Konwertuj points z API na RoutePoint format
+                if (route.points && Array.isArray(route.points)) {
+                  const convertedPoints: RoutePoint[] = route.points.map((pointData: any, index: number) => {
+                    const point = pointData.point || pointData
+                    return {
+                      id: point.id?.toString() || `point_${index}`,
+                      name: point.locationLabel || `Punkt ${index + 1}`,
+                      description: point.narrationText || "",
+                      lat: point.latitude,
+                      lng: point.longitude,
+                      order: pointData.orderIndex !== undefined ? pointData.orderIndex + 1 : index + 1,
+                      hasCustomAudio: !!point.audioUrl,
+                      audioFile: null, // Audio files are stored on server, not in form
+                      characterId: point.characterId || null,
+                      dialog: point.narrationText || "",
+                    }
+                  })
+                  setPoints(convertedPoints)
+                  
+                  // Jeśli są punkty, przejdź do kroku 2
+                  if (convertedPoints.length > 0) {
+                    setCurrentStep(2)
+                  }
+                }
+                setIsLoading(false)
+              } else {
+                // Spróbuj ponownie za chwilę
+                setTimeout(loadData, 100)
+              }
             }
-            setIsLoading(false)
+            
+            loadData()
           } else {
-            // Spróbuj ponownie za chwilę
-            setTimeout(loadData, 100)
+            setValidationError(response.error || "Nie udało się załadować trasy")
+            setIsLoading(false)
           }
+        } catch (err: any) {
+          console.error("Error loading route:", err)
+          setValidationError(err?.message || "Wystąpił błąd podczas ładowania trasy")
+          setIsLoading(false)
         }
-        
-        loadData()
-      } else {
-        setIsLoading(false)
       }
+      
+      loadRouteData()
     }
   }, [editPathId])
 
@@ -316,6 +337,24 @@ const RouteCreatorPage = () => {
       setMounted(true)
     }, 100)
     return () => clearTimeout(timer)
+  }, [])
+
+  // Pobierz listę postaci przy załadowaniu
+  useEffect(() => {
+    const loadCharacters = async () => {
+      try {
+        setIsLoadingCharacters(true)
+        const charactersData = await getCharactersFromApi()
+        setCharacters(charactersData)
+      } catch (error) {
+        console.error("Failed to load characters:", error)
+        // Nie blokujemy działania aplikacji jeśli nie uda się załadować postaci
+      } finally {
+        setIsLoadingCharacters(false)
+      }
+    }
+
+    loadCharacters()
   }, [])
 
   // Watch for marker icon changes in form
@@ -396,7 +435,7 @@ const RouteCreatorPage = () => {
       order: points.length + 1,
       hasCustomAudio: false,
       audioFile: null,
-      characterName: "",
+      characterId: null,
       dialog: "",
     }
     setPoints([...points, newPoint])
@@ -478,7 +517,7 @@ const RouteCreatorPage = () => {
         setIsEditing(true)
         return false
       }
-      if (!point.characterName || point.characterName.trim() === "") {
+      if (!point.characterId) {
         setValidationError(`Punkt ${point.order} nie ma wybranej postaci`)
         setSelectedPoint(point)
         setIsEditing(true)
@@ -552,18 +591,6 @@ const RouteCreatorPage = () => {
         return
       }
 
-      // Get characters to map character names to IDs
-      const charactersResponse = await getCharacters()
-      if (!charactersResponse.success || !charactersResponse.data) {
-        setValidationError("Nie udało się pobrać listy postaci")
-        setIsSaving(false)
-        return
-      }
-
-      const characterMap = new Map(
-        charactersResponse.data.map((char: any) => [char.name.toLowerCase(), char.id])
-      )
-
       // Generate pathId if not provided
       const pathId = formValues.pathId || `route_${Date.now()}`
 
@@ -575,18 +602,13 @@ const RouteCreatorPage = () => {
       // Prepare points data
       const sortedPoints = [...points].sort((a, b) => a.order - b.order)
       const pointsData = sortedPoints.map((point) => {
-        // Map character name to character ID
-        const characterId = point.characterName
-          ? characterMap.get(point.characterName.toLowerCase())
-          : undefined
-
         return {
           latitude: point.lat,
           longitude: point.lng,
           radiusMeters: 50, // Default radius, can be made configurable
           locationLabel: point.name,
           narrationText: point.dialog || point.description,
-          characterId: characterId ? Number(characterId) : undefined,
+          characterId: point.characterId ? Number(point.characterId) : undefined,
           audioFile: point.hasCustomAudio && point.audioFile ? point.audioFile : undefined,
         }
       })
@@ -998,19 +1020,26 @@ const RouteCreatorPage = () => {
                       <Label htmlFor="point-character">Postać</Label>
                       <select
                         id="point-character"
-                        value={selectedPoint.characterName}
+                        value={selectedPoint.characterId || ""}
                         onChange={(e) =>
-                          setSelectedPoint({ ...selectedPoint, characterName: e.target.value })
+                          setSelectedPoint({ 
+                            ...selectedPoint, 
+                            characterId: e.target.value ? Number(e.target.value) : null 
+                          })
                         }
-                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        disabled={isLoadingCharacters}
+                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <option value="">Wybierz postać...</option>
-                        {characterOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
+                        {characters.map((character) => (
+                          <option key={character.id} value={character.id}>
+                            {character.name}
                           </option>
                         ))}
                       </select>
+                      {isLoadingCharacters && (
+                        <p className="text-xs text-muted-foreground mt-1">Ładowanie postaci...</p>
+                      )}
                     </div>
                     <div>
                       <Label htmlFor="point-dialog">Dialog</Label>
