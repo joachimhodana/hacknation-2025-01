@@ -2,17 +2,12 @@ import React from "react";
 import { View, StyleSheet, Platform } from "react-native";
 import Map from "@/components/Map/Map";
 
-// Default coordinates (Bydgoszcz, Poland)
-const DEFAULT_COORDS = {
-  lat: 53.1235,
-  lng: 18.0084,
-  zoom: 15,
-};
-
 export default function MapScreen() {
+  // Map will automatically center on user's location
+  // Coordinates are optional fallback
   return (
     <View style={styles.container}>
-      <Map lat={DEFAULT_COORDS.lat} lng={DEFAULT_COORDS.lng} zoom={DEFAULT_COORDS.zoom} />
+      <Map />
     </View>
   );
 }
