@@ -16,4 +16,35 @@
       }
     ]
   }
+  ,
+  {
+    "pathId": "monuments_001",
+    "pointOrder": [
+      {
+        "locationLabel": "Pomnik Mariana Rejewskiego",
+        "orderIndex": 0
+      },
+      {
+        "locationLabel": "Łuczniczka",
+        "orderIndex": 1
+      },
+      {
+        "locationLabel": "Przechodzący przez Rzekę",
+        "orderIndex": 2
+      }
+      ,
+      {
+        "locationLabel": "Fontanna Potop",
+        "orderIndex": 3
+      },
+      {
+        "locationLabel": "Pomnik Walki i Męczeństwa",
+        "orderIndex": 4
+      },
+      {
+        "locationLabel": "Rzeźba Trzy Gracje",
+        "orderIndex": 5
+      }
+    ]
+  }
 ]

@@ -18,7 +18,6 @@ const RoutesListPage = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Fetch routes from API
   useEffect(() => {
     const fetchRoutes = async () => {
       try {
@@ -27,10 +26,9 @@ const RoutesListPage = () => {
         const response = await getPaths()
         
         if (response.success && response.data) {
-          // Map API response to frontend format
           const mappedRoutes: RoutesObjectType[] = response.data.map((path: any) => ({
             pathId: path.pathId || path.id?.toString() || "",
-            id: path.id, // Store numeric ID for API calls
+            id: path.id,
             title: path.title || "",
             shortDescription: path.shortDescription || "",
             longDescription: path.longDescription || "",
@@ -45,8 +43,8 @@ const RoutesListPage = () => {
             createBy: path.createdBy || "",
             createdAt: path.createdAt ? new Date(path.createdAt).getTime() : Date.now(),
             updatedAt: path.updatedAt ? new Date(path.updatedAt).getTime() : Date.now(),
-            stops: [], // Stops will be loaded when editing a specific route
-            pointsCount: path.pointsCount || 0, // Number of points from API
+            stops: [],
+            pointsCount: path.pointsCount || 0,
           }))
           setRoutes(mappedRoutes)
         } else {
@@ -69,7 +67,6 @@ const RoutesListPage = () => {
   const currentRoutes = routes.slice(startIndex, endIndex)
 
   const handleTogglePublish = async (route: RoutesObjectType) => {
-    // Backend uses pathId (string), not numeric id
     const routeId = route.pathId
 
     if (!routeId) {
@@ -90,13 +87,12 @@ const RoutesListPage = () => {
       const result = await response.json()
       
       if (result.success && result.data) {
-        // Update local state with new publication status
         setRoutes(routes.map(r => 
           r.id === route.id || (r.id === undefined && r.pathId === route.pathId)
             ? { ...r, isPublished: result.data.isPublished }
             : r
         ))
-        setError(null) // Clear any previous errors
+        setError(null)
       } else {
         setError(result.error || "Nie udało się zmienić statusu publikacji")
       }
@@ -137,7 +133,6 @@ const RoutesListPage = () => {
     try {
       const response = await deletePath(pathId)
       if (response.success) {
-        // Odśwież listę tras
         const pathsResponse = await getPaths()
         if (pathsResponse.success && pathsResponse.data) {
           const mappedRoutes: RoutesObjectType[] = pathsResponse.data.map((path: any) => ({
@@ -161,7 +156,6 @@ const RoutesListPage = () => {
             pointsCount: path.pointsCount,
           }))
           setRoutes(mappedRoutes)
-          // Resetuj do pierwszej strony jeśli potrzeba
           const newTotalPages = Math.ceil(mappedRoutes.length / ITEMS_PER_PAGE)
           if (currentPage > newTotalPages && newTotalPages > 0) {
             setCurrentPage(newTotalPages)
@@ -404,7 +398,6 @@ const RoutesListPage = () => {
             })}
           </div>
 
-          {/* Paginacja */}
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2">
               <Button

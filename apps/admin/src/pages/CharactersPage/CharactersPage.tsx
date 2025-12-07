@@ -17,7 +17,6 @@ const CharactersPage = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [viewMode, setViewMode] = useState<ViewMode>("grid")
 
-  // Fetch characters from API
   useEffect(() => {
     const fetchCharacters = async () => {
       try {
@@ -55,10 +54,8 @@ const CharactersPage = () => {
   const handleDeleteCharacter = async (id: number) => {
     try {
       await deleteCharacter(id)
-      // Odśwież listę postaci
       const data = await getCharacters()
       setCharacters(data)
-      // Resetuj do pierwszej strony jeśli potrzeba
       const newTotalPages = Math.ceil(data.length / ITEMS_PER_PAGE)
       if (currentPage > newTotalPages && newTotalPages > 0) {
         setCurrentPage(newTotalPages)

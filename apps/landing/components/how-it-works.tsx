@@ -67,7 +67,6 @@ const IllustrationStep1 = () => (
       />
     </g>
 
-    {/* Opcja 2: Swobodne (Prawa strona) */}
     <g transform="translate(205, 85)">
       <rect
         width="70"
@@ -85,7 +84,6 @@ const IllustrationStep1 = () => (
         strokeDasharray="2 2"
       />
       <circle cx="35" cy="45" r="10" className="fill-muted/30" />
-      {/* Ikona radaru */}
       <path
         d="M35 45 L55 25"
         className="stroke-muted"
@@ -102,7 +100,6 @@ const IllustrationStep1 = () => (
       />
     </g>
 
-    {/* Przycisk na dole */}
     <rect
       x="145"
       y="230"
@@ -127,7 +124,6 @@ const IllustrationStep2 = () => (
     className="w-full h-full text-primary"
     fill="none"
   >
-    {/* Elementy mapy w perspektywie */}
     <g transform="matrix(1, -0.2, 0, 1, 0, 50)">
       <rect
         x="50"
@@ -138,7 +134,6 @@ const IllustrationStep2 = () => (
         className="fill-background stroke-border"
         strokeWidth="2"
       />
-      {/* Ulice/Siatka */}
       <path
         d="M50 100 L350 100 M50 150 L350 150 M50 200 L350 200"
         className="stroke-muted/20"
@@ -150,7 +145,6 @@ const IllustrationStep2 = () => (
         strokeWidth="2"
       />
 
-      {/* Trasa */}
       <path
         d="M100 200 L175 150 L175 100 L250 75"
         className="stroke-primary"
@@ -159,7 +153,6 @@ const IllustrationStep2 = () => (
         strokeDasharray="8 6"
       />
 
-      {/* Punkty trasy */}
       <circle
         cx="175"
         cy="150"
@@ -176,14 +169,12 @@ const IllustrationStep2 = () => (
       />
     </g>
 
-    {/* Pinezka użytkownika (pulsująca) - poza transformacją perspektywy dla lepszego efektu */}
     <g transform="translate(100, 230)">
       <circle cx="0" cy="0" r="15" className="fill-primary/30 animate-ping" />
       <circle cx="0" cy="0" r="8" className="fill-primary" />
       <path d="M0 8 L0 20" className="stroke-primary" strokeWidth="2" />
     </g>
 
-    {/* Pop-up z ciekawostką */}
     <g transform="translate(250, 100)">
       <rect
         x="-20"
@@ -221,7 +212,6 @@ const IllustrationStep3 = () => (
     className="w-full h-full text-primary"
     fill="none"
   >
-    {/* Tło - promienie */}
     <g className="stroke-muted/10" strokeWidth="2" strokeDasharray="4 4">
       <line x1="200" y1="150" x2="200" y2="20" />
       <line x1="200" y1="150" x2="330" y2="150" />
@@ -231,9 +221,7 @@ const IllustrationStep3 = () => (
       <line x1="200" y1="150" x2="110" y2="60" />
     </g>
 
-    {/* Główna odznaka */}
     <g transform="translate(200, 130)">
-      {/* Tarcza */}
       <path
         d="M0 -70 L 60 -40 L 60 20 C 60 60, 0 90, 0 90 C 0 90, -60 60, -60 20 L -60 -40 Z"
         className="fill-background stroke-primary"
@@ -244,14 +232,12 @@ const IllustrationStep3 = () => (
         className="fill-primary/10"
       />
 
-      {/* Gwiazda na środku */}
       <path
         d="M0 -30 L 10 -5 L 35 -5 L 15 15 L 25 40 L 0 25 L -25 40 L -15 15 L -35 -5 L -10 -5 Z"
         className="fill-primary"
       />
     </g>
 
-    {/* Mniejsze elementy (monety/punkty) */}
     <circle
       cx="100"
       cy="80"
@@ -287,7 +273,6 @@ const IllustrationStep3 = () => (
       strokeWidth="2"
     />
 
-    {/* Pasek postępu na dole */}
     <g transform="translate(100, 250)">
       <text x="0" y="-10" fontSize="12" className="fill-muted-foreground">
         Twój postęp
@@ -350,7 +335,6 @@ export default function HowItWorks() {
       "
       id="dzialanie"
     >
-      {/* Overlay: przyciemnienie + lekki blur na treść */}
       <div className="absolute inset-0 bg-black/10 backdrop-blur-sm" />
 
       <div className="relative mx-auto max-w-7xl px-6 sm:px-6 lg:px-8">
@@ -363,7 +347,6 @@ export default function HowItWorks() {
           </p>
         </div>
 
-        {/* Dotted Path */}
         <div className="relative mt-16 hidden md:block">
           <div className="absolute inset-x-0 top-2 px-20 lg:px-32">
             <svg
@@ -385,7 +368,6 @@ export default function HowItWorks() {
           </div>
         </div>
 
-        {/* STEPS */}
         <div className="relative mt-8 grid gap-12 md:grid-cols-3 text-center">
           {steps.map((step, index) => (
             <div

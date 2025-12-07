@@ -50,7 +50,6 @@ const RoutesCreatorPage = () => {
   const [existingThumbnailUrl, setExistingThumbnailUrl] = useState<string | null>(null)
   const [existingMarkerIconUrl, setExistingMarkerIconUrl] = useState<string | null>(null)
 
-  // Ładowanie danych trasy do edycji
   useEffect(() => {
     if (editPathId) {
       const loadRouteData = async () => {
@@ -61,12 +60,9 @@ const RoutesCreatorPage = () => {
           if (response.success && response.data) {
             const route = response.data
 
-            // Konwertuj points z API na RoutePoint format
-            // Backend zwraca points jako tablicę z { point: {...}, orderIndex: number }
             if (route.points && Array.isArray(route.points)) {
               if (route.points.length > 0) {
                 const convertedPoints: RoutePoint[] = route.points.map((pointData: unknown, index: number) => {
-                  // Backend zwraca { point: {...}, orderIndex: number }
                   type PointDataWithOrder = {
                     point?: {
                       id?: number
@@ -121,11 +117,8 @@ const RoutesCreatorPage = () => {
               setPoints([])
             }
 
-            // Zapisz istniejące URL-e plików
             setExistingThumbnailUrl(route.thumbnailUrl || null)
             setExistingMarkerIconUrl(route.markerIconUrl || null)
-
-            // Ustaw markerIconUrl z pełnym URL z backendu, jeśli istnieje
             if (route.markerIconUrl) {
               const fullMarkerIconUrl = getBackendImageUrl(route.markerIconUrl)
               if (fullMarkerIconUrl) {
@@ -133,7 +126,6 @@ const RoutesCreatorPage = () => {
               }
             }
 
-            // Przygotuj wartości formularza z obiektu route
             const formValues = {
               title: route.title || "",
               shortDescription: route.shortDescription || "",
@@ -145,11 +137,7 @@ const RoutesCreatorPage = () => {
               makerIconFile: null,
             }
 
-            // Ustaw initial values, które będą użyte przy tworzeniu formularza
             setInitialFormValues(formValues)
-
-            // Formularz zostanie wypełniony automatycznie przez GeneralRouteForm przez initialValues
-            // Nie resetuj formularza tutaj, ponieważ może to nadpisać wartości wprowadzone przez użytkownika
             setCurrentStep(1)
             setIsLoading(false)
           } else {
@@ -191,7 +179,6 @@ const RoutesCreatorPage = () => {
     return () => clearTimeout(timer)
   }, [])
 
-  // Watch for marker icon changes in form
   useEffect(() => {
     if (!formRef.current) return
 
@@ -200,19 +187,16 @@ const RoutesCreatorPage = () => {
       if (formValues?.makerIconFile instanceof File) {
         const file = formValues.makerIconFile
         setMarkerIconUrl((prevUrl) => {
-          // Only revoke if it's a blob URL (created with createObjectURL)
           if (prevUrl && prevUrl.startsWith('blob:')) {
             URL.revokeObjectURL(prevUrl)
           }
           return URL.createObjectURL(file)
         })
       } else if (!formValues?.makerIconFile) {
-        // If no file selected, use existing marker icon URL from backend if available
         if (existingMarkerIconUrl) {
           const fullUrl = getBackendImageUrl(existingMarkerIconUrl)
           if (fullUrl) {
             setMarkerIconUrl((prevUrl) => {
-              // Only revoke if it's a blob URL
               if (prevUrl && prevUrl.startsWith('blob:')) {
                 URL.revokeObjectURL(prevUrl)
               }
@@ -220,7 +204,6 @@ const RoutesCreatorPage = () => {
             })
           } else {
             setMarkerIconUrl((prevUrl) => {
-              // Only revoke if it's a blob URL
               if (prevUrl && prevUrl.startsWith('blob:')) {
                 URL.revokeObjectURL(prevUrl)
               }
@@ -229,7 +212,6 @@ const RoutesCreatorPage = () => {
           }
         } else {
           setMarkerIconUrl((prevUrl) => {
-            // Only revoke if it's a blob URL
             if (prevUrl && prevUrl.startsWith('blob:')) {
               URL.revokeObjectURL(prevUrl)
             }
@@ -248,7 +230,6 @@ const RoutesCreatorPage = () => {
     return () => {
       subscription.unsubscribe()
       setMarkerIconUrl((prevUrl) => {
-        // Only revoke if it's a blob URL
         if (prevUrl && prevUrl.startsWith('blob:')) {
           URL.revokeObjectURL(prevUrl)
         }
@@ -326,13 +307,11 @@ const RoutesCreatorPage = () => {
     )
     setPoints(updatedPoints)
 
-    // Update selected point if it's the one being moved
     if (selectedPoint?.id === pointId) {
       setSelectedPoint({ ...selectedPoint, lat, lng })
     }
   }
 
-  // Walidacja punktów - sprawdza czy wszystkie wymagane pola są wypełnione
   const validatePoints = (): boolean => {
     setValidationError(null)
 
@@ -360,6 +339,10 @@ const RoutesCreatorPage = () => {
   }
 
   const handleNextStep = async () => {
+    if (editPathId) {
+      return
+    }
+
     setValidationError(null)
 
     if (!formRef.current) {
@@ -382,13 +365,13 @@ const RoutesCreatorPage = () => {
     setIsSaving(true)
 
     try {
-      // Walidacja punktów
-      if (!validatePoints()) {
-        setIsSaving(false)
-        return
+      if (!editPathId || currentStep === 2) {
+        if (!validatePoints()) {
+          setIsSaving(false)
+          return
+        }
       }
 
-      // Walidacja formularza ustawień ogólnych
       if (!formRef.current) {
         setValidationError("Formularz ustawień ogólnych nie jest jeszcze gotowy")
         setIsSaving(false)
@@ -398,18 +381,13 @@ const RoutesCreatorPage = () => {
       const isFormValid = await formRef.current.trigger()
       if (!isFormValid) {
         setValidationError("Proszę wypełnić wszystkie wymagane pola w ustawieniach ogólnych. Sprawdź komunikaty błędów pod polami.")
-        setCurrentStep(1) // Przejdź do kroku 1, aby pokazać błędy
+        setCurrentStep(1)
         setIsSaving(false)
         return
       }
 
-      // Pobierz aktualne dane z formularza ustawień ogólnych
-      // Użyj getValues() z shouldValidate: false, aby upewnić się, że otrzymujemy aktualne wartości
-      // Dodatkowo wywołaj trigger() aby upewnić się, że formularz jest zsynchronizowany
       await formRef.current.trigger()
       const formValues = formRef.current.getValues()
-      
-      console.log('Form values before save:', formValues)
 
       const estimatedTimeHours = calculateEstimatedTime(routeDistance, 3)
       const totalTimeMinutes = Math.round(estimatedTimeHours * 60)
@@ -418,10 +396,8 @@ const RoutesCreatorPage = () => {
       const API_BASE_URL = import.meta.env.VITE_BETTER_AUTH_URL || "http://localhost:8080"
 
       if (editPathId) {
-        // Najpierw zapisz path bez punktów
         const formData = new FormData()
         
-        // Zawsze wysyłaj wszystkie pola, nawet jeśli są puste
         formData.append('title', formValues.title || '')
         formData.append('shortDescription', formValues.shortDescription || '')
         formData.append('longDescription', formValues.longDescription || '')
@@ -430,12 +406,10 @@ const RoutesCreatorPage = () => {
         formData.append('totalTimeMinutes', totalTimeMinutes.toString())
         formData.append('distanceMeters', distanceMeters.toString())
 
-        // Wysyłaj stylePreset zawsze, nawet jeśli jest pusty
         if (formValues.stylePreset !== undefined) {
           formData.append('stylePreset', formValues.stylePreset || '')
         }
 
-        // Pliki wysyłaj tylko jeśli są nowe (instanceof File)
         if (formValues.thumbnailFile instanceof File) {
           formData.append('thumbnailFile', formValues.thumbnailFile)
         }
@@ -444,19 +418,9 @@ const RoutesCreatorPage = () => {
           formData.append('markerIconFile', formValues.makerIconFile)
         }
 
-        // Wyślij pustą tablicę punktów, aby usunąć wszystkie istniejące powiązania
-        formData.append('points', JSON.stringify([]))
-        
-        console.log('Updating route with data:', {
-          title: formValues.title,
-          shortDescription: formValues.shortDescription,
-          longDescription: formValues.longDescription,
-          category: formValues.category,
-          difficulty: formValues.difficulty,
-          stylePreset: formValues.stylePreset,
-          hasThumbnailFile: formValues.thumbnailFile instanceof File,
-          hasMakerIconFile: formValues.makerIconFile instanceof File,
-        })
+        if (currentStep === 2) {
+          formData.append('points', JSON.stringify([]))
+        }
 
         const pathResponse = await fetch(`${API_BASE_URL}/admin/paths/${editPathId}`, {
           method: 'PATCH',
@@ -475,10 +439,12 @@ const RoutesCreatorPage = () => {
           return
         }
 
-        // Pobierz numeric ID path (nie pathId)
-        const pathNumericId = pathResult.data.id
+        if (currentStep === 1) {
+          navigate("/routes")
+          return
+        }
 
-        // Teraz zapisz każdy punkt osobno przez pętlę i PATCH
+        const pathNumericId = pathResult.data.id
         const sortedPoints = [...points].sort((a, b) => a.order - b.order)
         
         for (let index = 0; index < sortedPoints.length; index++) {
@@ -486,7 +452,6 @@ const RoutesCreatorPage = () => {
           const isExistingPoint = point.id && !isNaN(Number(point.id))
           const pointId = isExistingPoint ? Number(point.id) : null
 
-          // Przygotuj dane punktu
           const pointFormData = new FormData()
           pointFormData.append('latitude', point.lat.toString())
           pointFormData.append('longitude', point.lng.toString())
@@ -505,7 +470,6 @@ const RoutesCreatorPage = () => {
           let savedPointId: number
 
           if (isExistingPoint && pointId) {
-            // Aktualizuj istniejący punkt przez PATCH
             const patchResponse = await fetch(`${API_BASE_URL}/admin/points/${pointId}`, {
               method: 'PATCH',
               headers: {
@@ -521,7 +485,6 @@ const RoutesCreatorPage = () => {
             }
             savedPointId = patchResult.data.id
           } else {
-            // Dla nowych punktów - utwórz przez PATCH path z jednym punktem
             const newPointFormData = new FormData()
             newPointFormData.append('points', JSON.stringify([{
               latitude: point.lat,
@@ -550,7 +513,6 @@ const RoutesCreatorPage = () => {
               throw new Error(createPointResult.error || `Nie udało się utworzyć punktu ${index + 1}`)
             }
 
-            // Pobierz ID nowo utworzonego punktu - musimy pobrać path z punktami
             const getPathResponse = await fetch(`${API_BASE_URL}/admin/paths/${editPathId}`, {
               method: 'GET',
               headers: {
@@ -564,12 +526,10 @@ const RoutesCreatorPage = () => {
               throw new Error("Nie udało się pobrać ID nowego punktu")
             }
 
-            // Znajdź ostatni punkt (ten który właśnie utworzyliśmy)
             const pathPoints = getPathResult.data.points
             const newPoint = pathPoints[pathPoints.length - 1]
             savedPointId = newPoint.point?.id || newPoint.id
 
-            // Teraz zaktualizuj punkt przez PATCH z pełnymi danymi
             const updateNewPointResponse = await fetch(`${API_BASE_URL}/admin/points/${savedPointId}`, {
               method: 'PATCH',
               headers: {
@@ -585,7 +545,6 @@ const RoutesCreatorPage = () => {
             }
           }
 
-          // Usuń punkt z path (jeśli był już dodany)
           await fetch(`${API_BASE_URL}/admin/points/${savedPointId}/remove-from-path/${pathNumericId}`, {
             method: 'DELETE',
             headers: {
@@ -594,7 +553,6 @@ const RoutesCreatorPage = () => {
             credentials: 'include',
           })
 
-          // Dodaj punkt do path z odpowiednim orderIndex
           const addToPathResponse = await fetch(`${API_BASE_URL}/admin/points/${savedPointId}/add-to-path/${pathNumericId}`, {
             method: 'POST',
             headers: {
@@ -620,7 +578,6 @@ const RoutesCreatorPage = () => {
           return
         }
 
-        // Upewnij się, że thumbnailFile jest File (nie null)
         if (!formValues.thumbnailFile || !(formValues.thumbnailFile instanceof File)) {
           setValidationError("Miniatura jest wymagana")
           setCurrentStep(1)
@@ -628,7 +585,6 @@ const RoutesCreatorPage = () => {
           return
         }
 
-        // Wyodrębnij thumbnailFile jako File (TypeScript type narrowing)
         const thumbnailFile = formValues.thumbnailFile
 
         const pathId = `route_${Date.now()}`
@@ -644,7 +600,6 @@ const RoutesCreatorPage = () => {
           audioFile: point.hasCustomAudio && point.audioFile ? point.audioFile : undefined,
         }))
 
-      // Create the path with all points in one request
       const pathResponse = await createPath({
         pathId,
         title: formValues.title,
@@ -691,7 +646,6 @@ const RoutesCreatorPage = () => {
 
   return (
     <div className="flex h-[calc(100vh-64px)]">
-      {/*Lewa strona - Mapa*/}
       <div className="flex-1 relative overflow-hidden isolate">
         {mounted ? (
           <>
@@ -705,12 +659,9 @@ const RoutesCreatorPage = () => {
                 onMarkerDelete={handleDeletePoint}
                 selectedPointId={selectedPoint?.id || null}
               />
-              {/* Overlay na mapie gdy jesteśmy w kroku 1 */}
               {currentStep === 1 && (
                 <>
-                  {/* Warstwa blur tylko na mapie */}
                   <div className="absolute inset-0 bg-background/60 z-[50] pointer-events-none" style={{ backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }} />
-                  {/* Komunikat */}
                   <div className="absolute inset-0 z-[51] flex items-center justify-center pointer-events-none">
                     <div className="bg-background/95 backdrop-blur-md rounded-lg p-6 shadow-lg border border-border max-w-md mx-4 text-center">
                       <Icon icon="solar:map-point-bold-duotone" className="h-12 w-12 mx-auto mb-4 text-primary" />
@@ -733,7 +684,6 @@ const RoutesCreatorPage = () => {
           </div>
         )}
 
-        {/* Route statistics overlay */}
         {points.length >= 2 && currentStep === 2 && (
           <RouteStatisticsOverlay
             routeDistance={routeDistance}
@@ -742,15 +692,11 @@ const RoutesCreatorPage = () => {
         )}
       </div>
 
-
-      {/* Prawa strona - Panel kroków */}
       <div className="w-1/3 border-r overflow-y-auto relative z-[100] bg-background">
         <div className="p-4 space-y-4">
           <RouteStepsHeader editPathId={editPathId} currentStep={currentStep} />
 
-          {/* Keep form mounted to preserve state */}
           <div className={currentStep === 1 ? "space-y-4" : "hidden"}>
-            {/* Krok 1 - Ustawienia ogólne */}
             <InformationCard
               title="Krok 1: Ustawienia ogólne"
               description="Wypełnij podstawowe informacje o trasie. Po ukończeniu przejdź do kroku 2, aby dodać punkty."
@@ -774,8 +720,6 @@ const RoutesCreatorPage = () => {
                   <GeneralRouteForm
                     onFormReady={(form) => { 
                       formRef.current = form
-                      // Nie resetuj formularza tutaj - GeneralRouteForm obsługuje to przez initialValues
-                      // Resetowanie tutaj może nadpisać wartości wprowadzone przez użytkownika
                     }}
                     onValidationChange={(isValid) => setIsFormValid(isValid)}
                     initialValues={initialFormValues || undefined}
@@ -787,26 +731,48 @@ const RoutesCreatorPage = () => {
             </Card>
             {currentStep === 1 && (
               <>
-                <Button
-                  onClick={handleNextStep}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                  size="lg"
-                  disabled={!isFormValid}
-                >
-                  Przejdź do kroku 2
-                  <Icon icon="solar:alt-arrow-right-bold-duotone" className="h-4 w-4 ml-2" />
-                </Button>
-                {!isFormValid && (
-                  <p className="text-sm text-muted-foreground text-center">
-                    Wypełnij wszystkie wymagane pola, aby przejść do następnego kroku
-                  </p>
+                {editPathId ? (
+                  <Button
+                    onClick={handleSaveRoute}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    size="lg"
+                    disabled={!isFormValid || isSaving}
+                  >
+                    {isSaving ? (
+                      <>
+                        <Icon icon="solar:refresh-bold-duotone" className="h-4 w-4 mr-2 animate-spin" />
+                        Zapisywanie...
+                      </>
+                    ) : (
+                      <>
+                        <Icon icon="solar:diskette-bold-duotone" className="h-4 w-4 mr-2" />
+                        Zapisz trasę
+                      </>
+                    )}
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      onClick={handleNextStep}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      size="lg"
+                      disabled={!isFormValid}
+                    >
+                      Przejdź do kroku 2
+                      <Icon icon="solar:alt-arrow-right-bold-duotone" className="h-4 w-4 ml-2" />
+                    </Button>
+                    {!isFormValid && (
+                      <p className="text-sm text-muted-foreground text-center">
+                        Wypełnij wszystkie wymagane pola, aby przejść do następnego kroku
+                      </p>
+                    )}
+                  </>
                 )}
               </>
             )}
           </div>
 
-          {/* Krok 2 - Punkty trasy */}
-          {currentStep === 2 && (
+          {currentStep === 2 && !editPathId && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-4">
                 <Button
@@ -835,13 +801,12 @@ const RoutesCreatorPage = () => {
                 onPointDelete={handleDeletePoint}
                 onPointMove={handleMovePoint}
                 onAddPoint={() => {
-                  const centerLat = 53.1235 // Bydgoszcz
+                  const centerLat = 53.1235
                   const centerLng = 18.0084
                   handleMapClick(centerLat, centerLng)
                 }}
               />
 
-              {/* Panel edycji punktu */}
               {selectedPoint && isEditing && (
                 <PointEditPanel
                   point={selectedPoint}

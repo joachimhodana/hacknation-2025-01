@@ -5,7 +5,6 @@ import RoutesListPage from "@/pages/RoutesList/RoutesListPage.tsx"
 import CharactersCreatorPage from "@/pages/CharactersCreatorPage/CharactersCreatorPage.tsx"
 import CharactersListPage from "@/pages/CharactersPage/CharactersPage.tsx"
 import { Documentation } from "@/pages/Documentation"
-// import { Login } from "@/pages/Login/Login"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 import Header from "@/components/shared/Header/Header.tsx";
 
@@ -14,7 +13,6 @@ function App() {
     <BrowserRouter>
       <div className="min-h-screen bg-background">
         <Routes>
-          {/*<Route path="/login" element={<Login />} />*/}
           <Route
             path="/*"
             element={
