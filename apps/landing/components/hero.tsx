@@ -133,7 +133,7 @@ export default function Hero() {
             </div>
 
             <div className="flex flex-1 items-center justify-center">
-              <div className="relative w-full max-w-xs sm:max-w-sm md:max-w-xs lg:max-w-sm">
+              <div className="relative w-full max-w-xs sm:max-w-sm md:max-w-xs lg:max-w-md">
                 <div className="absolute inset-0 -z-10 scale-110 rounded-[2.5rem] bg-secondary/25 blur-2xl" />
                 <div className="w-full">
                   <img
