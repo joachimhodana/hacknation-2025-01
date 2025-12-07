@@ -1,87 +1,34 @@
 import React, { useEffect, useState, useRef } from "react";
-import { StyleSheet, Platform, ActivityIndicator, View, Text } from "react-native";
-import MapView, { PROVIDER_GOOGLE, PROVIDER_DEFAULT, Camera, Marker } from "react-native-maps";
+import {
+  StyleSheet,
+  Platform,
+  ActivityIndicator,
+  View,
+  TouchableOpacity,
+  Text,
+  Appearance,
+} from "react-native";
+import MapView, {
+  PROVIDER_GOOGLE,
+  PROVIDER_DEFAULT,
+  Camera,
+  Marker,
+} from "react-native-maps";
 import * as Location from "expo-location";
 import { authClient } from "@/lib/auth-client";
 
-export type MapProps = {
-  lat?: number;
-  lng?: number;
-  zoom?: number;
-};
+const MIN_ALT = 120;
+const MAX_ALT = 8000;
+const ZOOM_STEP = 400; // stały krok przybliżania/oddalania
 
-// Subtle, natural theme - similar to Apple Maps Pokemon Go style
-const subtleStyle = [
-  // Water - light blue (not too vibrant)
-  {
-    featureType: "water",
-    elementType: "geometry",
-    stylers: [{ color: "#A8D5E2" }, { lightness: 20 }],
-  },
-  {
-    featureType: "water",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#5B8FA3" }],
-  },
-  // Parks/Grass - natural green (not neon)
-  {
-    featureType: "park",
-    elementType: "geometry",
-    stylers: [{ color: "#9BCF7F" }, { saturation: -10 }],
-  },
-  {
-    featureType: "park",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#5A7A4A" }],
-  },
-  // Roads - light gray/white (subtle)
-  {
-    featureType: "road",
-    elementType: "geometry",
-    stylers: [{ color: "#F8F8F8" }, { lightness: 5 }],
-  },
-  {
-    featureType: "road.highway",
-    elementType: "geometry",
-    stylers: [{ color: "#E8E8E8" }],
-  },
-  {
-    featureType: "road.arterial",
-    elementType: "geometry",
-    stylers: [{ color: "#F0F0F0" }],
-  },
-  // Buildings - neutral colors
-  {
-    featureType: "poi.business",
-    elementType: "geometry",
-    stylers: [{ color: "#E8E8E8" }, { lightness: 10 }],
-  },
-  {
-    featureType: "poi",
-    elementType: "geometry",
-    stylers: [{ color: "#D8D8D8" }],
-  },
-  // Land/background - neutral beige/teal
-  {
-    featureType: "landscape",
-    elementType: "geometry",
-    stylers: [{ color: "#E8F0E8" }, { saturation: -20 }],
-  },
-  // Labels - readable but not too bold
-  {
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#4A4A4A" }],
-  },
-  {
-    elementType: "labels.text.stroke",
-    stylers: [{ color: "#FFFFFF" }, { weight: 1.5 }],
-  },
-];
-
-export const Map: React.FC<MapProps> = ({ lat, lng, zoom = 15 }) => {
+export const Map: React.FC = () => {
+  const colorScheme = Appearance.getColorScheme();
+  const isDark = colorScheme === "dark";
   const { data: session } = authClient.useSession();
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [locationPermission, setLocationPermission] = useState<boolean>(false);
+  
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(
+    null,
+  );
   const mapRef = useRef<MapView>(null);
   const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
   
@@ -96,42 +43,26 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom = 15 }) => {
         .toUpperCase()
         .slice(0, 2)
     : "U";
-  
-  // Calculate delta based on zoom level
-  const latitudeDelta = 0.0922 / (zoom / 13);
-  const longitudeDelta = 0.0421 / (zoom / 13);
 
   useEffect(() => {
     (async () => {
-      // Request location permission
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        console.log("Permission to access location was denied");
-        setLocationPermission(false);
-        // Use fallback coordinates if permission denied
-        if (lat && lng) {
-          setUserLocation({ lat, lng });
-        }
+        console.log("Location denied");
         return;
       }
 
-      setLocationPermission(true);
-
-      // Get initial location
       try {
-        const location = await Location.getCurrentPositionAsync({
+        const loc = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.High,
         });
+
         setUserLocation({
-          lat: location.coords.latitude,
-          lng: location.coords.longitude,
+          lat: loc.coords.latitude,
+          lng: loc.coords.longitude,
         });
-      } catch (error) {
-        console.error("Error getting location:", error);
-        // Use fallback coordinates
-        if (lat && lng) {
-          setUserLocation({ lat, lng });
-        }
+      } catch (e) {
+        console.log("Error getting location", e);
       }
 
       // Watch location in real-time
@@ -162,24 +93,82 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom = 15 }) => {
     };
   }, []);
 
-  // Update camera to follow user location in real-time
+  // Update camera to follow user location in real-time (3D view)
   useEffect(() => {
     if (userLocation && mapRef.current) {
-      mapRef.current.animateCamera(
-        {
-          center: {
-            latitude: userLocation.lat,
-            longitude: userLocation.lng,
-          },
-          pitch: 45, // True 3D 45-degree tilt
-          heading: 0,
-          altitude: 1000,
-          zoom: zoom,
+      const cam: Camera = {
+        center: {
+          latitude: userLocation.lat,
+          longitude: userLocation.lng,
         },
-        { duration: 500 } // Faster update for real-time tracking
-      );
+        pitch: 55,
+        heading: 0,
+        altitude: 600,
+      };
+
+      mapRef.current.animateCamera(cam, { duration: 500 }); // Faster update for real-time tracking
     }
-  }, [userLocation, zoom]);
+  }, [userLocation]);
+
+  const normalizeAltitude = (rawAlt?: number): number => {
+    let alt = rawAlt ?? 600;
+
+    if (!Number.isFinite(alt) || alt < 10 || alt > 100_000) {
+      alt = 600;
+    }
+
+    if (alt < MIN_ALT) alt = MIN_ALT;
+    if (alt > MAX_ALT) alt = MAX_ALT;
+
+    return alt;
+  };
+
+  // 🔍 zoom przyciskami – zawsze działa, nawet po mega oddaleniu
+  const adjustZoom = async (direction: "in" | "out") => {
+    if (!mapRef.current) return;
+
+    const cam = await mapRef.current.getCamera();
+    let alt = normalizeAltitude(cam.altitude);
+
+    if (direction === "in") {
+      alt = Math.max(MIN_ALT, alt - ZOOM_STEP);
+    } else {
+      alt = Math.min(MAX_ALT, alt + ZOOM_STEP);
+    }
+
+    const newCam: Camera = {
+      ...cam,
+      altitude: alt,
+      pitch: 55, // pilnujemy 3D
+    };
+
+    mapRef.current.animateCamera(newCam, { duration: 200 });
+  };
+
+  // 📍 powrót do aktualnej lokalizacji (3D)
+  const goToMyLocation = async () => {
+    if (!mapRef.current) return;
+
+    try {
+      const loc = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      const cam: Camera = {
+        center: {
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude,
+        },
+        pitch: 55,
+        heading: 0,
+        altitude: 600,
+      };
+
+      mapRef.current.animateCamera(cam, { duration: 700 });
+    } catch (e) {
+      console.log("Error refreshing location", e);
+    }
+  };
 
   if (!userLocation) {
     return (
@@ -190,49 +179,75 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom = 15 }) => {
   }
 
   return (
-    <MapView
-      ref={mapRef}
-      style={styles.map}
-      provider={Platform.OS === "android" ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
-      region={{
-        latitude: userLocation.lat,
-        longitude: userLocation.lng,
-        latitudeDelta,
-        longitudeDelta,
-      }}
-      showsUserLocation={false}
-      showsMyLocationButton={true}
-      showsCompass={true}
-      zoomEnabled={true}
-      scrollEnabled={true}
-      rotateEnabled={true}
-      pitchEnabled={true}
-      // Subtle, natural theme
-      mapType={Platform.OS === "ios" ? "standard" : "standard"}
-      customMapStyle={Platform.OS === "android" ? subtleStyle : undefined}
-    >
-      {/* Custom marker with user avatar */}
-      <Marker
-        coordinate={{
+    <View style={styles.container}>
+      <MapView
+        ref={mapRef}
+        style={styles.map}
+        provider={Platform.OS === "android" ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
+        initialRegion={{
           latitude: userLocation.lat,
           longitude: userLocation.lng,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.0045,
         }}
-        anchor={{ x: 0.5, y: 0.5 }}
+        showsUserLocation={false}
+        showsCompass
+        showsPointsOfInterest={false}
+        showsBuildings
+        showsIndoors={false}
+        showsTraffic={false}
+        zoomEnabled
+        scrollEnabled
+        rotateEnabled={false}
+        pitchEnabled={false} // tilt zablokowany → trzymamy 3D z kamery
+        mapType="standard"
+        customMapStyle={
+          Platform.OS === "android"
+            ? isDark
+              ? darkStyle
+              : subtleStyle
+            : undefined
+        }
       >
-        <View style={styles.avatarMarker}>
-          <Text style={styles.avatarMarkerText}>{userInitials}</Text>
-        </View>
-      </Marker>
-    </MapView>
+        {/* Custom marker with user avatar */}
+        <Marker
+          coordinate={{
+            latitude: userLocation.lat,
+            longitude: userLocation.lng,
+          }}
+          anchor={{ x: 0.5, y: 0.5 }}
+        >
+          <View style={styles.avatarMarker}>
+            <Text style={styles.avatarMarkerText}>{userInitials}</Text>
+          </View>
+        </Marker>
+      </MapView>
+
+      {/* 🔍 Zoom buttons – PODNIESIONE WYŻEJ */}
+      <View style={styles.controlsContainer}>
+        <TouchableOpacity style={styles.controlButton} onPress={() => adjustZoom("in")}>
+          <Text style={styles.controlButtonText}>+</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.controlButton} onPress={() => adjustZoom("out")}>
+          <Text style={styles.controlButtonText}>−</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* 📍 My location – też trochę wyżej */}
+      <View style={styles.myLocationButton}>
+        <TouchableOpacity style={styles.controlButton} onPress={goToMyLocation}>
+          <Text style={styles.controlButtonText}>⌖</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 };
 
+// --- STYLES ---
+
 const styles = StyleSheet.create({
-  map: {
-    flex: 1,
-    width: "100%",
-    height: "100%",
-  },
+  container: { flex: 1 },
+  map: { flex: 1, width: "100%", height: "100%" },
   loadingContainer: {
     justifyContent: "center",
     alignItems: "center",
@@ -258,6 +273,47 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "white",
   },
+  // podbite wyżej: było bottom: 130, teraz 190
+  controlsContainer: {
+    position: "absolute",
+    right: 16,
+    bottom: 190,
+    flexDirection: "column",
+  },
+  controlButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.95)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  controlButtonText: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#111",
+  },
+  myLocationButton: {
+    position: "absolute",
+    right: 16,
+    bottom: 120, // też wyżej niż wcześniej
+  },
 });
+
+// Android styles
+const darkStyle = [
+  { elementType: "geometry", stylers: [{ color: "#1E1E1E" }] },
+  { featureType: "poi", stylers: [{ visibility: "off" }] },
+];
+
+const subtleStyle = [
+  { featureType: "poi", stylers: [{ visibility: "off" }] },
+];
 
 export default Map;

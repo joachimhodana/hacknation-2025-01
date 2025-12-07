@@ -108,7 +108,7 @@ export const adminCharactersRoutes = new Elysia({ prefix: "/characters" })
         const fileName = `${avatarUUID}${extension}`;
         const filePath = join(process.cwd(),"public", "resources", "avatars", fileName);
         await Bun.write(filePath, avatarBuffer);
-        avatarUrl = `/resources/avatars/${fileName}`;
+        avatarUrl = `public/resources/avatars/${fileName}`;
       }
 
       // Prepare update object, removing avatarFile, and updating updatedAt
