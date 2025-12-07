@@ -4,6 +4,7 @@ import { characters } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { adminMiddleware } from "@/lib/admin-middleware";
 import { join } from "path";
+import { mkdir } from "fs/promises";
 
 export const adminCharactersRoutes = new Elysia({ prefix: "/characters" })
   .use(adminMiddleware)
@@ -22,7 +23,10 @@ export const adminCharactersRoutes = new Elysia({ prefix: "/characters" })
         const mimeType = body.avatarFile.type;
         const extension = mimeType === "image/jpeg" ? ".jpg" : ".png";
         const fileName = `${avatarUUID}${extension}`;
-        const filePath = join(process.cwd(),"public", "resources", "avatars", fileName);
+        const avatarsDir = join(process.cwd(), "public", "resources", "avatars");
+        // Ensure directory exists
+        await mkdir(avatarsDir, { recursive: true });
+        const filePath = join(avatarsDir, fileName);
         await Bun.write(filePath, avatarBuffer);
         avatarUrl = `/resources/avatars/${fileName}`;
       }
@@ -99,14 +103,17 @@ export const adminCharactersRoutes = new Elysia({ prefix: "/characters" })
       }
 
       // Handle avatar file update if present
-      let avatarUrl = undefined;
+      let avatarUrl: string | undefined = undefined;
       if (body.avatarFile) {
         const avatarUUID = crypto.randomUUID();
         const avatarBuffer = await body.avatarFile.arrayBuffer();
         const mimeType = body.avatarFile.type;
         const extension = mimeType === "image/jpeg" ? ".jpg" : ".png";
         const fileName = `${avatarUUID}${extension}`;
-        const filePath = join(process.cwd(),"public", "resources", "avatars", fileName);
+        const avatarsDir = join(process.cwd(), "public", "resources", "avatars");
+        // Ensure directory exists
+        await mkdir(avatarsDir, { recursive: true });
+        const filePath = join(avatarsDir, fileName);
         await Bun.write(filePath, avatarBuffer);
         avatarUrl = `/resources/avatars/${fileName}`;
       }
@@ -117,12 +124,10 @@ export const adminCharactersRoutes = new Elysia({ prefix: "/characters" })
         updateData.avatarUrl = avatarUrl;
       }
       updateData.updatedAt = new Date();
+      
       const [updatedCharacter] = await db
         .update(characters)
-        .set({
-          ...body,
-          updatedAt: new Date(),
-        })
+        .set(updateData)
         .where(
           and(
             eq(characters.id, Number(params.id)),
@@ -145,9 +150,13 @@ export const adminCharactersRoutes = new Elysia({ prefix: "/characters" })
     },
     {
       auth: true,
+      type: "multipart/form-data",
       body: t.Object({
         name: t.Optional(t.String()),
-        avatarUrl: t.Optional(t.String()),
+        avatarFile: t.Optional(t.File({
+          maxFileSize: "10MB",
+          allowedMimeTypes: ["image/jpeg", "image/png"],
+        })),
         description: t.Optional(t.String()),
         voicePreset: t.Optional(t.String()),
       }),

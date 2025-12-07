@@ -154,3 +154,21 @@ export async function getPath(id: number | string): Promise<ApiResponse<any>> {
   return result;
 }
 
+/**
+ * Delete a path/route by pathId
+ */
+export async function deletePath(pathId: string): Promise<ApiResponse<void>> {
+  const headers = await getAuthHeaders();
+  const response = await fetch(`${API_BASE_URL}/admin/paths/${pathId}`, {
+    method: 'DELETE',
+    headers: {
+      ...headers,
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+  });
+
+  const result: ApiResponse<void> = await response.json();
+  return result;
+}
+

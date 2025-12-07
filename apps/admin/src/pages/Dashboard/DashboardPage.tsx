@@ -4,59 +4,7 @@ import DashboardStats from "@/pages/Dashboard/components/DashboardStats/Dashboar
 import DashboardRoutes from "@/pages/Dashboard/components/DashboardRoutes/DashboardRoutes.tsx"
 import DashboardHeader from "@/pages/Dashboard/components/DashboardHeader/DashboardHeader.tsx"
 
-
-
-// const totalStats = {
-//   totalRoutes: mockRoutes.length,
-//   totalParticipants: mockRoutes.reduce((sum, r) => sum + r.totalParticipants, 0),
-//   totalCompleted: mockRoutes.reduce((sum, r) => sum + r.completed, 0),
-//   completionRate: Math.round(
-//     (mockRoutes.reduce((sum, r) => sum + r.completed, 0) /
-//       mockRoutes.reduce((sum, r) => sum + r.totalParticipants, 0)) *
-//       100
-//   ),
-// }
-
-// type ChartDataType = "participants" | "completed" | "inProgress" | "completionRate"
-
 const DashboardPage = () => {
-  // const [chartType, setChartType] = useState<ChartDataType>("participants")
-
-  // const getChartData = () => {
-  //   switch (chartType) {
-  //     case "participants":
-  //       return mockRoutes.map((r) => ({ name: r.name, value: r.totalParticipants }))
-  //     case "completed":
-  //       return mockRoutes.map((r) => ({ name: r.name, value: r.completed }))
-  //     case "inProgress":
-  //       return mockRoutes.map((r) => ({ name: r.name, value: r.inProgress }))
-  //     case "completionRate":
-  //       return mockRoutes.map((r) => ({
-  //         name: r.name,
-  //         value: Math.round((r.completed / r.totalParticipants) * 100),
-  //       }))
-  //     default:
-  //       return []
-  //   }
-  // }
-
-  // const chartData = getChartData()
-  // const maxValue = Math.max(...chartData.map((d) => d.value), 1)
-
-  // const getChartLabel = () => {
-  //   switch (chartType) {
-  //     case "participants":
-  //       return "Uczestnicy"
-  //     case "completed":
-  //       return "Ukończone"
-  //     case "inProgress":
-  //       return "W trakcie"
-  //     case "completionRate":
-  //       return "Wskaźnik ukończenia (%)"
-  //     default:
-  //       return ""
-  //   }
-  // }
 
   return (
     <div className="container mx-auto p-6 space-y-6">

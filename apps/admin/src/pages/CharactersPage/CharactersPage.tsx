@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import type { CharacterType } from "@/types/CharactersType.tsx"
-import { getCharacters } from "@/services/charactersApi.ts"
+import { getCharacters, deleteCharacter } from "@/services/charactersApi.ts"
 import CharactersListHeader from "@/pages/CharactersPage/components/CharactersListHeader/CharactersListHeader.tsx"
 import CharactersListEmpty from "@/pages/CharactersPage/components/CharactersListEmpty/CharactersListEmpty.tsx"
 import CharacterCard from "@/pages/CharactersPage/components/CharacterCard/CharacterCard.tsx"
@@ -52,6 +52,23 @@ const CharactersPage = () => {
     })
   }
 
+  const handleDeleteCharacter = async (id: number) => {
+    try {
+      await deleteCharacter(id)
+      // Odśwież listę postaci
+      const data = await getCharacters()
+      setCharacters(data)
+      // Resetuj do pierwszej strony jeśli potrzeba
+      const newTotalPages = Math.ceil(data.length / ITEMS_PER_PAGE)
+      if (currentPage > newTotalPages && newTotalPages > 0) {
+        setCurrentPage(newTotalPages)
+      }
+    } catch (err) {
+      console.error("Failed to delete character:", err)
+      setError(err instanceof Error ? err.message : "Nie udało się usunąć postaci")
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="container mx-auto p-6 space-y-6">
@@ -92,6 +109,7 @@ const CharactersPage = () => {
                 character={character}
                 viewMode={viewMode}
                 formatDate={formatDate}
+                onDelete={handleDeleteCharacter}
               />
             ))}
           </div>

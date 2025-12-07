@@ -2,161 +2,33 @@ import { useState, useEffect, useRef } from "react"
 import { useSearchParams, useNavigate } from "react-router-dom"
 import { useForm } from "react-hook-form"
 import { Button } from "@/components/ui/button.tsx"
-import { Input } from "@/components/ui/input.tsx"
-import { Label } from "@/components/ui/label.tsx"
-import { Textarea } from "@/components/ui/textarea.tsx"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx"
 import { Icon } from "@iconify/react"
-import { cn } from "@/lib/utils.ts"
 import MapComponent from "@/components/shared/MapComponent/MapComponent.tsx"
 import InformationCard from "@/components/shared/CustomCards/InformationCard/InformationCard.tsx"
 import GeneralRouteForm from "./components/GeneralRouteForm/GeneralRouteForm.tsx"
+import RouteStepsHeader from "./components/RouteStepsHeader/RouteStepsHeader.tsx"
+import RouteStatisticsOverlay from "./components/RouteStatisticsOverlay/RouteStatisticsOverlay.tsx"
+import PointsList, { type RoutePoint } from "./components/PointsList/PointsList.tsx"
+import PointEditPanel from "./components/PointEditPanel/PointEditPanel.tsx"
 import { calculateEstimatedTime, formatTime } from "@/lib/route-utils.ts"
 import { createPath, getPath } from "@/lib/api-client.ts"
 import { getBackendImageUrl } from "@/lib/image-utils.ts"
 import { getCharacters as getCharactersFromApi } from "@/services/charactersApi.ts"
 import type { CharacterType } from "@/types/CharactersType.tsx"
 
-interface RoutePoint {
-  id: string
-  name: string
-  description: string
-  lat: number
-  lng: number
-  order: number
-  hasCustomAudio: boolean
-  audioFile: File | null
-  characterId: number | null
-  dialog: string
+type RouteFormData = {
+  title: string
+  shortDescription: string
+  longDescription: string
+  category: string
+  difficulty: string
+  thumbnailFile: File | null
+  stylePreset: string
+  makerIconFile: File | null
 }
 
-// Audio file input component
-function AudioFileInput({
-  id,
-  file,
-  onFileChange,
-}: {
-  id: string
-  file: File | null
-  onFileChange: (file: File | null) => void
-}) {
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0]
-    if (selectedFile) {
-      // Validate file type
-      const validTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/webm', 'audio/x-m4a']
-      const fileExtension = selectedFile.name.split('.').pop()?.toLowerCase()
-      const isValidType = validTypes.includes(selectedFile.type) ||
-        ['mp3', 'wav', 'ogg', 'webm', 'm4a'].includes(fileExtension || '')
-
-      if (!isValidType) {
-        alert('Nieprawidłowy format pliku. Dozwolone formaty: MP3, WAV, OGG, WEBM, M4A')
-        return
-      }
-      // Validate file size (10MB)
-      if (selectedFile.size > 10 * 1024 * 1024) {
-        alert('Plik jest za duży. Maksymalny rozmiar: 10MB')
-        return
-      }
-      onFileChange(selectedFile)
-    }
-  }
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    const droppedFile = e.dataTransfer.files[0]
-    if (droppedFile) {
-      const validTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/webm', 'audio/x-m4a']
-      const fileExtension = droppedFile.name.split('.').pop()?.toLowerCase()
-      const isValidType = validTypes.includes(droppedFile.type) ||
-        ['mp3', 'wav', 'ogg', 'webm', 'm4a'].includes(fileExtension || '')
-
-      if (!isValidType) {
-        alert('Nieprawidłowy format pliku. Dozwolone formaty: MP3, WAV, OGG, WEBM, M4A')
-        return
-      }
-      if (droppedFile.size > 10 * 1024 * 1024) {
-        alert('Plik jest za duży. Maksymalny rozmiar: 10MB')
-        return
-      }
-      onFileChange(droppedFile)
-    }
-  }
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-  }
-
-  const handleRemove = () => {
-    onFileChange(null)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
-  }
-
-  const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return bytes + ' B'
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
-  }
-
-  return (
-    <div>
-      <div
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        className={cn(
-          "border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors",
-          file
-            ? "border-primary bg-primary/5"
-            : "border-border hover:border-primary hover:bg-primary/5"
-        )}
-        onClick={() => fileInputRef.current?.click()}
-      >
-        <input
-          ref={fileInputRef}
-          id={id}
-          type="file"
-          accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/webm"
-          onChange={handleFileChange}
-          className="hidden"
-        />
-        {file ? (
-          <div className="relative">
-            <div className="flex items-center justify-center gap-3">
-              <Icon icon="solar:music-note-bold-duotone" className="h-12 w-12 text-primary" />
-              <div className="text-left">
-                <p className="text-sm font-medium text-foreground">{file.name}</p>
-                <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleRemove()
-              }}
-              className="absolute top-0 right-0 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90"
-            >
-              <Icon icon="solar:close-circle-bold-duotone" className="h-4 w-4" />
-            </button>
-          </div>
-        ) : (
-          <div>
-            <Icon icon="solar:upload-bold-duotone" className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              Kliknij lub przeciągnij plik audio tutaj
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-const RouteCreatorPage = () => {
+const RoutesCreatorPage = () => {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const editPathId = searchParams.get("edit")
@@ -173,8 +45,8 @@ const RouteCreatorPage = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [characters, setCharacters] = useState<CharacterType[]>([])
   const [isLoadingCharacters, setIsLoadingCharacters] = useState(false)
-  const formRef = useRef<ReturnType<typeof useForm<any>> | null>(null)
-  const [initialFormValues, setInitialFormValues] = useState<any>(null)
+  const formRef = useRef<ReturnType<typeof useForm<RouteFormData>> | null>(null)
+  const [initialFormValues, setInitialFormValues] = useState<Partial<RouteFormData> | null>(null)
   const [existingThumbnailUrl, setExistingThumbnailUrl] = useState<string | null>(null)
   const [existingMarkerIconUrl, setExistingMarkerIconUrl] = useState<string | null>(null)
 
@@ -193,9 +65,34 @@ const RouteCreatorPage = () => {
             // Backend zwraca points jako tablicę z { point: {...}, orderIndex: number }
             if (route.points && Array.isArray(route.points)) {
               if (route.points.length > 0) {
-                const convertedPoints: RoutePoint[] = route.points.map((pointData: any, index: number) => {
+                const convertedPoints: RoutePoint[] = route.points.map((pointData: unknown, index: number) => {
                   // Backend zwraca { point: {...}, orderIndex: number }
-                  const point = pointData.point || pointData
+                  type PointDataWithOrder = {
+                    point?: {
+                      id?: number
+                      latitude: number
+                      longitude: number
+                      locationLabel?: string | null
+                      narrationText?: string | null
+                      audioUrl?: string | null
+                      characterId?: number | null
+                    }
+                    orderIndex?: number
+                  }
+                  
+                  type PointDataDirect = {
+                    id?: number
+                    latitude: number
+                    longitude: number
+                    locationLabel?: string | null
+                    narrationText?: string | null
+                    audioUrl?: string | null
+                    characterId?: number | null
+                  }
+
+                  const data = pointData as PointDataWithOrder | PointDataDirect
+                  const point = 'point' in data && data.point ? data.point : (data as PointDataDirect)
+                  const orderIndex = 'orderIndex' in data ? data.orderIndex : undefined
 
                   if (!point || typeof point.latitude !== 'number' || typeof point.longitude !== 'number') {
                     console.warn('Invalid point data:', pointData)
@@ -208,13 +105,13 @@ const RouteCreatorPage = () => {
                     description: point.narrationText || "",
                     lat: point.latitude,
                     lng: point.longitude,
-                    order: pointData.orderIndex !== undefined ? pointData.orderIndex + 1 : index + 1,
+                    order: orderIndex !== undefined ? orderIndex + 1 : index + 1,
                     hasCustomAudio: !!point.audioUrl,
                     audioFile: null,
                     characterId: point.characterId || null,
                     dialog: point.narrationText || "",
                   }
-                }).filter((p): p is RoutePoint => p !== null)
+                }).filter((p: RoutePoint | null): p is RoutePoint => p !== null)
 
                 setPoints(convertedPoints)
               } else {
@@ -259,9 +156,10 @@ const RouteCreatorPage = () => {
             setValidationError(response.error || "Nie udało się załadować trasy")
             setIsLoading(false)
           }
-        } catch (err: any) {
+        } catch (err) {
           console.error("Error loading route:", err)
-          setValidationError(err?.message || "Wystąpił błąd podczas ładowania trasy")
+          const errorMessage = err instanceof Error ? err.message : "Wystąpił błąd podczas ładowania trasy"
+          setValidationError(errorMessage)
           setIsLoading(false)
         }
       }
@@ -293,22 +191,6 @@ const RouteCreatorPage = () => {
     return () => clearTimeout(timer)
   }, [])
 
-  useEffect(() => {
-    const loadCharacters = async () => {
-      try {
-        setIsLoadingCharacters(true)
-        const charactersData = await getCharactersFromApi()
-        setCharacters(charactersData)
-      } catch (error) {
-        console.error("Failed to load characters:", error)
-      } finally {
-        setIsLoadingCharacters(false)
-      }
-    }
-
-    loadCharacters()
-  }, [])
-
   // Watch for marker icon changes in form
   useEffect(() => {
     if (!formRef.current) return
@@ -316,12 +198,13 @@ const RouteCreatorPage = () => {
     const checkMarkerIcon = () => {
       const formValues = formRef.current?.getValues()
       if (formValues?.makerIconFile instanceof File) {
+        const file = formValues.makerIconFile
         setMarkerIconUrl((prevUrl) => {
           // Only revoke if it's a blob URL (created with createObjectURL)
           if (prevUrl && prevUrl.startsWith('blob:')) {
             URL.revokeObjectURL(prevUrl)
           }
-          return URL.createObjectURL(formValues.makerIconFile)
+          return URL.createObjectURL(file)
         })
       } else if (!formValues?.makerIconFile) {
         // If no file selected, use existing marker icon URL from backend if available
@@ -372,33 +255,7 @@ const RouteCreatorPage = () => {
         return null
       })
     }
-  }, [formRef.current, isFormValid, existingMarkerIconUrl])
-
-  useEffect(() => {
-    if (isFormValid && formRef.current) {
-      const formValues = formRef.current.getValues()
-      if (formValues?.makerIconFile instanceof File) {
-        setMarkerIconUrl((prevUrl) => {
-          // Only revoke if it's a blob URL
-          if (prevUrl && prevUrl.startsWith('blob:')) {
-            URL.revokeObjectURL(prevUrl)
-          }
-          return URL.createObjectURL(formValues.makerIconFile)
-        })
-      } else if (existingMarkerIconUrl) {
-        // Use existing marker icon URL from backend if no file selected
-        const fullUrl = getBackendImageUrl(existingMarkerIconUrl)
-        if (fullUrl) {
-          setMarkerIconUrl((prevUrl) => {
-            // Only revoke if it's a blob URL
-            if (prevUrl && prevUrl.startsWith('blob:')) {
-              URL.revokeObjectURL(prevUrl)
-            }
-            return fullUrl
-          })
-        }
-      }
-    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFormValid, existingMarkerIconUrl])
 
   const estimatedTimeHours = calculateEstimatedTime(routeDistance, 3)
@@ -425,7 +282,7 @@ const RouteCreatorPage = () => {
   }
 
   const handleDeletePoint = (id: string) => {
-    const newPoints = points.filter((p) => p.id !== id).map((p, index) => ({
+    const newPoints = points.filter((p: RoutePoint) => p.id !== id).map((p: RoutePoint, index: number) => ({
       ...p,
       order: index + 1,
     }))
@@ -763,7 +620,18 @@ const RouteCreatorPage = () => {
           return
         }
 
-        const pathId = formValues.pathId || `route_${Date.now()}`
+        // Upewnij się, że thumbnailFile jest File (nie null)
+        if (!formValues.thumbnailFile || !(formValues.thumbnailFile instanceof File)) {
+          setValidationError("Miniatura jest wymagana")
+          setCurrentStep(1)
+          setIsSaving(false)
+          return
+        }
+
+        // Wyodrębnij thumbnailFile jako File (TypeScript type narrowing)
+        const thumbnailFile = formValues.thumbnailFile
+
+        const pathId = `route_${Date.now()}`
 
         const sortedPoints = [...points].sort((a, b) => a.order - b.order)
         const pointsData = sortedPoints.map((point) => ({
@@ -786,7 +654,7 @@ const RouteCreatorPage = () => {
         difficulty: formValues.difficulty,
         totalTimeMinutes,
         distanceMeters,
-        thumbnailFile: formValues.thumbnailFile,
+        thumbnailFile,
         markerIconFile: formValues.makerIconFile instanceof File ? formValues.makerIconFile : undefined,
         stylePreset: formValues.stylePreset || undefined,
         points: pointsData,
@@ -801,9 +669,10 @@ const RouteCreatorPage = () => {
       navigate("/routes")
       }
 
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error saving route:", error)
-      setValidationError(error?.message || "Wystąpił błąd podczas zapisywania trasy")
+      const errorMessage = error instanceof Error ? error.message : "Wystąpił błąd podczas zapisywania trasy"
+      setValidationError(errorMessage)
     } finally {
       setIsSaving(false)
     }
@@ -866,36 +735,10 @@ const RouteCreatorPage = () => {
 
         {/* Route statistics overlay */}
         {points.length >= 2 && currentStep === 2 && (
-          <div className="absolute bottom-4 right-4 bg-background/95 backdrop-blur-sm rounded-lg p-4 shadow-sm border border-border z-1000">
-            <div className="space-y-4">
-
-              {/* Distance */}
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <Icon icon="solar:route-bold-duotone" className="h-4 w-4 text-foreground" />
-                  <span className="text-sm font-medium text-foreground">Długość trasy</span>
-                </div>
-                <div className="text-lg font-semibold text-neutral-900 tracking-tight">
-                  {routeDistance.toFixed(2)} km
-                </div>
-              </div>
-
-              {/* Time */}
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <Icon icon="solar:clock-circle-bold-duotone" className="h-4 w-4 text-foreground" />
-                  <span className="text-sm font-medium text-foreground">Szacowany czas</span>
-                </div>
-                <div className="text-lg font-semibold text-neutral-900 tracking-tight">
-                  {formattedTime}
-                </div>
-              </div>
-              <div className="text-xs text-muted-foreground pt-2 border-t border-border">
-                (przy prędkości 3 km/h)
-              </div>
-            </div>
-
-          </div>
+          <RouteStatisticsOverlay
+            routeDistance={routeDistance}
+            formattedTime={formattedTime}
+          />
         )}
       </div>
 
@@ -903,27 +746,7 @@ const RouteCreatorPage = () => {
       {/* Prawa strona - Panel kroków */}
       <div className="w-1/3 border-r overflow-y-auto relative z-[100] bg-background">
         <div className="p-4 space-y-4">
-          {/* Header z krokami */}
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-xl font-bold">
-                {editPathId ? "Edytuj trasę" : "Kreator trasy"}
-              </h2>
-              {editPathId && (
-                <p className="text-sm text-muted-foreground">ID: {editPathId}</p>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <div className={`flex items-center gap-1 px-2 py-1 rounded ${currentStep === 1 ? 'bg-blue-100 text-blue-900' : 'bg-gray-100 text-gray-600'}`}>
-                <Icon icon="solar:check-circle-bold-duotone" className={`h-4 w-4 ${currentStep === 1 ? 'text-blue-600' : 'text-gray-400'}`} />
-                <span className="text-sm font-medium">Krok 1</span>
-              </div>
-              <div className={`flex items-center gap-1 px-2 py-1 rounded ${currentStep === 2 ? 'bg-blue-100 text-blue-900' : 'bg-gray-100 text-gray-600'}`}>
-                <Icon icon="solar:check-circle-bold-duotone" className={`h-4 w-4 ${currentStep === 2 ? 'text-blue-600' : 'text-gray-400'}`} />
-                <span className="text-sm font-medium">Krok 2</span>
-              </div>
-            </div>
-          </div>
+          <RouteStepsHeader editPathId={editPathId} currentStep={currentStep} />
 
           {/* Keep form mounted to preserve state */}
           <div className={currentStep === 1 ? "space-y-4" : "hidden"}>
@@ -1002,251 +825,35 @@ const RouteCreatorPage = () => {
                 icon={<Icon icon="solar:map-point-bold-duotone" className="h-5 w-5 text-blue-600" />}
               />
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span>Punkty trasy ({points.length})</span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const centerLat = 53.1235 // Bydgoszcz
-                        const centerLng = 18.0084
-                        handleMapClick(centerLat, centerLng)
-                      }}
-                      className="bg-blue-50 hover:bg-blue-100 border-blue-200"
-                    >
-                      <Icon icon="solar:add-circle-bold-duotone" className="h-4 w-4 mr-2" />
-                      Dodaj punkt
-                    </Button>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {points.length === 0 ? (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
-                      <Icon icon="solar:map-point-bold-duotone" className="h-8 w-8 mx-auto mb-2 text-blue-600" />
-                      <p className="text-sm text-blue-800 font-medium mb-1">
-                        Brak punktów
-                      </p>
-                      <p className="text-xs text-blue-600">
-                        Kliknij na mapie, aby dodać pierwszy punkt
-                      </p>
-                    </div>
-                  ) : (
-                    points
-                      .sort((a, b) => a.order - b.order)
-                      .map((point) => (
-                        <div
-                          key={point.id}
-                          className={`p-3 border rounded-lg cursor-pointer transition-all ${selectedPoint?.id === point.id
-                              ? "border-blue-500 bg-blue-50 shadow-md ring-2 ring-blue-200"
-                              : "hover:bg-blue-50/50 border-border"
-                            }`}
-                          onClick={() => {
-                            setSelectedPoint(point)
-                            setIsEditing(true)
-                          }}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 flex-1">
-                              <Icon icon="solar:menu-dots-vertical-bold-duotone" className="h-4 w-4 text-muted-foreground" />
-                              <div className="flex-1">
-                                <div className="font-medium">{point.name}</div>
-                                <div className="text-xs text-muted-foreground">
-                                  {point.lat.toFixed(4)}, {point.lng.toFixed(4)}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleMovePoint(point.id, "up")
-                                }}
-                                disabled={point.order === 1}
-                                className="h-8 w-8"
-                              >
-                                ↑
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleMovePoint(point.id, "down")
-                                }}
-                                disabled={point.order === points.length}
-                                className="h-8 w-8"
-                              >
-                                ↓
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleDeletePoint(point.id)
-                                }}
-                                className="h-8 w-8 text-destructive hover:text-destructive"
-                              >
-                                <Icon icon="solar:trash-bin-trash-bold-duotone" className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                  )}
-                </CardContent>
-              </Card>
+              <PointsList
+                points={points}
+                selectedPoint={selectedPoint}
+                onPointSelect={(point) => {
+                  setSelectedPoint(point)
+                  setIsEditing(true)
+                }}
+                onPointDelete={handleDeletePoint}
+                onPointMove={handleMovePoint}
+                onAddPoint={() => {
+                  const centerLat = 53.1235 // Bydgoszcz
+                  const centerLng = 18.0084
+                  handleMapClick(centerLat, centerLng)
+                }}
+              />
 
               {/* Panel edycji punktu */}
               {selectedPoint && isEditing && (
-                <Card className="border-blue-200 bg-blue-50/30">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Icon icon="solar:pen-bold-duotone" className="h-4 w-4" />
-                      Edycja punktu
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label htmlFor="point-name">Nazwa</Label>
-                      <Input
-                        id="point-name"
-                        value={selectedPoint.name}
-                        onChange={(e) =>
-                          setSelectedPoint({ ...selectedPoint, name: e.target.value })
-                        }
-                        className="bg-background"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="point-description">Opis</Label>
-                      <Textarea
-                        id="point-description"
-                        value={selectedPoint.description}
-                        onChange={(e) =>
-                          setSelectedPoint({ ...selectedPoint, description: e.target.value })
-                        }
-                        rows={4}
-                        className="bg-background"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label htmlFor="point-lat">Szerokość geograficzna</Label>
-                        <Input
-                          id="point-lat"
-                          type="number"
-                          step="any"
-                          value={selectedPoint.lat}
-                          onChange={(e) =>
-                            setSelectedPoint({
-                              ...selectedPoint,
-                              lat: parseFloat(e.target.value) || 0,
-                            })
-                          }
-                          className="bg-background"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="point-lng">Długość geograficzna</Label>
-                        <Input
-                          id="point-lng"
-                          type="number"
-                          step="any"
-                          value={selectedPoint.lng}
-                          onChange={(e) =>
-                            setSelectedPoint({
-                              ...selectedPoint,
-                              lng: parseFloat(e.target.value) || 0,
-                            })
-                          }
-                          className="bg-background"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="point-has-custom-audio"
-                        checked={selectedPoint.hasCustomAudio}
-                        onChange={(e) =>
-                          setSelectedPoint({ ...selectedPoint, hasCustomAudio: e.target.checked })
-                        }
-                        className="h-4 w-4 rounded border-gray-300"
-                      />
-                      <Label htmlFor="point-has-custom-audio" className="text-sm font-medium">
-                        Własne audio dla tego punktu
-                      </Label>
-                    </div>
-                    {selectedPoint.hasCustomAudio && (
-                      <div>
-                        <Label htmlFor="point-audio-file">Plik audio</Label>
-                        <AudioFileInput
-                          id="point-audio-file"
-                          file={selectedPoint.audioFile}
-                          onFileChange={(file) =>
-                            setSelectedPoint({ ...selectedPoint, audioFile: file })
-                          }
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Format: MP3, WAV, OGG (maks. 10MB)
-                        </p>
-                      </div>
-                    )}
-                    <div>
-                      <Label htmlFor="point-character">Postać</Label>
-                      <select
-                        id="point-character"
-                        value={selectedPoint.characterId || ""}
-                        onChange={(e) =>
-                          setSelectedPoint({ 
-                            ...selectedPoint, 
-                            characterId: e.target.value ? Number(e.target.value) : null 
-                          })
-                        }
-                        disabled={isLoadingCharacters}
-                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <option value="">Wybierz postać...</option>
-                        {characters.map((character) => (
-                          <option key={character.id} value={character.id}>
-                            {character.name}
-                          </option>
-                        ))}
-                      </select>
-                      {isLoadingCharacters && (
-                        <p className="text-xs text-muted-foreground mt-1">Ładowanie postaci...</p>
-                      )}
-                    </div>
-                    <div>
-                      <Label htmlFor="point-dialog">Dialog</Label>
-                      <Textarea
-                        id="point-dialog"
-                        value={selectedPoint.dialog}
-                        onChange={(e) =>
-                          setSelectedPoint({ ...selectedPoint, dialog: e.target.value })
-                        }
-                        rows={3}
-                        placeholder="Wprowadź dialog dla tego punktu..."
-                        className="bg-background"
-                      />
-                    </div>
-                    <Button
-                      onClick={handleSavePoint}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                    >
-                      Zapisz zmiany
-                    </Button>
-                  </CardContent>
-                </Card>
+                <PointEditPanel
+                  point={selectedPoint}
+                  characters={characters}
+                  isLoadingCharacters={isLoadingCharacters}
+                  onPointChange={setSelectedPoint}
+                  onSave={handleSavePoint}
+                />
               )}
 
               {validationError && (
-                <div className="bg-red-50  border border-red-200  rounded-lg p-3">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                   <p className="text-sm text-red-800">{validationError}</p>
                 </div>
               )}
@@ -1277,4 +884,4 @@ const RouteCreatorPage = () => {
   )
 }
 
-export default RouteCreatorPage
+export default RoutesCreatorPage
