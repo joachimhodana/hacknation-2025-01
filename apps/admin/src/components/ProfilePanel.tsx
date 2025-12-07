@@ -109,7 +109,7 @@ export function ProfilePanel({ isOpen, onClose }: ProfilePanelProps) {
                     {(user?.email as string | undefined) || "brak email"}
                   </p>
                   {user?.role && (
-                    <span className="inline-block mt-2 px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                    <span className="inline-block mt-2 px-3 py-1 text-xs font-semibold rounded-full bg-primary/10 text-primary">
                       {(user.role as string) === "admin" ? "Administrator" : (user.role as string)}
                     </span>
                   )}
