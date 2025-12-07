@@ -286,8 +286,7 @@ export const Map: React.FC = () => {
         const data = await res.json();
         const coords: [number, number][] =
           data.routes?.[0]?.geometry?.coordinates ?? [];
-        const steps: OsrmStep[] =
-          data.routes?.[0]?.legs?.[0]?.steps ?? [];
+        const steps: OsrmStep[] = data.routes?.[0]?.legs?.[0]?.steps ?? [];
 
         if (coords.length) {
           const route = coords.map(([lng, lat]) => ({
@@ -356,8 +355,8 @@ export const Map: React.FC = () => {
           },
           (location) => {
             const updated = {
-          lat: location.coords.latitude,
-          lng: location.coords.longitude,
+              lat: location.coords.latitude,
+              lng: location.coords.longitude,
             };
             setUserLocation(updated);
           },
@@ -652,12 +651,10 @@ export const Map: React.FC = () => {
     return a;
   };
 
-  // 🔍 Zoom po kamerze – tak, żeby + ZAWSZE przybliżało
   const adjustZoom = async (direction: "in" | "out") => {
     if (!mapRef.current) return;
 
     const cam = await mapRef.current.getCamera();
-
     const hasZoom = cam.zoom !== undefined && cam.zoom !== null;
 
     if (hasZoom) {
@@ -681,9 +678,9 @@ export const Map: React.FC = () => {
       let alt = clampAlt(cam.altitude ?? 600);
 
       if (direction === "in") {
-        alt *= ALT_FACTOR; // < 1 → bliżej
+        alt *= ALT_FACTOR;
       } else {
-        alt /= ALT_FACTOR; // > 1 → dalej
+        alt /= ALT_FACTOR;
       }
 
       alt = clampAlt(alt);
@@ -707,10 +704,10 @@ export const Map: React.FC = () => {
       const newCam: Camera = hasZoom
         ? {
             ...cam,
-          center: {
-            latitude: userLocation.lat,
-            longitude: userLocation.lng,
-          },
+            center: {
+              latitude: userLocation.lat,
+              longitude: userLocation.lng,
+            },
             zoom: clampZoom((cam.zoom as number) || 16),
           }
         : {
@@ -749,13 +746,13 @@ export const Map: React.FC = () => {
 
   return (
     <View style={styles.container}>
-    <MapView
-      ref={mapRef}
-      style={styles.map}
-      provider={Platform.OS === "android" ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
-      initialRegion={{
-        latitude: userLocation.lat,
-        longitude: userLocation.lng,
+      <MapView
+        ref={mapRef}
+        style={styles.map}
+        provider={Platform.OS === "android" ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
+        initialRegion={{
+          latitude: userLocation.lat,
+          longitude: userLocation.lng,
           latitudeDelta: 0.01,
           longitudeDelta: 0.0045,
         }}
@@ -914,7 +911,7 @@ export const Map: React.FC = () => {
         </View>
       )}
 
-      {/* Kontrolki mapy */}
+      {/* kontrolki mapy */}
       <View style={styles.controlsContainer}>
         <TouchableOpacity
           style={styles.controlButton}
@@ -930,10 +927,7 @@ export const Map: React.FC = () => {
           <Text style={styles.controlIcon}>－</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.controlButton}
-          onPress={goToMyLocation}
-        >
+        <TouchableOpacity style={styles.controlButton} onPress={goToMyLocation}>
           <Text style={styles.controlIcon}>⌖</Text>
         </TouchableOpacity>
 
@@ -1129,7 +1123,6 @@ const styles = StyleSheet.create({
     color: "white",
   },
 
-  // Kółkowe piny
   pinCircleOuter: {
     width: 40,
     height: 40,
@@ -1163,7 +1156,6 @@ const styles = StyleSheet.create({
     resizeMode: "cover",
   },
 
-  // Wyspa
   floatingRouteCard: {
     position: "absolute",
     left: 16,
@@ -1271,7 +1263,6 @@ const styles = StyleSheet.create({
     color: COLORS.blue,
   },
 
-  // Kontrolki mapy
   controlsContainer: {
     position: "absolute",
     right: 16,

@@ -58,7 +58,7 @@ export default function DownloadCta() {
                   </svg>
                 </div>
                 <div>
-                  <div className="text-xs">GET IT ON</div>
+                  <div className="text-xs">POBIERZ NA</div>
                   <div className="-mt-1 font-sans text-xl font-semibold">
                     Google Play
                   </div>
@@ -78,7 +78,7 @@ export default function DownloadCta() {
                   </svg>
                 </div>
                 <div>
-                  <div className="text-xs">Download on the</div>
+                  <div className="text-xs">Pobierz na</div>
                   <div className="-mt-1 font-sans text-2xl font-semibold">
                     App Store
                   </div>
