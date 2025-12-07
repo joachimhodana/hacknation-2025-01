@@ -2,9 +2,9 @@ FROM oven/bun:latest AS dev
 
 WORKDIR /app
 
-# Install OpenSSL for PostgreSQL connections
+# Install OpenSSL for PostgreSQL connections, wget and curl for health checks
 RUN apt-get update -y && \
-    apt-get install -y openssl libssl-dev ca-certificates && \
+    apt-get install -y openssl libssl-dev ca-certificates wget curl && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy dependency files first

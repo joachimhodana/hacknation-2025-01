@@ -28,8 +28,9 @@ services:
     # volumes:
     #   - ./apps/core:/app
     #   - core_node_modules:/app/node_modules
-    ports:
-      - "${CORE_PORT:-${PORT:-8080}}:${PORT:-8080}"
+    # Expose port for Coolify's Traefik/Caddy to discover
+    expose:
+      - "8080"
     environment:
       - WATCH_FILES=true
       - PORT=${PORT:-8080}
@@ -43,6 +44,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://127.0.0.1:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
 
   drizzle-studio:
@@ -59,8 +66,9 @@ services:
     # volumes:
     #   - ./apps/core:/app
     #   - drizzle_studio_node_modules:/app/node_modules
-    ports:
-      - "${DRIZZLE_PORT:-4983}:${DRIZZLE_STUDIO_PORT:-4983}"
+    # Expose port for Coolify's Traefik/Caddy to discover
+    expose:
+      - "4983"
     environment:
       - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/hacknation}
       - DRIZZLE_STUDIO_PORT=${DRIZZLE_STUDIO_PORT:-4983}
@@ -74,34 +82,56 @@ services:
     build:
       context: ./apps/landing
       dockerfile: Dockerfile
+      args:
+        - PORT=3000
     container_name: hacknation-landing
     # Source code volume mount removed for production - use files from built image
     # Uncomment for local development with hot reload:
     # volumes:
     #   - ./apps/landing:/app
     #   - landing_node_modules:/app/node_modules
-    ports:
-      - "3000:3000"
+    # Expose port for Coolify's Traefik/Caddy to discover
+    # Using published port without host binding - Coolify handles routing
+    expose:
+      - "3000"
     environment:
       - NODE_ENV=${NODE_ENV:-development}
+      - PORT=${LANDING_CONTAINER_PORT:-3000}
+      - HOST=${LANDING_HOST:-0.0.0.0}
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://127.0.0.1:3000 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
     restart: unless-stopped
 
   admin:
     build:
       context: ./apps/admin
       dockerfile: Dockerfile
+      args:
+        - PORT=3001
     container_name: hacknation-admin
     # Source code volume mount removed for production - use files from built image
     # Uncomment for local development with hot reload:
     # volumes:
     #   - ./apps/admin:/app
     #   - admin_node_modules:/app/node_modules
-    ports:
-      - "3001:3001"
+    # Expose port for Coolify's Traefik/Caddy to discover
+    expose:
+      - "3001"
     environment:
       - NODE_ENV=${NODE_ENV:-development}
-      - PORT=${PORT:-3001}
-      - VITE_BETTER_AUTH_URL=${VITE_BETTER_AUTH_URL:-http://localhost:8080}
+      - PORT=${ADMIN_CONTAINER_PORT:-3001}
+      - HOST=${ADMIN_HOST:-0.0.0.0}
+      - VITE_BETTER_AUTH_URL=${VITE_BETTER_AUTH_URL:-${SERVICE_URL_CORE:-http://localhost:8080}}
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://127.0.0.1:3001 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
     restart: unless-stopped
 
 volumes:

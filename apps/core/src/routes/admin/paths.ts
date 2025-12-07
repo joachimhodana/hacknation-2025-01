@@ -218,6 +218,7 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
       };
     },
     {
+      auth: true,
       type: "multipart/form-data",
       body: t.Object({
         pathId: t.String(),
@@ -347,6 +348,7 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         markerIconUrl = `/resources/markers/${fileName}`;
       }
 
+      
       // Remove file fields for DB update
       const {
         thumbnailFile,
@@ -362,6 +364,16 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         updateData.markerIconUrl = markerIconUrl;
       }
       updateData.updatedAt = new Date();
+
+      if (updateData.totalTimeMinutes !== undefined) {
+        updateData.totalTimeMinutes = Number(updateData.totalTimeMinutes);
+      }
+      
+      if (updateData.distanceMeters !== undefined) {
+        const d = Number(updateData.distanceMeters);
+        updateData.distanceMeters = isNaN(d) ? null : d;
+      }
+      
 
       // Only allow the path author to update
       const [updatedPath] = await db
@@ -432,8 +444,8 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         longDescription: t.Optional(t.String()),
         category: t.Optional(t.String()),
         difficulty: t.Optional(t.String()),
-        totalTimeMinutes: t.Optional(t.Number()),
-        distanceMeters: t.Optional(t.Number()),
+        totalTimeMinutes: t.Optional(t.Union([t.Number(), t.String()])),
+        distanceMeters: t.Optional(t.Union([t.Number(), t.String()])),        
         thumbnailFile: t.Optional(t.File({
           maxFileSize: "10MB",
           allowedMimeTypes: ["image/jpeg", "image/png"],

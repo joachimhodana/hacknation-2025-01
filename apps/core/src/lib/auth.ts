@@ -18,16 +18,23 @@ export const auth = betterAuth({
     baseURL: process.env.BETTER_AUTH_URL || "http://localhost:8080",
     basePath: "/api/auth",
     trustedOrigins: [
+        // Local development origins
         "http://localhost:3000", // landing
         "http://localhost:3001", // admin
         "http://localhost:8081", // Expo web dev server
         "http://127.0.0.1:3000",
         "http://127.0.0.1:3001",
         "http://127.0.0.1:8081",
+        // Production domains from environment variables
+        ...(process.env.SERVICE_URL_LANDING ? [process.env.SERVICE_URL_LANDING] : []),
+        ...(process.env.SERVICE_URL_ADMIN ? [process.env.SERVICE_URL_ADMIN] : []),
+        ...(process.env.SERVICE_URL_CORE ? [process.env.SERVICE_URL_CORE] : []),
+        ...(process.env.SERVICE_URL_DRIZZLE_STUDIO ? [process.env.SERVICE_URL_DRIZZLE_STUDIO] : []),
+        // Expo origins
         "exp://",
         "exp://10.250.163.140:8081",
-        `exp://${process.env.EXPO_PUBLIC_BETTER_AUTH_URL_NATIVE}`,
-        `exp://${process.env.EXPO_PUBLIC_BETTER_AUTH_URL_WEB}`,
+        ...(process.env.EXPO_PUBLIC_BETTER_AUTH_URL_NATIVE ? [`exp://${process.env.EXPO_PUBLIC_BETTER_AUTH_URL_NATIVE}`] : []),
+        ...(process.env.EXPO_PUBLIC_BETTER_AUTH_URL_WEB ? [`exp://${process.env.EXPO_PUBLIC_BETTER_AUTH_URL_WEB}`] : []),
         "exp://*/*",                 // Trust all Expo development URLs
         "exp://10.0.0.*:*/*",        // Trust 10.0.0.x IP range
         "exp://192.168.*.*:*/*",     // Trust 192.168.x.x IP range
