@@ -8,9 +8,10 @@ import {
   ScrollView,
   ActivityIndicator,
   Image,
+  BackHandler,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useNavigation } from "expo-router";
 import Navbar from "@/components/Navbar";
 import { PointsBadge } from "@/components/PointsBadge";
 import { authClient } from "@/lib/auth-client";
@@ -33,6 +34,7 @@ export type { CollectedItem } from "@/lib/api-client";
 
 const ProfileScreen: React.FC = () => {
   const router = useRouter();
+  const navigation = useNavigation();
   const { data: session, isPending } = authClient.useSession();
   const [stats, setStats] = useState<{
     completionPercentage: number;
@@ -49,6 +51,27 @@ const ProfileScreen: React.FC = () => {
       router.replace("/");
     }
   }, [session, isPending, router]);
+
+  // Block back navigation to splash/index
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      // Prevent going back to splash/index
+      return true;
+    });
+
+    const unsubscribe = navigation.addListener('beforeRemove', (e: any) => {
+      // Prevent navigation to splash or index
+      const targetRoute = e.data?.action?.payload?.name;
+      if (targetRoute === 'splash' || targetRoute === 'index') {
+        e.preventDefault();
+      }
+    });
+
+    return () => {
+      backHandler.remove();
+      unsubscribe();
+    };
+  }, [navigation]);
 
   // Fetch user stats when session is available
   useEffect(() => {

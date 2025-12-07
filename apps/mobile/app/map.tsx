@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
-import { View, StyleSheet, Platform, ActivityIndicator } from "react-native";
-import { useRouter } from "expo-router";
+import { View, StyleSheet, Platform, ActivityIndicator, BackHandler } from "react-native";
+import { useRouter, useNavigation } from "expo-router";
 import Map from "@/components/Map/Map";
 import Navbar from "@/components/Navbar";
 import { PointsBadge } from "@/components/PointsBadge";
@@ -8,6 +8,7 @@ import { authClient } from "@/lib/auth-client";
 
 export default function MapScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const { data: session, isPending } = authClient.useSession();
 
   useEffect(() => {
@@ -18,6 +19,27 @@ export default function MapScreen() {
       console.log("[Map] Session found:", session.user?.email || session.user?.id);
     }
   }, [session, isPending, router]);
+
+  // Block back navigation to splash/index
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      // Prevent going back to splash/index
+      return true;
+    });
+
+    const unsubscribe = navigation.addListener('beforeRemove', (e: any) => {
+      // Prevent navigation to splash or index
+      const targetRoute = e.data?.action?.payload?.name;
+      if (targetRoute === 'splash' || targetRoute === 'index') {
+        e.preventDefault();
+      }
+    });
+
+    return () => {
+      backHandler.remove();
+      unsubscribe();
+    };
+  }, [navigation]);
 
   if (isPending) {
     return (

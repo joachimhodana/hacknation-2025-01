@@ -12,9 +12,10 @@ import {
   ActivityIndicator,
   Image,
   ImageSourcePropType,
+  BackHandler,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useNavigation } from "expo-router";
 import { fetchUserStats, type CollectedItem, type Reward } from "@/lib/api-client";
 import { getAPIBaseURL } from "@/lib/api-url";
 import Navbar from "@/components/Navbar";
@@ -42,6 +43,7 @@ const COLORS = {
 
 const CollectionsScreen: React.FC = () => {
   const router = useRouter();
+  const navigation = useNavigation();
   const { data: session, isPending } = authClient.useSession();
   const [allItems, setAllItems] = useState<CollectedItem[]>([]);
   const [itemsLoading, setItemsLoading] = useState(true);
@@ -65,6 +67,27 @@ const CollectionsScreen: React.FC = () => {
       router.replace("/");
     }
   }, [session, isPending, router]);
+
+  // Block back navigation to splash/index
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      // Prevent going back to splash/index
+      return true;
+    });
+
+    const unsubscribe = navigation.addListener('beforeRemove', (e: any) => {
+      // Prevent navigation to splash or index
+      const targetRoute = e.data?.action?.payload?.name;
+      if (targetRoute === 'splash' || targetRoute === 'index') {
+        e.preventDefault();
+      }
+    });
+
+    return () => {
+      backHandler.remove();
+      unsubscribe();
+    };
+  }, [navigation]);
 
   // Fetch user stats to get collected items and all rewards
   useEffect(() => {
