@@ -16,23 +16,61 @@ import MapView, {
 } from "react-native-maps";
 import * as Location from "expo-location";
 import { authClient } from "@/lib/auth-client";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const MIN_ALT = 120;
 const MAX_ALT = 8000;
-const ZOOM_STEP = 400; // stały krok przybliżania/oddalania
+const ZOOM_STEP = 400;
+
+const COLORS = {
+  red: "#ED1C24",
+  yellow: "#FFDE00",
+  blue: "#0095DA",
+};
+
+type ActiveRoute = {
+  title: string;
+  totalStops: number;
+  completedStops: number;
+} | null;
 
 export const Map: React.FC = () => {
   const colorScheme = Appearance.getColorScheme();
   const isDark = colorScheme === "dark";
   const { data: session } = authClient.useSession();
-  
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(
+  const insets = useSafeAreaInsets();
+
+  const [userLocation, setUserLocation] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+  const mapRef = useRef<MapView>(null);
+  const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(
     null,
   );
-  const mapRef = useRef<MapView>(null);
-  const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
-  
-  // Get user info for avatar
+
+  // 🔹 TU PODSTAWISZ REALNE DANE TRASY
+  const activeRoute: ActiveRoute = {
+    title: "Szlak Mariana Rejewskiego",
+    totalStops: 8,
+    completedStops: 3,
+  };
+
+  const hasRoute = !!activeRoute;
+  const routeTitle = activeRoute?.title ?? "";
+  const totalStops = activeRoute?.totalStops ?? 0;
+  const completedStops = Math.min(
+    activeRoute?.completedStops ?? 0,
+    totalStops,
+  );
+  const progressRatio =
+    totalStops > 0 ? completedStops / totalStops : 0;
+  const progressText =
+    totalStops > 0
+      ? `${completedStops} / ${totalStops} przystanków`
+      : "Brak przystanków na trasie";
+
+  // User info for avatar
   const user = session?.user;
   const userName = user?.name as string | undefined;
   const userInitials = userName
@@ -65,27 +103,25 @@ export const Map: React.FC = () => {
         console.log("Error getting location", e);
       }
 
-      // Watch location in real-time
       try {
         locationSubscriptionRef.current = await Location.watchPositionAsync(
           {
             accuracy: Location.Accuracy.High,
-            timeInterval: 1000, // Update every second
-            distanceInterval: 1, // Update every meter
+            timeInterval: 1000,
+            distanceInterval: 1,
           },
           (location) => {
             setUserLocation({
               lat: location.coords.latitude,
               lng: location.coords.longitude,
             });
-          }
+          },
         );
       } catch (error) {
         console.error("Error watching location:", error);
       }
     })();
 
-    // Cleanup subscription on unmount
     return () => {
       if (locationSubscriptionRef.current) {
         locationSubscriptionRef.current.remove();
@@ -93,7 +129,6 @@ export const Map: React.FC = () => {
     };
   }, []);
 
-  // Update camera to follow user location in real-time (3D view)
   useEffect(() => {
     if (userLocation && mapRef.current) {
       const cam: Camera = {
@@ -106,7 +141,7 @@ export const Map: React.FC = () => {
         altitude: 600,
       };
 
-      mapRef.current.animateCamera(cam, { duration: 500 }); // Faster update for real-time tracking
+      mapRef.current.animateCamera(cam, { duration: 500 });
     }
   }, [userLocation]);
 
@@ -123,7 +158,6 @@ export const Map: React.FC = () => {
     return alt;
   };
 
-  // 🔍 zoom przyciskami – zawsze działa, nawet po mega oddaleniu
   const adjustZoom = async (direction: "in" | "out") => {
     if (!mapRef.current) return;
 
@@ -139,13 +173,12 @@ export const Map: React.FC = () => {
     const newCam: Camera = {
       ...cam,
       altitude: alt,
-      pitch: 55, // pilnujemy 3D
+      pitch: 55,
     };
 
     mapRef.current.animateCamera(newCam, { duration: 200 });
   };
 
-  // 📍 powrót do aktualnej lokalizacji (3D)
   const goToMyLocation = async () => {
     if (!mapRef.current) return;
 
@@ -173,10 +206,13 @@ export const Map: React.FC = () => {
   if (!userLocation) {
     return (
       <View style={[styles.map, styles.loadingContainer]}>
-        <ActivityIndicator size="large" color="#9BCF7F" />
+        <ActivityIndicator size="large" color={COLORS.blue} />
       </View>
     );
   }
+
+  // 🔝 dynamiczne położenie wyspy – zawsze pod safe area
+  const floatingTop = insets.top + 12;
 
   return (
     <View style={styles.container}>
@@ -199,7 +235,7 @@ export const Map: React.FC = () => {
         zoomEnabled
         scrollEnabled
         rotateEnabled={false}
-        pitchEnabled={false} // tilt zablokowany → trzymamy 3D z kamery
+        pitchEnabled={false}
         mapType="standard"
         customMapStyle={
           Platform.OS === "android"
@@ -209,7 +245,6 @@ export const Map: React.FC = () => {
             : undefined
         }
       >
-        {/* Custom marker with user avatar */}
         <Marker
           coordinate={{
             latitude: userLocation.lat,
@@ -223,17 +258,70 @@ export const Map: React.FC = () => {
         </Marker>
       </MapView>
 
-      {/* 🔍 Zoom buttons – PODNIESIONE WYŻEJ */}
+      {/* 🏝️ Pływająca wyspa – zawsze pod notch, nigdy w safe area */}
+      {hasRoute && (
+        <View
+          style={[
+            styles.floatingRouteCard,
+            { top: floatingTop },
+          ]}
+        >
+          <View style={styles.routeAccentStrip}>
+            <View
+              style={[styles.routeAccentSegment, { backgroundColor: COLORS.red }]}
+            />
+            <View
+              style={[
+                styles.routeAccentSegment,
+                { backgroundColor: COLORS.yellow },
+              ]}
+            />
+            <View
+              style={[styles.routeAccentSegment, { backgroundColor: COLORS.blue }]}
+            />
+          </View>
+
+          <View style={styles.routeCardContent}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.routeTitle} numberOfLines={1}>
+                {routeTitle}
+              </Text>
+              <Text style={styles.routeSubtitle}>{progressText}</Text>
+            </View>
+
+            <View style={styles.progressBadge}>
+              <Text style={styles.progressBadgeText}>
+                {Math.round(progressRatio * 100)}%
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.progressBarTrack}>
+            <View
+              style={[
+                styles.progressBarFill,
+                { width: `${progressRatio * 100}%` },
+              ]}
+            />
+          </View>
+        </View>
+      )}
+
       <View style={styles.controlsContainer}>
-        <TouchableOpacity style={styles.controlButton} onPress={() => adjustZoom("in")}>
+        <TouchableOpacity
+          style={styles.controlButton}
+          onPress={() => adjustZoom("in")}
+        >
           <Text style={styles.controlButtonText}>+</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.controlButton} onPress={() => adjustZoom("out")}>
+        <TouchableOpacity
+          style={styles.controlButton}
+          onPress={() => adjustZoom("out")}
+        >
           <Text style={styles.controlButtonText}>−</Text>
         </TouchableOpacity>
       </View>
 
-      {/* 📍 My location – też trochę wyżej */}
       <View style={styles.myLocationButton}>
         <TouchableOpacity style={styles.controlButton} onPress={goToMyLocation}>
           <Text style={styles.controlButtonText}>⌖</Text>
@@ -243,8 +331,6 @@ export const Map: React.FC = () => {
   );
 };
 
-// --- STYLES ---
-
 const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1, width: "100%", height: "100%" },
@@ -253,11 +339,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#E8F0E8",
   },
+
   avatarMarker: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "#9BCF7F",
+    backgroundColor: COLORS.blue,
     borderWidth: 3,
     borderColor: "white",
     shadowColor: "#000",
@@ -273,7 +360,73 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "white",
   },
-  // podbite wyżej: było bottom: 130, teraz 190
+
+  // wyspa BEZ top – top dostaje dynamicznie
+  floatingRouteCard: {
+    position: "absolute",
+    left: 16,
+    right: 16,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.96)",
+    paddingHorizontal: 14,
+    paddingTop: 10,
+    paddingBottom: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  routeAccentStrip: {
+    flexDirection: "row",
+    height: 3,
+    borderRadius: 999,
+    overflow: "hidden",
+    marginBottom: 8,
+  },
+  routeAccentSegment: {
+    flex: 1,
+  },
+  routeCardContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  routeTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  routeSubtitle: {
+    marginTop: 2,
+    fontSize: 12,
+    color: "#6B7280",
+  },
+  progressBadge: {
+    marginLeft: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: COLORS.red,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  progressBadgeText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  progressBarTrack: {
+    height: 5,
+    borderRadius: 999,
+    backgroundColor: "#E5E7EB",
+    overflow: "hidden",
+  },
+  progressBarFill: {
+    height: "100%",
+    backgroundColor: COLORS.blue,
+  },
+
   controlsContainer: {
     position: "absolute",
     right: 16,
@@ -302,7 +455,7 @@ const styles = StyleSheet.create({
   myLocationButton: {
     position: "absolute",
     right: 16,
-    bottom: 120, // też wyżej niż wcześniej
+    bottom: 120,
   },
 });
 

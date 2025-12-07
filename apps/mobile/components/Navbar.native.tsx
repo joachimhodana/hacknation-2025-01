@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter, usePathname } from "expo-router";
-import { MapPoint, Compass, User, Box } from "@solar-icons/react";
+import { Ionicons } from "@expo/vector-icons";
 
 const COLORS = {
   red: "#ED1C24",
@@ -16,29 +16,34 @@ const COLORS = {
 type NavItem = {
   label: string;
   route: string;
-  IconComponent: React.ComponentType<{ size?: number; color?: string; weight?: string }>;
+  iconName: keyof typeof Ionicons.glyphMap;
+  iconNameActive: keyof typeof Ionicons.glyphMap;
 };
 
 const navItems: NavItem[] = [
   { 
     label: "Map", 
     route: "/map", 
-    IconComponent: MapPoint
+    iconName: "map-outline",
+    iconNameActive: "map"
   },
   { 
     label: "Explore", 
     route: "/explore", 
-    IconComponent: Compass
+    iconName: "compass-outline",
+    iconNameActive: "compass"
   },
   { 
     label: "Profile", 
     route: "/profile", 
-    IconComponent: User
+    iconName: "person-outline",
+    iconNameActive: "person"
   },
   { 
     label: "Collection", 
     route: "/collections", 
-    IconComponent: Box
+    iconName: "cube-outline",
+    iconNameActive: "cube"
   },
 ];
 
@@ -62,10 +67,11 @@ export default function Navbar() {
             style={[styles.navItem, isActive && styles.navItemActive]}
             onPress={() => handleNavigate(item.route)}
           >
-            <item.IconComponent
+            <Ionicons
+              name={isActive ? item.iconNameActive : item.iconName}
               size={24}
               color={isActive ? COLORS.red : COLORS.textMuted}
-              weight={isActive ? "Bold" : "BoldDuotone"}
+              style={styles.icon}
             />
             <Text
               style={[
@@ -127,4 +133,3 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
-
