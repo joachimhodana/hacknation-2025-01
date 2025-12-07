@@ -22,7 +22,8 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
   .use(adminMiddleware)
   .post(
     "/",
-    async ({ body, user }) => {
+    async (context: any) => {
+      const { body, user } = context;
       console.log("[paths.ts POST] Handler called");
       console.log("[paths.ts POST] User:", user ? `id: ${user.id}` : "null");
       if (!user) {
@@ -217,7 +218,6 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
       };
     },
     {
-      auth: true, // Use macro for authentication
       type: "multipart/form-data",
       body: t.Object({
         pathId: t.String(),
@@ -306,8 +306,7 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         ...path,
         points: pathPointsData,
       },
-    };
-  })
+    };})
   .patch(
     "/:id",
     async (context: any) => {
@@ -316,158 +315,64 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         return { success: false, error: "Unauthorized" };
       }
 
-      // Helper to parse a number safely
-      const parseMaybeNumber = (value: any) => {
-        if (typeof value === "number") return value;
-        if (typeof value === "string" && value.trim() === "") return undefined;
-        if (typeof value === "string") {
-          const n = Number(value);
-          return isNaN(n) ? undefined : n;
-        }
-        return undefined;
-      };
+      // Prepare update values and handle file uploads
+      let thumbnailUrl: string | undefined;
+      let markerIconUrl: string | undefined;
 
-      // Handle thumbnail file update
-      let thumbnailUrl = undefined;
+      // Handle thumbnail file upload if present
       if (body.thumbnailFile) {
-        const thumbnailUUID = crypto.randomUUID();
-        const thumbnailBuffer = await body.thumbnailFile.arrayBuffer();
-        const mimeType = body.thumbnailFile.type;
-        const extension = mimeType === "image/jpeg" ? ".jpg" : ".png";
-        const fileName = `${thumbnailUUID}${extension}`;
+        const uuid = crypto.randomUUID();
+        const ext =
+          body.thumbnailFile.type === "image/jpeg"
+            ? ".jpg"
+            : (body.thumbnailFile.type === "image/png" ? ".png" : "");
+        const fileName = `${uuid}${ext}`;
         const filePath = join(process.cwd(), "public", "resources", "thumbnails", fileName);
-        await mkdir(join(process.cwd(),"public", "resources", "thumbnails"), { recursive: true });
-        await Bun.write(filePath, thumbnailBuffer);
-        thumbnailUrl = `/resources/thumbnails/${fileName}`;
+        const fileBuffer = await body.thumbnailFile.arrayBuffer();
+        await Bun.write(filePath, fileBuffer);
+        thumbnailUrl = `/public/resources/thumbnails/${fileName}`;
       }
 
-      // Handle marker icon file update
-      let markerIconUrl = undefined;
+      // Handle marker icon file upload if present
       if (body.markerIconFile) {
-        const markerIconUUID = crypto.randomUUID();
-        const markerIconBuffer = await body.markerIconFile.arrayBuffer();
-        const mimeType = body.markerIconFile.type;
-        const extension = mimeType === "image/jpeg" ? ".jpg" : ".png";
-        const fileName = `${markerIconUUID}${extension}`;
-        const filePath = join(process.cwd(), "public", "resources", "marker_icons", fileName);
-        await mkdir(join(process.cwd(), "public","resources", "marker_icons"), { recursive: true });
-        await Bun.write(filePath, markerIconBuffer);
-        markerIconUrl = `/resources/marker_icons/${fileName}`;
+        const uuid = crypto.randomUUID();
+        const ext =
+          body.markerIconFile.type === "image/jpeg"
+            ? ".jpg"
+            : (body.markerIconFile.type === "image/png" ? ".png" : "");
+        const fileName = `${uuid}${ext}`;
+        const filePath = join(process.cwd(), "public", "resources", "markers", fileName);
+        const fileBuffer = await body.markerIconFile.arrayBuffer();
+        await Bun.write(filePath, fileBuffer);
+        markerIconUrl = `/public/resources/markers/${fileName}`;
       }
 
-      // Prepare update object, removing files and handling numeric fields
+      // Remove file fields for DB update
       const {
         thumbnailFile,
         markerIconFile,
-        totalTimeMinutes,
-        distanceMeters,
-        points: pointsData,
+        points,
         ...updateData
       } = body;
 
-      // Patch: Always parse to number for totalTimeMinutes and distanceMeters
-      const totalTime = parseMaybeNumber(totalTimeMinutes);
-      const distance = parseMaybeNumber(distanceMeters);
-
-      if (thumbnailUrl !== undefined) updateData.thumbnailUrl = thumbnailUrl;
-      if (markerIconUrl !== undefined) updateData.markerIconUrl = markerIconUrl;
-      if (totalTime !== undefined) updateData.totalTimeMinutes = totalTime;
-      if (distance !== undefined) updateData.distanceMeters = distance;
-
-      if ('isPublished' in body && body.isPublished !== undefined) {
-        if (typeof body.isPublished === 'string') {
-          updateData.isPublished = body.isPublished === 'true' || body.isPublished === '1';
-        } else {
-          updateData.isPublished = Boolean(body.isPublished);
-        }
+      if (thumbnailUrl !== undefined) {
+        updateData.thumbnailUrl = thumbnailUrl;
+      }
+      if (markerIconUrl !== undefined) {
+        updateData.markerIconUrl = markerIconUrl;
       }
       updateData.updatedAt = new Date();
 
-      // Get path by pathId and user first to get numeric id (for pathPoints)
-      const [existingPath] = await db
-        .select()
-        .from(paths)
-        .where(and(eq(paths.pathId, params.id), eq(paths.createdBy, user.id)))
-        .limit(1);
-
-      if (!existingPath) {
-        return {
-          success: false,
-          error: "Path not found or you don't have permission",
-        };
-      }
-      const pathNumericId = existingPath.id;
-
-      // If points are present in the payload, update the points for the path
-      if (pointsData !== undefined) {
-        if (!Array.isArray(pointsData)) {
-          return { success: false, error: "Points must be an array" };
-        }
-        // Validate each point minimally
-        for (const point of pointsData) {
-          if (
-            typeof point.latitude !== "number" ||
-            typeof point.longitude !== "number" ||
-            typeof point.narrationText !== "string"
-          ) {
-            return {
-              success: false,
-              error:
-                "Invalid point structure: latitude, longitude, and narrationText are required",
-            };
-          }
-        }
-
-        // Remove all existing pathPoints for this path
-        await db.delete(pathPoints).where(eq(pathPoints.pathId, pathNumericId));
-        // Add stricter validation error reporting for latitude
-        for (let idx = 0; idx < pointsData.length; idx++) {
-          if (typeof pointsData[idx].latitude !== "number") {
-            return {
-              success: false,
-              error: `Expected number for points[${idx}].latitude, got ${typeof pointsData[idx].latitude}`,
-              details: {
-                type: "validation",
-                on: "body",
-                property: `/points/${idx}/latitude`,
-                message: "Expected number",
-                summary: "Expected number",
-                found: pointsData[idx].latitude,
-              }
-            };
-          }
-        }
-
-        // Insert new points and connect them
-        for (let i = 0; i < pointsData.length; i++) {
-          const pt = pointsData[i];
-          const [insertedPoint] = await db
-            .insert(points)
-            .values({
-              latitude: pt.latitude,
-              longitude: pt.longitude,
-              radiusMeters: pt.radiusMeters ?? 10,
-              locationLabel: pt.locationLabel ?? null,
-              narrationText: pt.narrationText,
-              characterId: pt.characterId ?? null,
-              rewardLabel: pt.rewardLabel ?? null,
-              rewardIconUrl: pt.rewardIconUrl ?? null,
-              createdBy: user.id,
-            })
-            .returning();
-          await db.insert(pathPoints).values({
-            pathId: pathNumericId,
-            pointId: insertedPoint.id,
-            orderIndex: i,
-          });
-        }
-      }
-
-      // Update the path itself
+      // Only allow the path author to update
       const [updatedPath] = await db
         .update(paths)
         .set(updateData)
-        .where(and(eq(paths.pathId, params.id), eq(paths.createdBy, user.id)))
+        .where(
+          and(
+            eq(paths.pathId, params.id),
+            eq(paths.createdBy, user.id)
+          )
+        )
         .returning();
 
       if (!updatedPath) {
@@ -477,6 +382,43 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         };
       }
 
+      // Handle points update if provided
+      if (typeof points === "string") {
+        try {
+          const pointsArray: number[] = JSON.parse(points);
+          if (!Array.isArray(pointsArray)) {
+            return {
+              success: false,
+              error: "Points must be an array of point IDs",
+            };
+          }
+
+          // Get path ID from updatedPath
+          const pathIdNumber = updatedPath.id;
+
+          // 1. Remove all current pathPoints for this path
+          await db
+            .delete(pathPoints)
+            .where(eq(pathPoints.pathId, pathIdNumber));
+
+          // 2. Re-insert new point associations with specified order
+          if (pointsArray.length > 0) {
+            await db.insert(pathPoints).values(
+              pointsArray.map((pointId, idx) => ({
+                pathId: pathIdNumber,
+                pointId: pointId,
+                orderIndex: idx,
+              }))
+            );
+          }
+        } catch (err) {
+          return {
+            success: false,
+            error: "Invalid points data: " + (err as Error).message,
+          };
+        }
+      }
+
       return {
         success: true,
         data: updatedPath,
@@ -484,27 +426,25 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
     },
     {
       auth: true,
-      // Accept string values as well as number for numeric fields for multipart compatibility
       body: t.Object({
         title: t.Optional(t.String()),
         shortDescription: t.Optional(t.String()),
         longDescription: t.Optional(t.String()),
         category: t.Optional(t.String()),
         difficulty: t.Optional(t.String()),
-        totalTimeMinutes: t.Optional(t.Union([t.Number(), t.String()])),
-        distanceMeters: t.Optional(t.Union([t.Number(), t.String()])),
+        totalTimeMinutes: t.Optional(t.Number()),
+        distanceMeters: t.Optional(t.Number()),
         thumbnailFile: t.Optional(t.File({
-          maxFileSize: "20MB",
+          maxFileSize: "10MB",
           allowedMimeTypes: ["image/jpeg", "image/png"],
         })),
-        isPublished: t.Optional(t.Union([t.Boolean(), t.String()])),
         stylePreset: t.Optional(t.String()),
         markerIconFile: t.Optional(t.File({
           maxFileSize: "10MB",
           allowedMimeTypes: ["image/jpeg", "image/png"],
         })),
+        points: t.Optional(t.String()), // Expecting a stringified JSON array of point IDs
       }),
-      type: "multipart/form-data",
     }
   )
   .delete("/:id", async (context: any) => {
