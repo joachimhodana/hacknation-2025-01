@@ -8,25 +8,18 @@ import {
   Text,
   Appearance,
   Image,
+  Linking,
 } from "react-native";
 import MapView, {
   PROVIDER_GOOGLE,
   PROVIDER_DEFAULT,
-  Camera,
   Marker,
   Polyline,
+  Camera,
 } from "react-native-maps";
 import * as Location from "expo-location";
 import { authClient } from "@/lib/auth-client";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-const MIN_ALT = 120;
-const MAX_ALT = 8000;
-const ZOOM_ALT_STEP = 400;
-
-const MIN_ZOOM = 13;
-const MAX_ZOOM = 19;
-const ZOOM_STEP = 0.6;
 
 const COLORS = {
   red: "#ED1C24",
@@ -34,6 +27,16 @@ const COLORS = {
   blue: "#0095DA",
   default: "#111827",
 };
+
+// zoom po stronie kamery
+const MIN_ZOOM = 13;
+const MAX_ZOOM = 19;
+const ZOOM_STEP = 0.6;
+
+// fallback na altitude (jak zoom nie działa)
+const MIN_ALT = 80;
+const MAX_ALT = 8000;
+const ALT_FACTOR = 0.7; // < 1 → przybliżenie, > 1 → oddalenie
 
 type ActiveRoute = {
   title: string;
@@ -49,7 +52,16 @@ type RoutePin = {
   lng: number;
   variant: MarkerVariant;
   label?: string;
-  imageSource?: any; // require(...) jak będziesz miał asset
+  imageSource?: any;
+};
+
+type OsrmStep = {
+  distance: number;
+  name: string;
+  maneuver: {
+    type: string;
+    modifier?: string;
+  };
 };
 
 export const Map: React.FC = () => {
@@ -64,12 +76,13 @@ export const Map: React.FC = () => {
   const [routeCoordinates, setRouteCoordinates] = useState<
     { latitude: number; longitude: number }[]
   >([]);
+  const [routeSteps, setRouteSteps] = useState<OsrmStep[]>([]);
   const mapRef = useRef<MapView>(null);
   const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(
     null,
   );
 
-  // 🔹 Mock – podepniesz tu realne dane trasy
+  // Mock – realna trasa później z backendu
   const activeRoute: ActiveRoute = {
     title: "Szlak Mariana Rejewskiego",
     totalStops: 8,
@@ -86,7 +99,7 @@ export const Map: React.FC = () => {
       ? `${completedStops} / ${totalStops} przystanków`
       : "Brak przystanków na trasie";
 
-  // User info for avatar
+  // User info
   const user = session?.user;
   const userName = user?.name as string | undefined;
   const userInitials = userName
@@ -98,7 +111,7 @@ export const Map: React.FC = () => {
         .slice(0, 2)
     : "U";
 
-  // 🔵🔴🟡 Trzy typy markerów + domyślny – wszystkie kółka
+  // Piny trasy
   const routePins: RoutePin[] = [
     {
       id: "pin-default",
@@ -145,7 +158,48 @@ export const Map: React.FC = () => {
     }
   };
 
-  // 🔗 OSRM – pobierz realną trasę między pinami i zapisz jako Polyline
+  const formatDistance = (meters: number) => {
+    if (!Number.isFinite(meters)) return "";
+    if (meters < 1000) return `${Math.round(meters)} m`;
+    return `${(meters / 1000).toFixed(1)} km`;
+  };
+
+  const formatManeuverText = (step: OsrmStep | undefined): string => {
+    if (!step) return "Brak danych o następnym manewrze";
+    const { type, modifier } = step.maneuver || {};
+    const street = step.name ? ` w ${step.name}` : "";
+
+    if (type === "arrive") return "Dotrzesz do celu";
+    if (type === "depart") return "Rozpocznij trasę";
+
+    if (type === "roundabout") {
+      return `Wjedź na rondo${street}`;
+    }
+
+    if (type === "turn" || type === "continue") {
+      switch (modifier) {
+        case "left":
+          return `Skręć w lewo${street}`;
+        case "right":
+          return `Skręć w prawo${street}`;
+        case "slight left":
+          return `Lekko w lewo${street}`;
+        case "slight right":
+          return `Lekko w prawo${street}`;
+        case "straight":
+        default:
+          return `Jedź prosto${street}`;
+      }
+    }
+
+    return `Kontynuuj${street}`;
+  };
+
+  const nextStep = routeSteps[0];
+  const nextStepDistance = nextStep ? formatDistance(nextStep.distance) : null;
+  const nextStepText = formatManeuverText(nextStep);
+
+  // OSRM – policz trasę między pinami + wyciągnij kroki
   useEffect(() => {
     const fetchOsrmRoute = async () => {
       if (routePins.length < 2) return;
@@ -157,61 +211,61 @@ export const Map: React.FC = () => {
 
         const url =
           `https://router.project-osrm.org/route/v1/foot/${coordsStr}` +
-          "?overview=full&geometries=geojson";
+          "?overview=full&geometries=geojson&steps=true";
 
         const res = await fetch(url);
 
         if (!res.ok) {
           console.log("OSRM error status:", res.status);
-          // fallback: prosta linia między pinami
+          // fallback: prosta linia
           setRouteCoordinates(
             routePins.map((p) => ({
               latitude: p.lat,
               longitude: p.lng,
             })),
           );
+          setRouteSteps([]);
           return;
         }
 
         const data = await res.json();
-
         const coords: [number, number][] =
           data.routes?.[0]?.geometry?.coordinates ?? [];
+        const steps: OsrmStep[] =
+          data.routes?.[0]?.legs?.[0]?.steps ?? [];
 
         if (!coords.length) {
-          // fallback jak OSRM nic nie zwróci
           setRouteCoordinates(
             routePins.map((p) => ({
               latitude: p.lat,
               longitude: p.lng,
             })),
           );
-          return;
+        } else {
+          const route = coords.map(([lng, lat]) => ({
+            latitude: lat,
+            longitude: lng,
+          }));
+          setRouteCoordinates(route);
         }
 
-        const route = coords.map(([lng, lat]) => ({
-          latitude: lat,
-          longitude: lng,
-        }));
-
-        setRouteCoordinates(route);
+        setRouteSteps(steps);
       } catch (e) {
         console.log("Error fetching OSRM route:", e);
-        // fallback: prosta linia między pinami
         setRouteCoordinates(
           routePins.map((p) => ({
             latitude: p.lat,
             longitude: p.lng,
           })),
         );
+        setRouteSteps([]);
       }
     };
 
-    // routePins są na razie stałe → wystarczy raz na mount
     fetchOsrmRoute();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // routePins stałe
 
+  // Lokalizacja usera
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -225,10 +279,25 @@ export const Map: React.FC = () => {
           accuracy: Location.Accuracy.High,
         });
 
-        setUserLocation({
+        const base = {
           lat: loc.coords.latitude,
           lng: loc.coords.longitude,
-        });
+        };
+
+        setUserLocation(base);
+
+        // startowa kamera
+        const cam: Camera = {
+          center: {
+            latitude: base.lat,
+            longitude: base.lng,
+          },
+          pitch: 55,
+          heading: 0,
+          zoom: 16,
+        };
+
+        mapRef.current?.animateCamera(cam, { duration: 600 });
       } catch (e) {
         console.log("Error getting location", e);
       }
@@ -241,10 +310,11 @@ export const Map: React.FC = () => {
             distanceInterval: 1,
           },
           (location) => {
-            setUserLocation({
+            const updated = {
               lat: location.coords.latitude,
               lng: location.coords.longitude,
-            });
+            };
+            setUserLocation(updated);
           },
         );
       } catch (error) {
@@ -259,122 +329,103 @@ export const Map: React.FC = () => {
     };
   }, []);
 
-  // Startowa kamera
-  useEffect(() => {
-    if (userLocation && mapRef.current) {
-      const cam: Camera =
-        Platform.OS === "android"
-          ? {
-              center: {
-                latitude: userLocation.lat,
-                longitude: userLocation.lng,
-              },
-              pitch: 55,
-              heading: 0,
-              zoom: 16,
-            }
-          : {
-              center: {
-                latitude: userLocation.lat,
-                longitude: userLocation.lng,
-              },
-              pitch: 55,
-              heading: 0,
-              altitude: 600,
-            };
-
-      mapRef.current.animateCamera(cam, { duration: 500 });
-    }
-  }, [userLocation]);
-
-  const normalizeAltitude = (rawAlt?: number): number => {
-    let alt = rawAlt ?? 600;
-
-    if (!Number.isFinite(alt) || alt < 10 || alt > 100_000) {
-      alt = 600;
-    }
-
-    if (alt < MIN_ALT) alt = MIN_ALT;
-    if (alt > MAX_ALT) alt = MAX_ALT;
-
-    return alt;
+  const clampZoom = (z: number) => {
+    if (!Number.isFinite(z)) return 16;
+    if (z < MIN_ZOOM) return MIN_ZOOM;
+    if (z > MAX_ZOOM) return MAX_ZOOM;
+    return z;
   };
 
-  const clampZoom = (z?: number) => {
-    let zoom = z ?? 16;
-    if (!Number.isFinite(zoom)) zoom = 16;
-    if (zoom < MIN_ZOOM) zoom = MIN_ZOOM;
-    if (zoom > MAX_ZOOM) zoom = MAX_ZOOM;
-    return zoom;
+  const clampAlt = (a: number) => {
+    if (!Number.isFinite(a)) return 600;
+    if (a < MIN_ALT) return MIN_ALT;
+    if (a > MAX_ALT) return MAX_ALT;
+    return a;
   };
 
-  // ✅ poprawione przybliżanie/oddalanie
+  // 🔍 Zoom po kamerze – tak, żeby + ZAWSZE przybliżało
   const adjustZoom = async (direction: "in" | "out") => {
     if (!mapRef.current) return;
 
     const cam = await mapRef.current.getCamera();
-    let newCam: Camera;
 
-    if (cam.zoom !== undefined && cam.zoom !== null) {
-      // prefer zoom
+    const hasZoom = cam.zoom !== undefined && cam.zoom !== null;
+
+    if (hasZoom) {
       let zoom = clampZoom(cam.zoom as number);
-      zoom += direction === "in" ? ZOOM_STEP : -ZOOM_STEP;
+
+      if (direction === "in") {
+        zoom += ZOOM_STEP;
+      } else {
+        zoom -= ZOOM_STEP;
+      }
+
       zoom = clampZoom(zoom);
 
-      newCam = {
+      const newCam: Camera = {
         ...cam,
         zoom,
-        pitch: 55,
       };
-    } else {
-      // fallback: altitude
-      let alt = normalizeAltitude(cam.altitude);
-      alt += direction === "in" ? -ZOOM_ALT_STEP : ZOOM_ALT_STEP;
-      alt = normalizeAltitude(alt);
 
-      newCam = {
+      mapRef.current.animateCamera(newCam, { duration: 200 });
+    } else {
+      let alt = clampAlt(cam.altitude ?? 600);
+
+      if (direction === "in") {
+        alt *= ALT_FACTOR; // < 1 → bliżej
+      } else {
+        alt /= ALT_FACTOR; // > 1 → dalej
+      }
+
+      alt = clampAlt(alt);
+
+      const newCam: Camera = {
         ...cam,
         altitude: alt,
-        pitch: 55,
       };
-    }
 
-    mapRef.current.animateCamera(newCam, { duration: 200 });
+      mapRef.current.animateCamera(newCam, { duration: 200 });
+    }
   };
 
   const goToMyLocation = async () => {
-    if (!mapRef.current) return;
+    if (!userLocation || !mapRef.current) return;
 
     try {
-      const loc = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
+      const cam = await mapRef.current.getCamera();
+      const hasZoom = cam.zoom !== undefined && cam.zoom !== null;
 
-      const cam: Camera =
-        Platform.OS === "android"
-          ? {
-              center: {
-                latitude: loc.coords.latitude,
-                longitude: loc.coords.longitude,
-              },
-              pitch: 55,
-              heading: 0,
-              zoom: 16,
-            }
-          : {
-              center: {
-                latitude: loc.coords.latitude,
-                longitude: loc.coords.longitude,
-              },
-              pitch: 55,
-              heading: 0,
-              altitude: 600,
-            };
+      const newCam: Camera = hasZoom
+        ? {
+            ...cam,
+            center: {
+              latitude: userLocation.lat,
+              longitude: userLocation.lng,
+            },
+            zoom: clampZoom((cam.zoom as number) || 16),
+          }
+        : {
+            ...cam,
+            center: {
+              latitude: userLocation.lat,
+              longitude: userLocation.lng,
+            },
+            altitude: clampAlt(cam.altitude ?? 600),
+          };
 
-      mapRef.current.animateCamera(cam, { duration: 700 });
+      mapRef.current.animateCamera(newCam, { duration: 600 });
     } catch (e) {
-      console.log("Error refreshing location", e);
+      console.log("Error goToMyLocation", e);
     }
+  };
+
+  const openInAppleMaps = () => {
+    if (!routePins.length) return;
+    const dest = routePins[routePins.length - 1];
+    const url = `http://maps.apple.com/?daddr=${dest.lat},${dest.lng}&dirflg=w`;
+    Linking.openURL(url).catch((err) =>
+      console.log("Error opening Apple Maps", err),
+    );
   };
 
   if (!userLocation) {
@@ -410,8 +461,6 @@ export const Map: React.FC = () => {
         rotateEnabled={false}
         pitchEnabled={false}
         mapType="standard"
-        minZoomLevel={MIN_ZOOM}
-        maxZoomLevel={MAX_ZOOM}
         customMapStyle={
           Platform.OS === "android"
             ? isDark
@@ -420,7 +469,7 @@ export const Map: React.FC = () => {
             : undefined
         }
       >
-        {/* 🔵 OSRM Polyline pomiędzy pinami */}
+        {/* OSRM Polyline pomiędzy pinami */}
         {routeCoordinates.length >= 2 && (
           <Polyline
             coordinates={routeCoordinates}
@@ -444,7 +493,7 @@ export const Map: React.FC = () => {
           </View>
         </Marker>
 
-        {/* piny trasy – kółka, jeden styl, 3 typy + domyślny */}
+        {/* piny trasy – kółka */}
         {routePins.map((pin) => {
           const { bg, ring } = getPinColors(pin.variant);
 
@@ -487,10 +536,10 @@ export const Map: React.FC = () => {
         })}
       </MapView>
 
-      {/* pływająca wyspa z progresem trasy */}
+      {/* pływająca wyspa z progresem trasy + następnym manewrem */}
       {hasRoute && (
         <View style={[styles.floatingRouteCard, { top: floatingTop }]}>
-          <View style={styles.routeCardContent}>
+          <View style={styles.routeCardHeaderRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.routeTitle} numberOfLines={1}>
                 {routeTitle}
@@ -513,10 +562,36 @@ export const Map: React.FC = () => {
               ]}
             />
           </View>
+
+          {/* Next turn info */}
+          <View style={styles.nextStepRow}>
+            <View style={styles.nextStepIcon}>
+              <Text style={styles.nextStepIconText}>↱</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.nextStepLabel}>
+                Następny manewr
+                {nextStepDistance ? ` • za ${nextStepDistance}` : ""}
+              </Text>
+              <Text style={styles.nextStepText} numberOfLines={2}>
+                {nextStepText}
+              </Text>
+            </View>
+          </View>
+
+          {/* Apple Maps CTA */}
+          <View style={styles.appleRow}>
+            <TouchableOpacity
+              style={styles.appleButton}
+              onPress={openInAppleMaps}
+            >
+              <Text style={styles.appleButtonText}>Otwórz w Apple Maps</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
 
-      {/* Kontrolki mapy – równe odstępy, normalne ikonki */}
+      {/* Kontrolki mapy */}
       <View style={styles.controlsContainer}>
         <TouchableOpacity
           style={styles.controlButton}
@@ -573,7 +648,7 @@ const styles = StyleSheet.create({
     color: "white",
   },
 
-  // Kółkowe piny – jeden styl, różne warianty kolorystyczne
+  // Kółkowe piny
   pinCircleOuter: {
     width: 40,
     height: 40,
@@ -623,7 +698,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 6,
   },
-  routeCardContent: {
+  routeCardHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 6,
@@ -661,6 +736,58 @@ const styles = StyleSheet.create({
   progressBarFill: {
     height: "100%",
     backgroundColor: COLORS.blue,
+  },
+
+  nextStepRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
+    gap: 10,
+  },
+  nextStepIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#F3F4F6",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  nextStepIconText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: COLORS.blue,
+  },
+  nextStepLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#6B7280",
+  },
+  nextStepText: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#111827",
+    marginTop: 2,
+  },
+
+  appleRow: {
+    marginTop: 10,
+    flexDirection: "row",
+    justifyContent: "flex-end",
+  },
+  appleButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    backgroundColor: "#F9FAFB",
+  },
+  appleButtonText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: COLORS.blue,
   },
 
   // Kontrolki mapy
