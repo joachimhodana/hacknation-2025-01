@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter, usePathname } from "expo-router";
+import { MapPoint, Compass, User, Box } from "@solar-icons/react";
 
 const COLORS = {
   red: "#ED1C24",
@@ -15,14 +16,30 @@ const COLORS = {
 type NavItem = {
   label: string;
   route: string;
-  icon: string;
+  IconComponent: React.ComponentType<{ size?: number; color?: string; weight?: string }>;
 };
 
 const navItems: NavItem[] = [
-  { label: "Map", route: "/map", icon: "🗺️" },
-  { label: "Explore", route: "/explore", icon: "🔍" },
-  { label: "Profile", route: "/profile", icon: "👤" },
-  { label: "Collection", route: "/collections", icon: "📦" },
+  { 
+    label: "Map", 
+    route: "/map", 
+    IconComponent: MapPoint
+  },
+  { 
+    label: "Explore", 
+    route: "/explore", 
+    IconComponent: Compass
+  },
+  { 
+    label: "Profile", 
+    route: "/profile", 
+    IconComponent: User
+  },
+  { 
+    label: "Collection", 
+    route: "/collections", 
+    IconComponent: Box
+  },
 ];
 
 export default function Navbar() {
@@ -46,7 +63,11 @@ export default function Navbar() {
             style={[styles.navItem, isActive && styles.navItemActive]}
             onPress={() => handleNavigate(item.route)}
           >
-            <Text style={styles.icon}>{item.icon}</Text>
+            <item.IconComponent
+              size={24}
+              color={isActive ? COLORS.red : COLORS.textMuted}
+              weight={isActive ? "Bold" : "BoldDuotone"}
+            />
             <Text
               style={[
                 styles.label,
@@ -95,7 +116,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.bgSoft,
   },
   icon: {
-    fontSize: 24,
     marginBottom: 4,
   },
   label: {

@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { items as allItems, type CollectedItem } from "./profile";
+import { fetchUserStats, type CollectedItem } from "@/lib/api-client";
 import Navbar from "@/components/Navbar";
 import { authClient } from "@/lib/auth-client";
 
@@ -31,56 +31,34 @@ const COLORS = {
 const CollectionsScreen: React.FC = () => {
   const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
+  const [allItems, setAllItems] = useState<CollectedItem[]>([]);
+  const [itemsLoading, setItemsLoading] = useState(true);
 
+  // Modal state - must be declared before any conditional returns
+  const [selectedItem, setSelectedItem] = useState<CollectedItem | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Animation values - must be declared before any conditional returns
+  const [backdropOpacity] = useState(new Animated.Value(0));
+  const [cardOpacity] = useState(new Animated.Value(0));
+  const [cardTranslateY] = useState(new Animated.Value(24));
+
+  // All useEffect hooks must be before conditional returns
   useEffect(() => {
     if (!isPending && !session) {
       router.replace("/");
     }
   }, [session, isPending, router]);
 
-  if (isPending) {
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ED1C24" />
-        </View>
-      </SafeAreaView>
-    );
-  }
+  // Fetch user stats to get collected items
+  useEffect(() => {
+    if (session && !isPending) {
+      loadItems();
+    }
+  }, [session, isPending]);
 
-  if (!session) {
-    return null; // Will redirect
-  }
-
-  const collectedItems = allItems.filter((i) => i.collected);
-  const totalCount = allItems.length;
-  const collectedCount = collectedItems.length;
-
-  const [selectedItem, setSelectedItem] = useState<CollectedItem | null>(
-    collectedItems[0] ?? allItems[0] ?? null,
-  );
-
-  // logical open/close
-  const [isOpen, setIsOpen] = useState(false);
-  // actual Modal mount flag (so we can animate out before unmount)
-  const [isMounted, setIsMounted] = useState(false);
-
-  // animation values
-  const [backdropOpacity] = useState(new Animated.Value(0));
-  const [cardOpacity] = useState(new Animated.Value(0));
-  const [cardTranslateY] = useState(new Animated.Value(24));
-
-  const openModal = (item: CollectedItem) => {
-    setSelectedItem(item);
-    setIsMounted(true);
-    setIsOpen(true);
-  };
-
-  const closeModal = () => {
-    setIsOpen(false);
-  };
-
-  // drive animations when isOpen changes
+  // Drive animations when isOpen changes - MUST be before conditional returns
   useEffect(() => {
     if (!isMounted) return;
 
@@ -135,6 +113,54 @@ const CollectionsScreen: React.FC = () => {
     }
   }, [isOpen, isMounted, backdropOpacity, cardOpacity, cardTranslateY]);
 
+  const loadItems = async () => {
+    setItemsLoading(true);
+    try {
+      const userStats = await fetchUserStats();
+      if (userStats) {
+        // For now, we only show collected items
+        // In the future, we might want to show all available items with collected status
+        setAllItems(userStats.collectedItems);
+        // Set initial selected item if available
+        if (userStats.collectedItems.length > 0) {
+          setSelectedItem(userStats.collectedItems[0]);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading items:", error);
+    } finally {
+      setItemsLoading(false);
+    }
+  };
+
+  const openModal = (item: CollectedItem) => {
+    setSelectedItem(item);
+    setIsMounted(true);
+    setIsOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsOpen(false);
+  };
+
+  if (isPending || itemsLoading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#ED1C24" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!session) {
+    return null; // Will redirect
+  }
+
+  const collectedItems = allItems.filter((i) => i.collected);
+  const totalCount = allItems.length; // For now, total = collected (we only show collected items)
+  const collectedCount = collectedItems.length;
+
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* Background blobs */}
@@ -144,6 +170,9 @@ const CollectionsScreen: React.FC = () => {
 
       {/* Header */}
       <View style={styles.headerRow}>
+        <TouchableOpacity onPress={() => router.push("/profile")}>
+          <Text style={styles.backText}>‹ Wróć</Text>
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>Zebrane przedmioty</Text>
         <View style={{ width: 48 }} />
       </View>
@@ -151,21 +180,26 @@ const CollectionsScreen: React.FC = () => {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.counterRow}>
           <Text style={styles.subtitle}>
-            Wszystkie przedmioty, które możesz zdobyć w mieście.
+            {allItems.length > 0
+              ? "Wszystkie przedmioty, które możesz zdobyć w mieście."
+              : "Nie masz jeszcze zebranych przedmiotów. Odwiedź miejsca na mapie, aby je zdobyć!"}
           </Text>
 
-          <View style={styles.counterPill}>
-            <Text style={styles.counterText}>
-              {collectedCount} / {totalCount}
-            </Text>
-          </View>
+          {allItems.length > 0 && (
+            <View style={styles.counterPill}>
+              <Text style={styles.counterText}>
+                {collectedCount} / {totalCount}
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Grid: 3 in a row, includes collected + missing */}
-        <View style={styles.itemsGrid}>
-          {allItems.map((item) => {
-            const isCollected = item.collected;
-            const isActive = selectedItem?.id === item.id && isOpen;
+        {allItems.length > 0 ? (
+          <View style={styles.itemsGrid}>
+            {allItems.map((item) => {
+              const isCollected = item.collected;
+              const isActive = selectedItem?.id === item.id && isOpen;
 
             return (
               <TouchableOpacity
@@ -198,7 +232,15 @@ const CollectionsScreen: React.FC = () => {
             Array.from({ length: 3 - (allItems.length % 3) }).map((_, idx) => (
               <View key={`phantom-${idx}`} style={styles.itemTilePhantom} />
             ))}
-        </View>
+          </View>
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateEmoji}>📦</Text>
+            <Text style={styles.emptyStateText}>
+              Zacznij odkrywać miasto, aby zbierać przedmioty!
+            </Text>
+          </View>
+        )}
 
         <View style={{ height: 32 }} />
       </ScrollView>
@@ -531,5 +573,20 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 60,
+  },
+  emptyStateEmoji: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: COLORS.textMuted,
+    textAlign: "center",
+    paddingHorizontal: 32,
   },
 });

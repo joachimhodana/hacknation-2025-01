@@ -48,3 +48,6 @@ package-lock.json
 core
 
 resources/*
+!resources/characters/rejewski.png
+!resources/characters/swiecicki.png
+!resources/characters/przechodzacy_przez_rzeke.png
