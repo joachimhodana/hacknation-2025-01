@@ -5,6 +5,9 @@ ARG HOST=0.0.0.0
 
 WORKDIR /app
 
+# Install curl and wget for health checks and debugging
+RUN apk add --no-cache curl wget
+
 COPY package.json package-lock.json* ./
 RUN npm install
 

@@ -5,6 +5,11 @@ ARG HOST=0.0.0.0
 
 WORKDIR /app
 
+# Install curl and wget for health checks and debugging
+RUN apt-get update -y && \
+    apt-get install -y curl wget && \
+    rm -rf /var/lib/apt/lists/*
+
 COPY package.json bun.lock* ./
 RUN bun install
 
