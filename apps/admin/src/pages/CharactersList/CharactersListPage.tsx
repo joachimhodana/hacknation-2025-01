@@ -82,7 +82,7 @@ const CharactersListPage = () => {
               variant={viewMode === "grid" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("grid")}
-              className={viewMode === "grid" ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}
+              className={viewMode === "grid" ? "bg-primary hover:bg-primary/90 text-primary-foreground" : ""}
             >
               <Grid3x3 className="h-4 w-4" />
             </Button>
@@ -90,13 +90,13 @@ const CharactersListPage = () => {
               variant={viewMode === "list" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("list")}
-              className={viewMode === "list" ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}
+              className={viewMode === "list" ? "bg-primary hover:bg-primary/90 text-primary-foreground" : ""}
             >
               <List className="h-4 w-4" />
             </Button>
           </div>
           <Link to="/characters/create">
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
+            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
               <Plus className="h-4 w-4" />
               Nowa postać
             </Button>
@@ -110,7 +110,7 @@ const CharactersListPage = () => {
             <User className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <p className="text-muted-foreground">Brak postaci. Stwórz pierwszą postać!</p>
             <Link to="/characters/create">
-              <Button className="mt-4 bg-blue-600 hover:bg-blue-700 text-white">
+              <Button className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground">
                 Stwórz postać
               </Button>
             </Link>
@@ -118,42 +118,68 @@ const CharactersListPage = () => {
         </Card>
       ) : (
         <>
-          <div className={viewMode === "grid"
-            ? "grid gap-4 md:grid-cols-2 lg:grid-cols-3"
-            : "space-y-4"
-          }>
+          <div
+            className={
+              viewMode === "grid"
+                ? "grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+                : "space-y-4"
+            }
+          >
             {currentCharacters.map((character) => (
-              <Card key={character.id} className={`hover:shadow-lg transition-shadow ${
-                viewMode === "list" ? "flex" : ""
-              }`}>
+              <Card
+                key={character.id}
+                className={`hover:shadow-lg transition-shadow ${
+                  viewMode === "list" ? "flex" : ""
+                }`}
+              >
                 {viewMode === "list" && (
-                  <div className="w-48 h-48 bg-gray-100 rounded-l-lg flex items-center justify-center flex-shrink-0">
-                    <User className="h-12 w-12 text-gray-400" />
+                  <div className="w-48 h-48 bg-muted rounded-l-lg flex items-center justify-center flex-shrink-0">
+                    <User className="h-12 w-12 text-muted-foreground" />
                   </div>
                 )}
                 <div className={viewMode === "list" ? "flex-1 flex flex-col" : ""}>
                   <CardHeader>
-                    <div className={`flex items-start justify-between ${viewMode === "list" ? "flex-row" : ""}`}>
+                    <div
+                      className={`flex items-start justify-between ${
+                        viewMode === "list" ? "flex-row" : ""
+                      }`}
+                    >
                       <div className="flex-1">
-                        <CardTitle className={`${viewMode === "list" ? "text-xl" : "text-lg"} mb-2`}>
+                        <CardTitle
+                          className={`${
+                            viewMode === "list" ? "text-xl" : "text-lg"
+                          } mb-2`}
+                        >
                           {character.name}
                         </CardTitle>
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent className={`${viewMode === "list" ? "flex-1 flex flex-col justify-between" : "space-y-4"}`}>
-                    <div className={viewMode === "list"
-                      ? "flex items-center gap-6 flex-wrap"
-                      : "space-y-2"
-                    }>
+                  <CardContent
+                    className={`${
+                      viewMode === "list"
+                        ? "flex-1 flex flex-col justify-between"
+                        : "space-y-4"
+                    }`}
+                  >
+                    <div
+                      className={
+                        viewMode === "list"
+                          ? "flex items-center gap-6 flex-wrap"
+                          : "space-y-2"
+                      }
+                    >
                       {character.deafultPosition ? (
                         <div className="flex items-center gap-2 text-sm">
-                          <MapPin className="h-4 w-4 text-blue-600" />
+                          <MapPin className="h-4 w-4 text-primary" />
                           <span className="text-muted-foreground">
-                            {character.deafultPosition.latitude.toFixed(4)}, {character.deafultPosition.longitude.toFixed(4)}
+                            {character.deafultPosition.latitude.toFixed(4)},{" "}
+                            {character.deafultPosition.longitude.toFixed(4)}
                           </span>
                           {character.deafultPosition.description && (
-                            <span className="text-muted-foreground">- {character.deafultPosition.description}</span>
+                            <span className="text-muted-foreground">
+                              - {character.deafultPosition.description}
+                            </span>
                           )}
                         </div>
                       ) : (
@@ -163,16 +189,27 @@ const CharactersListPage = () => {
                       )}
                     </div>
 
-                    <div className={`text-xs text-muted-foreground ${viewMode === "list" ? "mt-2" : "border-t pt-3"}`}>
+                    <div
+                      className={`text-xs text-muted-foreground ${
+                        viewMode === "list" ? "mt-2" : "border-t pt-3"
+                      }`}
+                    >
                       Ostatnia edycja: {formatDate(character.lastModifiedAt)}
                     </div>
 
-                    <div className={`flex gap-2 ${viewMode === "list" ? "mt-4" : "pt-2"}`}>
-                      <Link to={`/characters/create?edit=${character.id}`} className="flex-1">
+                    <div
+                      className={`flex gap-2 ${
+                        viewMode === "list" ? "mt-4" : "pt-2"
+                      }`}
+                    >
+                      <Link
+                        to={`/characters/create?edit=${character.id}`}
+                        className="flex-1"
+                      >
                         <Button
                           variant="outline"
                           size="sm"
-                          className="w-full gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
+                          className="w-full gap-2 border-primary/30 text-primary hover:bg-primary"
                         >
                           <Edit className="h-4 w-4" />
                           Edytuj
@@ -191,28 +228,36 @@ const CharactersListPage = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
               >
                 Poprzednia
               </Button>
               <div className="flex items-center gap-1">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <Button
-                    key={page}
-                    variant={currentPage === page ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setCurrentPage(page)}
-                    className={currentPage === page ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}
-                  >
-                    {page}
-                  </Button>
-                ))}
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (page) => (
+                    <Button
+                      key={page}
+                      variant={currentPage === page ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(page)}
+                      className={
+                        currentPage === page
+                          ? "bg-primary hover:bg-primary/90 text-primary-foreground"
+                          : ""
+                      }
+                    >
+                      {page}
+                    </Button>
+                  )
+                )}
               </div>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                }
                 disabled={currentPage === totalPages}
               >
                 Następna

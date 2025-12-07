@@ -227,14 +227,20 @@ const CharacterCreatorPage = () => {
       <div className="flex-1 relative">
         {mounted ? (
           <MapComponent
-            points={defaultPosition ? [{
-              id: "default-position",
-              name: "Pozycja domyślna",
-              description: defaultPosition.description || "",
-              lat: defaultPosition.latitude,
-              lng: defaultPosition.longitude,
-              order: 1,
-            }] : []}
+            points={
+              defaultPosition
+                ? [
+                    {
+                      id: "default-position",
+                      name: "Pozycja domyślna",
+                      description: defaultPosition.description || "",
+                      lat: defaultPosition.latitude,
+                      lng: defaultPosition.longitude,
+                      order: 1,
+                    },
+                  ]
+                : []
+            }
             onMapClick={handleMapClick}
           />
         ) : (
@@ -262,15 +268,31 @@ const CharacterCreatorPage = () => {
             </div>
             <div className="flex items-center gap-2">
               <div
-                className={`flex items-center gap-1 px-2 py-1 rounded ${currentStep === 1 ? "bg-blue-100 text-blue-900" : "bg-gray-100 text-gray-600"}`}
+                className={`flex items-center gap-1 px-2 py-1 rounded ${
+                  currentStep === 1
+                    ? "bg-primary/10 text-primary"
+                    : "bg-muted text-muted-foreground"
+                }`}
               >
-                <CheckCircle2 className={`h-4 w-4 ${currentStep === 1 ? "text-blue-600" : "text-gray-400"}`} />
+                <CheckCircle2
+                  className={`h-4 w-4 ${
+                    currentStep === 1 ? "text-primary" : "text-muted-foreground"
+                  }`}
+                />
                 <span className="text-sm font-medium">Krok 1</span>
               </div>
               <div
-                className={`flex items-center gap-1 px-2 py-1 rounded ${currentStep === 2 ? "bg-blue-100 text-blue-900" : "bg-gray-100 text-gray-600"}`}
+                className={`flex items-center gap-1 px-2 py-1 rounded ${
+                  currentStep === 2
+                    ? "bg-primary/10 text-primary"
+                    : "bg-muted text-muted-foreground"
+                }`}
               >
-                <CheckCircle2 className={`h-4 w-4 ${currentStep === 2 ? "text-blue-600" : "text-gray-400"}`} />
+                <CheckCircle2
+                  className={`h-4 w-4 ${
+                    currentStep === 2 ? "text-primary" : "text-muted-foreground"
+                  }`}
+                />
                 <span className="text-sm font-medium">Krok 2</span>
               </div>
             </div>
@@ -282,11 +304,11 @@ const CharacterCreatorPage = () => {
               <InformationCard
                 title="Krok 1: Ustawienia ogólne"
                 description="Wypełnij podstawowe informacje o postaci. Po ukończeniu przejdź do kroku 2, aby opcjonalnie ustawić pozycję domyślną."
-                icon={<Settings className="h-5 w-5 text-blue-600" />}
+                icon={<Settings className="h-5 w-5 text-primary" />}
               />
               {validationError && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <p className="text-sm text-red-800">{validationError}</p>
+                <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3">
+                  <p className="text-sm text-destructive">{validationError}</p>
                 </div>
               )}
               <Card>
@@ -314,7 +336,7 @@ const CharacterCreatorPage = () => {
               </Card>
               <Button
                 onClick={handleNextStep}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                 size="lg"
                 disabled={!isFormValid}
               >
@@ -331,7 +353,12 @@ const CharacterCreatorPage = () => {
             /* Krok 2 - Pozycja domyślna */
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-4">
-                <Button variant="ghost" size="sm" onClick={() => setCurrentStep(1)} className="gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCurrentStep(1)}
+                  className="gap-2"
+                >
                   <ArrowLeft className="h-4 w-4" />
                   Powrót do kroku 1
                 </Button>
@@ -339,7 +366,7 @@ const CharacterCreatorPage = () => {
               <InformationCard
                 title="Krok 2: Pozycja domyślna (opcjonalnie)"
                 description="Możesz opcjonalnie ustawić pozycję domyślną postaci na mapie. Kliknij przycisk poniżej, a następnie kliknij na mapie, aby wybrać pozycję."
-                icon={<MapPin className="h-5 w-5 text-blue-600" />}
+                icon={<MapPin className="h-5 w-5 text-primary" />}
               />
 
               <Card>
@@ -349,29 +376,33 @@ const CharacterCreatorPage = () => {
                 <CardContent className="space-y-4">
                   {defaultPosition ? (
                     <div className="space-y-3">
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <div className="bg-primary/5 border border-primary/30 rounded-lg p-3">
                         <div className="flex items-center justify-between mb-2">
-                          <p className="font-semibold text-blue-900">Pozycja wybrana</p>
+                          <p className="font-semibold text-primary">Pozycja wybrana</p>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={handleRemovePosition}
-                            className="text-red-600 hover:text-red-700"
+                            className="text-destructive hover:text-destructive/90"
                           >
                             <X className="h-4 w-4" />
                           </Button>
                         </div>
-                        <div className="text-sm text-blue-800 space-y-1">
+                        <div className="text-sm text-primary space-y-1">
                           <p>
-                            <strong>Szerokość:</strong> {defaultPosition.latitude.toFixed(6)}
+                            <strong>Szerokość:</strong>{" "}
+                            {defaultPosition.latitude.toFixed(6)}
                           </p>
                           <p>
-                            <strong>Długość:</strong> {defaultPosition.longitude.toFixed(6)}
+                            <strong>Długość:</strong>{" "}
+                            {defaultPosition.longitude.toFixed(6)}
                           </p>
                         </div>
                       </div>
                       <div>
-                        <Label htmlFor="position-description">Opis pozycji (opcjonalnie)</Label>
+                        <Label htmlFor="position-description">
+                          Opis pozycji (opcjonalnie)
+                        </Label>
                         <Input
                           id="position-description"
                           value={defaultPosition.description}
@@ -389,11 +420,12 @@ const CharacterCreatorPage = () => {
                   ) : (
                     <div className="text-center py-4">
                       <p className="text-sm text-muted-foreground mb-4">
-                        Nie wybrano pozycji domyślnej. Kliknij przycisk poniżej, aby wybrać pozycję na mapie.
+                        Nie wybrano pozycji domyślnej. Kliknij przycisk poniżej, aby wybrać
+                        pozycję na mapie.
                       </p>
                       <Button
                         onClick={() => setIsSelectingPosition(true)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
                       >
                         <MapPin className="h-4 w-4" />
                         Wybierz pozycję na mapie
@@ -402,8 +434,8 @@ const CharacterCreatorPage = () => {
                   )}
 
                   {isSelectingPosition && !defaultPosition && (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                      <p className="text-sm text-yellow-800">
+                    <div className="bg-secondary/20 border border-secondary/40 rounded-lg p-3">
+                      <p className="text-sm text-secondary-foreground">
                         Kliknij na mapie po lewej stronie, aby wybrać pozycję domyślną.
                       </p>
                     </div>
@@ -413,7 +445,7 @@ const CharacterCreatorPage = () => {
 
               <Button
                 onClick={handleSaveCharacter}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                 size="lg"
               >
                 <Save className="h-4 w-4 mr-2" />

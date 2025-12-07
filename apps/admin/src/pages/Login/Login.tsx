@@ -31,7 +31,7 @@ export function Login() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-muted-foreground">Loading...</p>
         </div>
       </div>
@@ -161,14 +161,14 @@ export function Login() {
               </div>
             </div>
             {error && (
-              <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md flex items-center gap-2">
+              <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded-md flex items-center gap-2">
                 <Icon icon="solar:danger-triangle-bold-duotone" className="h-4 w-4 shrink-0" />
                 <span>{error}</span>
               </div>
             )}
             <Button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700"
+              className="w-full bg-primary hover:bg-primary/90"
               disabled={loading}
             >
               {loading ? (
@@ -189,4 +189,3 @@ export function Login() {
     </div>
   );
 }
-

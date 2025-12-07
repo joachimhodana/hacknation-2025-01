@@ -24,9 +24,29 @@ const mockRoutes: RoutesObjectType[] = [
     createdAt: Date.now() - 86400000 * 5,
     updatedAt: Date.now() - 86400000 * 2,
     stops: [
-      { stop_id: 1, name: "Punkt 1", map_marker: { display_name: "Punkt 1", address: "Warszawa", coordinates: { latitude: 52.2297, longitude: 21.0122 } }, place_description: "Opis", voice_over_text: "Dialog" },
-      { stop_id: 2, name: "Punkt 2", map_marker: { display_name: "Punkt 2", address: "Warszawa", coordinates: { latitude: 52.2297, longitude: 21.0122 } }, place_description: "Opis", voice_over_text: "Dialog" },
-    ]
+      {
+        stop_id: 1,
+        name: "Punkt 1",
+        map_marker: {
+          display_name: "Punkt 1",
+          address: "Warszawa",
+          coordinates: { latitude: 52.2297, longitude: 21.0122 },
+        },
+        place_description: "Opis",
+        voice_over_text: "Dialog",
+      },
+      {
+        stop_id: 2,
+        name: "Punkt 2",
+        map_marker: {
+          display_name: "Punkt 2",
+          address: "Warszawa",
+          coordinates: { latitude: 52.2297, longitude: 21.0122 },
+        },
+        place_description: "Opis",
+        voice_over_text: "Dialog",
+      },
+    ],
   },
   {
     pathId: "2",
@@ -45,8 +65,18 @@ const mockRoutes: RoutesObjectType[] = [
     createdAt: Date.now() - 86400000 * 10,
     updatedAt: Date.now() - 86400000 * 1,
     stops: [
-      { stop_id: 1, name: "Punkt 1", map_marker: { display_name: "Punkt 1", address: "Beskidy", coordinates: { latitude: 49.5, longitude: 19.0 } }, place_description: "Opis", voice_over_text: "Dialog" },
-    ]
+      {
+        stop_id: 1,
+        name: "Punkt 1",
+        map_marker: {
+          display_name: "Punkt 1",
+          address: "Beskidy",
+          coordinates: { latitude: 49.5, longitude: 19.0 },
+        },
+        place_description: "Opis",
+        voice_over_text: "Dialog",
+      },
+    ],
   },
   {
     pathId: "3",
@@ -65,10 +95,40 @@ const mockRoutes: RoutesObjectType[] = [
     createdAt: Date.now() - 86400000 * 3,
     updatedAt: Date.now() - 3600000,
     stops: [
-      { stop_id: 1, name: "Punkt 1", map_marker: { display_name: "Punkt 1", address: "Okolica", coordinates: { latitude: 52.0, longitude: 21.0 } }, place_description: "Opis", voice_over_text: "Dialog" },
-      { stop_id: 2, name: "Punkt 2", map_marker: { display_name: "Punkt 2", address: "Okolica", coordinates: { latitude: 52.0, longitude: 21.0 } }, place_description: "Opis", voice_over_text: "Dialog" },
-      { stop_id: 3, name: "Punkt 3", map_marker: { display_name: "Punkt 3", address: "Okolica", coordinates: { latitude: 52.0, longitude: 21.0 } }, place_description: "Opis", voice_over_text: "Dialog" },
-    ]
+      {
+        stop_id: 1,
+        name: "Punkt 1",
+        map_marker: {
+          display_name: "Punkt 1",
+          address: "Okolica",
+          coordinates: { latitude: 52.0, longitude: 21.0 },
+        },
+        place_description: "Opis",
+        voice_over_text: "Dialog",
+      },
+      {
+        stop_id: 2,
+        name: "Punkt 2",
+        map_marker: {
+          display_name: "Punkt 2",
+          address: "Okolica",
+          coordinates: { latitude: 52.0, longitude: 21.0 },
+        },
+        place_description: "Opis",
+        voice_over_text: "Dialog",
+      },
+      {
+        stop_id: 3,
+        name: "Punkt 3",
+        map_marker: {
+          display_name: "Punkt 3",
+          address: "Okolica",
+          coordinates: { latitude: 52.0, longitude: 21.0 },
+        },
+        place_description: "Opis",
+        voice_over_text: "Dialog",
+      },
+    ],
   },
 ]
 
@@ -87,11 +147,11 @@ const RoutesListPage = () => {
   const currentRoutes = routes.slice(startIndex, endIndex)
 
   const handleTogglePublish = (pathId: string) => {
-    setRoutes(routes.map(route => 
-      route.pathId === pathId 
-        ? { ...route, isPublished: !route.isPublished }
-        : route
-    ))
+    setRoutes(
+      routes.map((route) =>
+        route.pathId === pathId ? { ...route, isPublished: !route.isPublished } : route,
+      ),
+    )
   }
 
   const formatDate = (timestamp: number) => {
@@ -101,7 +161,7 @@ const RoutesListPage = () => {
       month: "long",
       day: "numeric",
       hour: "2-digit",
-      minute: "2-digit"
+      minute: "2-digit",
     })
   }
 
@@ -134,7 +194,11 @@ const RoutesListPage = () => {
               variant={viewMode === "grid" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("grid")}
-              className={viewMode === "grid" ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}
+              className={
+                viewMode === "grid"
+                  ? "bg-primary hover:bg-primary/90 text-primary-foreground"
+                  : ""
+              }
             >
               <Grid3x3 className="h-4 w-4" />
             </Button>
@@ -142,13 +206,17 @@ const RoutesListPage = () => {
               variant={viewMode === "list" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("list")}
-              className={viewMode === "list" ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}
+              className={
+                viewMode === "list"
+                  ? "bg-primary hover:bg-primary/90 text-primary-foreground"
+                  : ""
+              }
             >
               <List className="h-4 w-4" />
             </Button>
           </div>
           <Link to="/routes/create">
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
+            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
               <Plus className="h-4 w-4" />
               Nowa trasa
             </Button>
@@ -162,7 +230,7 @@ const RoutesListPage = () => {
             <Route className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <p className="text-muted-foreground">Brak tras. Stwórz pierwszą trasę!</p>
             <Link to="/routes/create">
-              <Button className="mt-4 bg-blue-600 hover:bg-blue-700 text-white">
+              <Button className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground">
                 Stwórz trasę
               </Button>
             </Link>
@@ -170,58 +238,92 @@ const RoutesListPage = () => {
         </Card>
       ) : (
         <>
-          <div className={viewMode === "grid" 
-            ? "grid gap-4 md:grid-cols-2 lg:grid-cols-3" 
-            : "space-y-4"
-          }>
+          <div
+            className={
+              viewMode === "grid"
+                ? "grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+                : "space-y-4"
+            }
+          >
             {currentRoutes.map((route) => (
-              <Card key={route.pathId} className={`hover:shadow-lg transition-shadow ${
-                viewMode === "list" ? "flex" : ""
-              }`}>
+              <Card
+                key={route.pathId}
+                className={`hover:shadow-lg transition-shadow ${
+                  viewMode === "list" ? "flex" : ""
+                }`}
+              >
                 {viewMode === "list" && (
-                  <div className="w-48 h-48 bg-gray-100 rounded-l-lg flex items-center justify-center flex-shrink-0">
-                    <Route className="h-12 w-12 text-gray-400" />
+                  <div className="w-48 h-48 bg-muted rounded-l-lg flex items-center justify-center flex-shrink-0">
+                    <Route className="h-12 w-12 text-muted-foreground" />
                   </div>
                 )}
                 <div className={viewMode === "list" ? "flex-1 flex flex-col" : ""}>
                   <CardHeader>
-                    <div className={`flex items-start justify-between ${viewMode === "list" ? "flex-row" : ""}`}>
+                    <div
+                      className={`flex items-start justify-between ${
+                        viewMode === "list" ? "flex-row" : ""
+                      }`}
+                    >
                       <div className="flex-1">
-                        <CardTitle className={`${viewMode === "list" ? "text-xl" : "text-lg"} mb-2`}>
+                        <CardTitle
+                          className={`${
+                            viewMode === "list" ? "text-xl" : "text-lg"
+                          } mb-2`}
+                        >
                           {route.title}
                         </CardTitle>
-                        <p className={`text-sm text-muted-foreground ${viewMode === "list" ? "" : "line-clamp-2"}`}>
+                        <p
+                          className={`text-sm text-muted-foreground ${
+                            viewMode === "list" ? "" : "line-clamp-2"
+                          }`}
+                        >
                           {route.shortDescription}
                         </p>
                       </div>
-                      <div className={`px-2 py-1 rounded text-xs font-medium ml-2 ${
-                        route.isPublished 
-                          ? "bg-green-100 text-green-800" 
-                          : "bg-gray-100 text-gray-800"
-                      }`}>
+                      <div
+                        className={`px-2 py-1 rounded text-xs font-medium ml-2 ${
+                          route.isPublished
+                            ? "bg-primary/10 text-primary"
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                      >
                         {route.isPublished ? "Opublikowana" : "Szkic"}
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent className={`${viewMode === "list" ? "flex-1 flex flex-col justify-between" : "space-y-4"}`}>
-                    <div className={viewMode === "list" 
-                      ? "flex items-center gap-6 flex-wrap" 
-                      : "grid grid-cols-2 gap-3"
-                    }>
+                  <CardContent
+                    className={`${
+                      viewMode === "list"
+                        ? "flex-1 flex flex-col justify-between"
+                        : "space-y-4"
+                    }`}
+                  >
+                    <div
+                      className={
+                        viewMode === "list"
+                          ? "flex items-center gap-6 flex-wrap"
+                          : "grid grid-cols-2 gap-3"
+                      }
+                    >
                       <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="h-4 w-4 text-blue-600" />
+                        <MapPin className="h-4 w-4 text-primary" />
                         <span className="text-muted-foreground">
-                          {route.stops.length} {route.stops.length === 1 ? "punkt" : route.stops.length < 5 ? "punkty" : "punktów"}
+                          {route.stops.length}{" "}
+                          {route.stops.length === 1
+                            ? "punkt"
+                            : route.stops.length < 5
+                            ? "punkty"
+                            : "punktów"}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
-                        <Route className="h-4 w-4 text-blue-600" />
+                        <Route className="h-4 w-4 text-primary" />
                         <span className="text-muted-foreground">
                           {formatDistance(route.distanceMeters)}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
-                        <Clock className="h-4 w-4 text-blue-600" />
+                        <Clock className="h-4 w-4 text-primary" />
                         <span className="text-muted-foreground">
                           {formatTime(route.totalTimeMinutes)}
                         </span>
@@ -234,20 +336,28 @@ const RoutesListPage = () => {
                     </div>
 
                     {route.updatedAt && (
-                      <div className={`text-xs text-muted-foreground ${viewMode === "list" ? "mt-2" : "border-t pt-3"}`}>
+                      <div
+                        className={`text-xs text-muted-foreground ${
+                          viewMode === "list" ? "mt-2" : "border-t pt-3"
+                        }`}
+                      >
                         Ostatnia edycja: {formatDate(route.updatedAt)}
                       </div>
                     )}
 
-                    <div className={`flex gap-2 ${viewMode === "list" ? "mt-4" : "pt-2"}`}>
+                    <div
+                      className={`flex gap-2 ${
+                        viewMode === "list" ? "mt-4" : "pt-2"
+                      }`}
+                    >
                       <Button
                         variant={route.isPublished ? "outline" : "default"}
                         size="sm"
                         onClick={() => handleTogglePublish(route.pathId)}
-                        className={`${viewMode === "list" ? "flex-1" : "flex-1"} gap-2 ${
-                          route.isPublished 
-                            ? "border-red-200 text-red-700 hover:bg-red-50" 
-                            : "bg-green-600 hover:bg-green-700 text-white"
+                        className={`flex-1 gap-2 ${
+                          route.isPublished
+                            ? "border-destructive/30 text-destructive hover:bg-destructive/10"
+                            : "bg-primary hover:bg-primary/90 text-primary-foreground"
                         }`}
                       >
                         {route.isPublished ? (
@@ -262,11 +372,14 @@ const RoutesListPage = () => {
                           </>
                         )}
                       </Button>
-                      <Link to={`/routes/create?edit=${route.pathId}`} className={viewMode === "list" ? "flex-1" : "flex-1"}>
+                      <Link
+                        to={`/routes/create?edit=${route.pathId}`}
+                        className="flex-1"
+                      >
                         <Button
                           variant="outline"
                           size="sm"
-                          className="w-full gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
+                          className="w-full gap-2 border-border text-foreground hover:bg-muted"
                         >
                           <Edit className="h-4 w-4" />
                           Edytuj
@@ -285,28 +398,36 @@ const RoutesListPage = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
               >
                 Poprzednia
               </Button>
               <div className="flex items-center gap-1">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <Button
-                    key={page}
-                    variant={currentPage === page ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setCurrentPage(page)}
-                    className={currentPage === page ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}
-                  >
-                    {page}
-                  </Button>
-                ))}
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (page) => (
+                    <Button
+                      key={page}
+                      variant={currentPage === page ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(page)}
+                      className={
+                        currentPage === page
+                          ? "bg-primary hover:bg-primary/90 text-primary-foreground"
+                          : ""
+                      }
+                    >
+                      {page}
+                    </Button>
+                  ),
+                )}
               </div>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                }
                 disabled={currentPage === totalPages}
               >
                 Następna
