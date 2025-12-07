@@ -251,32 +251,10 @@ const RouteCreatorPage = () => {
             // Ustaw initial values, które będą użyte przy tworzeniu formularza
             setInitialFormValues(formValues)
 
-            // Wypełnij formularz gdy będzie gotowy
-            const maxAttempts = 50
-            let attempts = 0
-
-            const loadData = () => {
-              if (formRef.current) {
-                formRef.current.reset(formValues, { keepDefaultValues: false })
-                formRef.current.setValue("title", formValues.title, { shouldValidate: false })
-                formRef.current.setValue("shortDescription", formValues.shortDescription, { shouldValidate: false })
-                formRef.current.setValue("longDescription", formValues.longDescription, { shouldValidate: false })
-                formRef.current.setValue("category", formValues.category, { shouldValidate: false })
-                formRef.current.setValue("difficulty", formValues.difficulty, { shouldValidate: false })
-                formRef.current.setValue("stylePreset", formValues.stylePreset, { shouldValidate: false })
-
-                setCurrentStep(1)
-                setIsLoading(false)
-              } else if (attempts < maxAttempts) {
-                attempts++
-                setTimeout(loadData, 100)
-              } else {
-                setCurrentStep(1)
-                setIsLoading(false)
-              }
-            }
-
-            loadData()
+            // Formularz zostanie wypełniony automatycznie przez GeneralRouteForm przez initialValues
+            // Nie resetuj formularza tutaj, ponieważ może to nadpisać wartości wprowadzone przez użytkownika
+            setCurrentStep(1)
+            setIsLoading(false)
           } else {
             setValidationError(response.error || "Nie udało się załadować trasy")
             setIsLoading(false)
@@ -569,8 +547,12 @@ const RouteCreatorPage = () => {
       }
 
       // Pobierz aktualne dane z formularza ustawień ogólnych
-      // getValues() zwraca aktualne wartości formularza
+      // Użyj getValues() z shouldValidate: false, aby upewnić się, że otrzymujemy aktualne wartości
+      // Dodatkowo wywołaj trigger() aby upewnić się, że formularz jest zsynchronizowany
+      await formRef.current.trigger()
       const formValues = formRef.current.getValues()
+      
+      console.log('Form values before save:', formValues)
 
       const estimatedTimeHours = calculateEstimatedTime(routeDistance, 3)
       const totalTimeMinutes = Math.round(estimatedTimeHours * 60)
@@ -969,18 +951,8 @@ const RouteCreatorPage = () => {
                   <GeneralRouteForm
                     onFormReady={(form) => { 
                       formRef.current = form
-                      if (initialFormValues) {
-                        form.reset(initialFormValues, { keepDefaultValues: false })
-                        form.setValue("title", initialFormValues.title, { shouldValidate: false })
-                        form.setValue("shortDescription", initialFormValues.shortDescription, { shouldValidate: false })
-                        form.setValue("longDescription", initialFormValues.longDescription, { shouldValidate: false })
-                        form.setValue("category", initialFormValues.category, { shouldValidate: false })
-                        form.setValue("difficulty", initialFormValues.difficulty, { shouldValidate: false })
-                        form.setValue("stylePreset", initialFormValues.stylePreset, { shouldValidate: false })
-                        setTimeout(() => {
-                          form.trigger()
-                        }, 100)
-                      }
+                      // Nie resetuj formularza tutaj - GeneralRouteForm obsługuje to przez initialValues
+                      // Resetowanie tutaj może nadpisać wartości wprowadzone przez użytkownika
                     }}
                     onValidationChange={(isValid) => setIsFormValid(isValid)}
                     initialValues={initialFormValues || undefined}

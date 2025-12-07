@@ -1,8 +1,8 @@
-import { BarChart3 } from "lucide-react"
 import { Icon } from "@iconify/react"
 import InformationCard from "@/components/shared/CustomCards/InformationCard/InformationCard.tsx"
 import DashboardStats from "@/pages/Dashboard/components/DashboardStats/DashboardStats.tsx"
 import DashboardRoutes from "@/pages/Dashboard/components/DashboardRoutes/DashboardRoutes.tsx"
+import DashboardHeader from "@/pages/Dashboard/components/DashboardHeader/DashboardHeader.tsx"
 
 
 

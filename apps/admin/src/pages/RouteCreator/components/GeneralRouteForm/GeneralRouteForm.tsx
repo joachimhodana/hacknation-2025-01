@@ -1,4 +1,4 @@
-import {useEffect} from "react";
+import {useEffect, useRef} from "react";
 import {useForm} from "react-hook-form";
 import {yupResolver} from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -207,6 +207,7 @@ const GeneralRouteForm = ({onFormReady, onValidationChange, initialValues, exist
     });
 
     const { formState } = form;
+    const hasInitialized = useRef(false);
 
     // Przekaż formularz do komponentu rodzica
     useEffect(() => {
@@ -215,9 +216,10 @@ const GeneralRouteForm = ({onFormReady, onValidationChange, initialValues, exist
         }
     }, [form, onFormReady]);
 
-    // Aktualizuj wartości formularza gdy initialValues się zmienią
+    // Aktualizuj wartości formularza tylko przy pierwszym załadowaniu initialValues
+    // Nie resetuj formularza jeśli użytkownik już wprowadził zmiany
     useEffect(() => {
-        if (initialValues) {
+        if (initialValues && !hasInitialized.current) {
             form.reset({
                 title: initialValues.title || "",
                 shortDescription: initialValues.shortDescription || "",
@@ -228,6 +230,7 @@ const GeneralRouteForm = ({onFormReady, onValidationChange, initialValues, exist
                 stylePreset: initialValues.stylePreset || "",
                 makerIconFile: initialValues.makerIconFile || null,
             }, { keepDefaultValues: false });
+            hasInitialized.current = true;
             // Wywołaj walidację po ustawieniu wartości
             setTimeout(() => {
                 form.trigger();
