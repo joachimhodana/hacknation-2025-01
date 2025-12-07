@@ -378,7 +378,7 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
       const [updatedPath] = await db
         .update(paths)
         .set(updateData)
-        .where(and(eq(paths.id, Number(params.id)), eq(paths.createdBy, user.id)))
+        .where(and(eq(paths.pathId, params.id), eq(paths.createdBy, user.id)))
         .returning();
 
       if (!updatedPath) {
@@ -425,7 +425,7 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
     const [deletedPath] = await db
       .delete(paths)
       .where(
-        and(eq(paths.id, Number(params.id)), eq(paths.createdBy, user.id))
+        and(eq(paths.pathId, params.id), eq(paths.createdBy, user.id))
       )
       .returning();
 
@@ -452,7 +452,7 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
       .from(paths)
       .where(
         and(
-          eq(paths.id, Number(params.id)),
+          eq(paths.pathId, params.id),
           eq(paths.createdBy, user.id)
         )
       )
@@ -472,7 +472,7 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
       })
       .where(
         and(
-          eq(paths.id, Number(params.id)),
+          eq(paths.pathId, params.id),
           eq(paths.createdBy, user.id)
         )
       )
