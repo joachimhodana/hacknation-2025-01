@@ -11,7 +11,7 @@ import GeneralCharacterForm, { type CharacterFormData } from "./components/Gener
 import DefaultPositionStep, { type DefaultPosition } from "./components/DefaultPositionStep/DefaultPositionStep.tsx"
 import CharacterStepsHeader from "./components/CharacterStepsHeader/CharacterStepsHeader.tsx"
 
-const CharacterCreatorPage = () => {
+const CharactersCreatorPage = () => {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const editCharacterId = searchParams.get("edit")
@@ -381,4 +381,4 @@ const CharacterCreatorPage = () => {
   )
 }
 
-export default CharacterCreatorPage
+export default CharactersCreatorPage

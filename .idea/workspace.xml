@@ -6,8 +6,16 @@
   <component name="ChangeListManager">
     <list default="true" id="1df88e0a-f3b6-4388-84f9-5fc94cf4eac0" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/CharacterCreator/CharacterCreatorPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/CharacterCreator/CharacterCreatorPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/services/charactersApi.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/services/charactersApi.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/App.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/CharacterCreator/CharacterCreatorPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/CharactersCreatorPage/CharactersCreatorPage.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/CharacterCreator/components/CharacterStepsHeader/CharacterStepsHeader.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/CharactersCreatorPage/components/CharacterStepsHeader/CharacterStepsHeader.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/CharacterCreator/components/DefaultPositionStep/DefaultPositionStep.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/CharactersCreatorPage/components/DefaultPositionStep/DefaultPositionStep.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/CharacterCreator/components/GeneralCharacterForm/GeneralCharacterForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/CharactersCreatorPage/components/GeneralCharacterForm/GeneralCharacterForm.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/CharactersList/CharactersListPage.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/Dashboard/DashboardPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/Dashboard/DashboardPage.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/Login/Login.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/Login/Login.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/RouteCreator/RouteCreatorPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/RoutesCreatorPage/RoutesCreatorPage.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/RouteCreator/components/GeneralRouteForm/GeneralRouteForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/RoutesCreatorPage/components/GeneralRouteForm/GeneralRouteForm.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -53,21 +61,21 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "feature/connection",
-    "node.js.detected.package.eslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "ts.external.directory.path": "/Users/pawelserkowski/WebstormProjects/hacknation-2025-01/apps/admin/node_modules/typescript/lib",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;feature/connection&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;/Users/pawelserkowski/WebstormProjects/hacknation-2025-01/apps/admin/node_modules/typescript/lib&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/apps/admin/src/pages/CharactersList/components" />
