@@ -186,7 +186,7 @@ export function ProfilePanel({ isOpen, onClose }: ProfilePanelProps) {
             <Button
               onClick={handleLogout}
               variant="outline"
-              className="w-full gap-2 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20"
+              className="w-full gap-2 text-destructive border-destructive/30 hover:bg-destructive/10"
             >
               <Icon icon="solar:logout-bold-duotone" className="h-5 w-5" />
               Wyloguj się

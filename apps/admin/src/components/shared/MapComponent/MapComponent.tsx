@@ -253,7 +253,7 @@ function DraggableMarker({
                     onMarkerDelete(point.id)
                   }
                 }}
-                className="shrink-0 p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                className="shrink-0 p-1.5 text-destructive hover:text-destructive/90 hover:bg-destructive/10 rounded transition-colors"
                 title="Usuń punkt"
               >
                 <Icon icon="solar:trash-bin-trash-bold-duotone" className="h-4 w-4" />
@@ -261,7 +261,7 @@ function DraggableMarker({
             )}
           </div>
           {isDragEnabled && (
-            <div className="text-xs text-blue-600 mt-2 font-medium pt-2 border-t border-gray-200">
+            <div className="text-xs text-primary mt-2 font-medium pt-2 border-t border-border">
               Przeciągnij, aby przesunąć
             </div>
           )}
