@@ -15,7 +15,7 @@ interface RoutePoint {
   order: number
   hasCustomAudio: boolean
   audioFile: File | null
-  characterName: string
+  characterId: number | null
   dialog: string
 }
 

@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from "react"
+import { useSearchParams, useNavigate } from "react-router-dom"
 import { useForm } from "react-hook-form"
-import { useSearchParams } from "react-router-dom"
 import { Button } from "@/components/ui/button.tsx"
-import type { RoutesObjectType, RouteStopType } from "@/types/RoutesType.tsx"
 import { Input } from "@/components/ui/input.tsx"
 import { Label } from "@/components/ui/label.tsx"
 import { Textarea } from "@/components/ui/textarea.tsx"
@@ -10,12 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.t
 import { Icon } from "@iconify/react"
 import { cn } from "@/lib/utils.ts"
 import MapComponent from "@/components/shared/MapComponent/MapComponent.tsx"
-import InformationCard from "@/components/shared/CustomCards/InformationCard/InformationCard.tsx";
-import GeneralRouteForm from "./components/GeneralRouteForm/GeneralRouteForm.tsx";
-import { calculateEstimatedTime, formatTime } from "@/lib/route-utils.ts";
-import { createPath, getPath } from "@/lib/api-client.ts";
-import { getCharacters as getCharactersFromApi } from "@/services/charactersApi.ts";
-import type { CharacterType } from "@/types/CharactersType.tsx";
+import InformationCard from "@/components/shared/CustomCards/InformationCard/InformationCard.tsx"
+import GeneralRouteForm from "./components/GeneralRouteForm/GeneralRouteForm.tsx"
+import { calculateEstimatedTime, formatTime } from "@/lib/route-utils.ts"
+import { createPath, getPath } from "@/lib/api-client.ts"
+import { getCharacters as getCharactersFromApi } from "@/services/charactersApi.ts"
+import type { CharacterType } from "@/types/CharactersType.tsx"
 
 interface RoutePoint {
   id: string
@@ -28,91 +27,6 @@ interface RoutePoint {
   audioFile: File | null
   characterId: number | null
   dialog: string
-}
-
-
-
-// Mock data - w prawdziwej aplikacji dane będą z API
-const mockRoutes: RoutesObjectType[] = [
-  {
-    pathId: "1",
-    title: "Trasa po Warszawie",
-    shortDescription: "Piękna trasa po stolicy",
-    longDescription: "Szczegółowy opis trasy po Warszawie...",
-    category: "walking",
-    totalTimeMinutes: 120,
-    difficulty: "easy",
-    distanceMeters: 5000,
-    thumbnailUrl: "",
-    isPublished: true,
-    stylePreset: "modern",
-    makerIconUrl: "",
-    createBy: "admin",
-    createdAt: Date.now() - 86400000 * 5,
-    updatedAt: Date.now() - 86400000 * 2,
-    stops: [
-      { stop_id: 1, name: "Punkt 1", map_marker: { display_name: "Punkt 1", address: "Warszawa", coordinates: { latitude: 52.2297, longitude: 21.0122 } }, place_description: "Opis punktu 1", voice_over_text: "Dialog punktu 1" },
-      { stop_id: 2, name: "Punkt 2", map_marker: { display_name: "Punkt 2", address: "Warszawa", coordinates: { latitude: 52.2300, longitude: 21.0130 } }, place_description: "Opis punktu 2", voice_over_text: "Dialog punktu 2" },
-    ]
-  },
-  {
-    pathId: "2",
-    title: "Szlak górski Beskidy",
-    shortDescription: "Trasa górska dla zaawansowanych",
-    longDescription: "Szczegółowy opis trasy górskiej...",
-    category: "hiking",
-    totalTimeMinutes: 300,
-    difficulty: "hard",
-    distanceMeters: 15000,
-    thumbnailUrl: "",
-    isPublished: false,
-    stylePreset: "classic",
-    makerIconUrl: "",
-    createBy: "admin",
-    createdAt: Date.now() - 86400000 * 10,
-    updatedAt: Date.now() - 86400000 * 1,
-    stops: [
-      { stop_id: 1, name: "Punkt 1", map_marker: { display_name: "Punkt 1", address: "Beskidy", coordinates: { latitude: 49.5, longitude: 19.0 } }, place_description: "Opis", voice_over_text: "Dialog" },
-    ]
-  },
-  {
-    pathId: "3",
-    title: "Wycieczka rowerowa",
-    shortDescription: "Trasa rowerowa po okolicy",
-    longDescription: "Szczegółowy opis trasy rowerowej...",
-    category: "cycling",
-    totalTimeMinutes: 90,
-    difficulty: "medium",
-    distanceMeters: 20000,
-    thumbnailUrl: "",
-    isPublished: true,
-    stylePreset: "colorful",
-    makerIconUrl: "",
-    createBy: "admin",
-    createdAt: Date.now() - 86400000 * 3,
-    updatedAt: Date.now() - 3600000,
-    stops: [
-      { stop_id: 1, name: "Punkt 1", map_marker: { display_name: "Punkt 1", address: "Okolica", coordinates: { latitude: 52.0, longitude: 21.0 } }, place_description: "Opis", voice_over_text: "Dialog" },
-      { stop_id: 2, name: "Punkt 2", map_marker: { display_name: "Punkt 2", address: "Okolica", coordinates: { latitude: 52.1, longitude: 21.1 } }, place_description: "Opis", voice_over_text: "Dialog" },
-      { stop_id: 3, name: "Punkt 3", map_marker: { display_name: "Punkt 3", address: "Okolica", coordinates: { latitude: 52.2, longitude: 21.2 } }, place_description: "Opis", voice_over_text: "Dialog" },
-    ]
-  },
-]
-
-// Funkcja do konwersji RouteStopType na RoutePoint
-const convertStopToPoint = (stop: RouteStopType, order: number): RoutePoint => {
-  return {
-    id: stop.stop_id.toString(),
-    name: stop.name,
-    description: stop.place_description,
-    lat: stop.map_marker.coordinates.latitude,
-    lng: stop.map_marker.coordinates.longitude,
-    order: order,
-    hasCustomAudio: false,
-    audioFile: null,
-    characterId: null, // Character ID will need to be loaded from API if available
-    dialog: stop.voice_over_text,
-  }
 }
 
 // Audio file input component
@@ -241,6 +155,7 @@ function AudioFileInput({
 
 const RouteCreatorPage = () => {
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const editPathId = searchParams.get("edit")
   const [currentStep, setCurrentStep] = useState<1 | 2>(1)
   const [points, setPoints] = useState<RoutePoint[]>([])
@@ -256,6 +171,9 @@ const RouteCreatorPage = () => {
   const [characters, setCharacters] = useState<CharacterType[]>([])
   const [isLoadingCharacters, setIsLoadingCharacters] = useState(false)
   const formRef = useRef<ReturnType<typeof useForm<any>> | null>(null)
+  const [initialFormValues, setInitialFormValues] = useState<any>(null)
+  const [existingThumbnailUrl, setExistingThumbnailUrl] = useState<string | null>(null)
+  const [existingMarkerIconUrl, setExistingMarkerIconUrl] = useState<string | null>(null)
 
   // Ładowanie danych trasy do edycji
   useEffect(() => {
@@ -269,6 +187,7 @@ const RouteCreatorPage = () => {
             const route = response.data
             
             // Konwertuj points z API na RoutePoint format
+            // Backend zwraca points jako tablicę z { point: {...}, orderIndex: number }
             if (route.points && Array.isArray(route.points)) {
               const convertedPoints: RoutePoint[] = route.points.map((pointData: any, index: number) => {
                 const point = pointData.point || pointData
@@ -280,46 +199,56 @@ const RouteCreatorPage = () => {
                   lng: point.longitude,
                   order: pointData.orderIndex !== undefined ? pointData.orderIndex + 1 : index + 1,
                   hasCustomAudio: !!point.audioUrl,
-                  audioFile: null, // Audio files are stored on server, not in form
+                  audioFile: null,
                   characterId: point.characterId || null,
                   dialog: point.narrationText || "",
                 }
               })
               setPoints(convertedPoints)
             } else {
-              // Jeśli nie ma punktów, ustaw pustą tablicę
               setPoints([])
             }
             
-            // Wypełnij formularz gdy będzie gotowy (z timeoutem, żeby nie czekać w nieskończoność)
-            const maxAttempts = 50 // maksymalnie 5 sekund (50 * 100ms)
+            // Zapisz istniejące URL-e plików
+            setExistingThumbnailUrl(route.thumbnailUrl || null)
+            setExistingMarkerIconUrl(route.markerIconUrl || null)
+            
+            // Przygotuj wartości formularza z obiektu route
+            const formValues = {
+              title: route.title || "",
+              shortDescription: route.shortDescription || "",
+              longDescription: route.longDescription || "",
+              category: route.category || "",
+              difficulty: route.difficulty || "",
+              thumbnailFile: null,
+              stylePreset: route.stylePreset || "",
+              makerIconFile: null,
+            }
+            
+            // Ustaw initial values, które będą użyte przy tworzeniu formularza
+            setInitialFormValues(formValues)
+            
+            // Wypełnij formularz gdy będzie gotowy
+            const maxAttempts = 50
             let attempts = 0
             
             const loadData = () => {
               if (formRef.current) {
-                // Wypełnij formularz
-                formRef.current.reset({
-                  pathId: route.pathId || editPathId,
-                  title: route.title,
-                  shortDescription: route.shortDescription,
-                  longDescription: route.longDescription || "",
-                  category: route.category,
-                  difficulty: route.difficulty,
-                  thumbnailFile: null, // Pliki trzeba będzie załadować osobno z URL
-                  stylePreset: route.stylePreset || "",
-                  makerIconFile: null, // Pliki trzeba będzie załadować osobno z URL
-                })
+                formRef.current.reset(formValues, { keepDefaultValues: false })
+                formRef.current.setValue("title", formValues.title, { shouldValidate: false })
+                formRef.current.setValue("shortDescription", formValues.shortDescription, { shouldValidate: false })
+                formRef.current.setValue("longDescription", formValues.longDescription, { shouldValidate: false })
+                formRef.current.setValue("category", formValues.category, { shouldValidate: false })
+                formRef.current.setValue("difficulty", formValues.difficulty, { shouldValidate: false })
+                formRef.current.setValue("stylePreset", formValues.stylePreset, { shouldValidate: false })
                 
-                // Zawsze przejdź do kroku 2 przy edycji
-                setCurrentStep(2)
+                setCurrentStep(1)
                 setIsLoading(false)
               } else if (attempts < maxAttempts) {
                 attempts++
                 setTimeout(loadData, 100)
               } else {
-                // Jeśli formularz nie jest gotowy po max próbach, ustaw dane i przejdź do kroku 2
-                console.warn("Formularz nie jest jeszcze gotowy, ale ustawiam dane")
-                setCurrentStep(2)
+                setCurrentStep(1)
                 setIsLoading(false)
               }
             }
@@ -341,14 +270,12 @@ const RouteCreatorPage = () => {
   }, [editPathId])
 
   useEffect(() => {
-    // Opóźnij montowanie mapy, aby uniknąć problemów z inicjalizacją
     const timer = setTimeout(() => {
       setMounted(true)
     }, 100)
     return () => clearTimeout(timer)
   }, [])
 
-  // Pobierz listę postaci przy załadowaniu
   useEffect(() => {
     const loadCharacters = async () => {
       try {
@@ -357,7 +284,6 @@ const RouteCreatorPage = () => {
         setCharacters(charactersData)
       } catch (error) {
         console.error("Failed to load characters:", error)
-        // Nie blokujemy działania aplikacji jeśli nie uda się załadować postaci
       } finally {
         setIsLoadingCharacters(false)
       }
@@ -373,16 +299,13 @@ const RouteCreatorPage = () => {
     const checkMarkerIcon = () => {
       const formValues = formRef.current?.getValues()
       if (formValues?.makerIconFile instanceof File) {
-        // Cleanup previous URL if it exists
         setMarkerIconUrl((prevUrl) => {
           if (prevUrl) {
             URL.revokeObjectURL(prevUrl)
           }
-          // Create object URL for the marker icon
           return URL.createObjectURL(formValues.makerIconFile)
         })
       } else if (!formValues?.makerIconFile) {
-        // Cleanup if icon was removed
         setMarkerIconUrl((prevUrl) => {
           if (prevUrl) {
             URL.revokeObjectURL(prevUrl)
@@ -392,17 +315,14 @@ const RouteCreatorPage = () => {
       }
     }
 
-    // Check initially
     checkMarkerIcon()
 
-    // Subscribe to form changes
     const subscription = formRef.current.watch(() => {
       checkMarkerIcon()
     })
 
     return () => {
       subscription.unsubscribe()
-      // Cleanup on unmount
       setMarkerIconUrl((prevUrl) => {
         if (prevUrl) {
           URL.revokeObjectURL(prevUrl)
@@ -412,7 +332,6 @@ const RouteCreatorPage = () => {
     }
   }, [formRef.current, isFormValid])
 
-  // Also check when form becomes valid (file might have been selected)
   useEffect(() => {
     if (isFormValid && formRef.current) {
       const formValues = formRef.current.getValues()
@@ -427,13 +346,11 @@ const RouteCreatorPage = () => {
     }
   }, [isFormValid])
 
-  // Calculate estimated time based on actual route distance
-  const estimatedTimeHours = calculateEstimatedTime(routeDistance, 3) // 3 km/h walking speed
+  const estimatedTimeHours = calculateEstimatedTime(routeDistance, 3)
   const formattedTime = formatTime(estimatedTimeHours)
 
   const handleMapClick = (lat: number, lng: number) => {
-    // Blokuj tworzenie punktów w kroku 1
-    if (currentStep === 1) return;
+    if (currentStep === 1) return
 
     const newPoint: RoutePoint = {
       id: Date.now().toString(),
@@ -488,7 +405,7 @@ const RouteCreatorPage = () => {
     )
     setPoints(updatedPoints)
     setIsEditing(false)
-    setValidationError(null) // Wyczyść błąd po zapisaniu punktu
+    setValidationError(null)
   }
 
   const handleMarkerMove = (pointId: string, lat: number, lng: number) => {
@@ -503,7 +420,6 @@ const RouteCreatorPage = () => {
     }
   }
 
-  // Walidacja punktów - sprawdza czy wszystkie wymagane pola są wypełnione
   const validatePoints = (): boolean => {
     setValidationError(null)
 
@@ -515,19 +431,6 @@ const RouteCreatorPage = () => {
     for (const point of points) {
       if (!point.name || point.name.trim() === "") {
         setValidationError(`Punkt ${point.order} nie ma wypełnionej nazwy`)
-        // Zaznacz punkt, który ma błąd
-        setSelectedPoint(point)
-        setIsEditing(true)
-        return false
-      }
-      if (!point.description || point.description.trim() === "") {
-        setValidationError(`Punkt ${point.order} nie ma wypełnionego opisu`)
-        setSelectedPoint(point)
-        setIsEditing(true)
-        return false
-      }
-      if (!point.characterId) {
-        setValidationError(`Punkt ${point.order} nie ma wybranej postaci`)
         setSelectedPoint(point)
         setIsEditing(true)
         return false
@@ -543,7 +446,6 @@ const RouteCreatorPage = () => {
     return true
   }
 
-  // Obsługa przejścia do kroku 2 z walidacją
   const handleNextStep = async () => {
     setValidationError(null)
 
@@ -552,7 +454,6 @@ const RouteCreatorPage = () => {
       return
     }
 
-    // Sprawdź walidację formularza
     const isValid = await formRef.current.trigger()
 
     if (!isValid) {
@@ -592,7 +493,6 @@ const RouteCreatorPage = () => {
       // Pobierz dane z formularza ustawień ogólnych
       const formValues = formRef.current.getValues()
 
-      // Calculate time in minutes
       const estimatedTimeHours = calculateEstimatedTime(routeDistance, 3)
       const totalTimeMinutes = Math.round(estimatedTimeHours * 60)
       const distanceMeters = Math.round(routeDistance * 1000)
@@ -600,7 +500,6 @@ const RouteCreatorPage = () => {
       const API_BASE_URL = import.meta.env.VITE_BETTER_AUTH_URL || "http://localhost:8080"
 
       if (editPathId) {
-        // Update existing path using PATCH
         const formData = new FormData()
         formData.append('title', formValues.title)
         formData.append('shortDescription', formValues.shortDescription)
@@ -609,8 +508,6 @@ const RouteCreatorPage = () => {
         }
         formData.append('category', formValues.category)
         formData.append('difficulty', formValues.difficulty)
-        // Backend expects number, but FormData converts to string, so we append as string
-        // Backend will convert it back to number
         formData.append('totalTimeMinutes', totalTimeMinutes.toString())
         formData.append('distanceMeters', distanceMeters.toString())
         
@@ -643,38 +540,28 @@ const RouteCreatorPage = () => {
           return
         }
 
-        // Success!
-        alert("Trasa została pomyślnie zaktualizowana!")
-        // Optionally redirect
-        // window.location.href = "/routes"
+        navigate("/routes")
       } else {
-        // Create new path
-        // Validate required files for new path
-        if (!formValues.thumbnailFile || !(formValues.thumbnailFile instanceof File)) {
+        if (!existingThumbnailUrl && (!formValues.thumbnailFile || !(formValues.thumbnailFile instanceof File))) {
           setValidationError("Miniatura jest wymagana")
           setCurrentStep(1)
           setIsSaving(false)
           return
         }
 
-        // Generate pathId if not provided
         const pathId = formValues.pathId || `route_${Date.now()}`
 
-        // Prepare points data
         const sortedPoints = [...points].sort((a, b) => a.order - b.order)
-        const pointsData = sortedPoints.map((point) => {
-          return {
-            latitude: point.lat,
-            longitude: point.lng,
-            radiusMeters: 50, // Default radius, can be made configurable
-            locationLabel: point.name,
-            narrationText: point.dialog || point.description,
-            characterId: point.characterId ? Number(point.characterId) : undefined,
-            audioFile: point.hasCustomAudio && point.audioFile ? point.audioFile : undefined,
-          }
-        })
+        const pointsData = sortedPoints.map((point) => ({
+          latitude: point.lat,
+          longitude: point.lng,
+          radiusMeters: 50,
+          locationLabel: point.name,
+          narrationText: point.dialog || point.description,
+          characterId: point.characterId ? Number(point.characterId) : undefined,
+          audioFile: point.hasCustomAudio && point.audioFile ? point.audioFile : undefined,
+        }))
 
-        // Create the path with all points in one request
         const pathResponse = await createPath({
           pathId,
           title: formValues.title,
@@ -696,10 +583,7 @@ const RouteCreatorPage = () => {
           return
         }
 
-        // Success!
-        alert("Trasa została pomyślnie zapisana!")
-        // Optionally redirect or reset form
-        // window.location.href = "/routes"
+        navigate("/routes")
       }
 
     } catch (error: any) {
@@ -723,7 +607,6 @@ const RouteCreatorPage = () => {
 
   return (
     <div className="flex h-[calc(100vh-64px)]">
-      {/*Lewa strona - Mapa*/}
       <div className="flex-1 relative">
         {mounted ? (
           <>
@@ -759,54 +642,38 @@ const RouteCreatorPage = () => {
           </div>
         )}
 
-        {/* Route statistics overlay */}
         {points.length >= 2 && (
-          <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-sm 
-                  rounded-lg p-4 shadow-sm border border-neutral-200 z-1000">
-
+          <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-sm rounded-lg p-4 shadow-sm border border-neutral-200 z-1000">
             <div className="space-y-4">
-
-              {/* Distance */}
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <Icon icon="solar:route-bold-duotone" className="h-4 w-4 text-neutral-700" />
-                  <span className="text-sm font-medium text-neutral-900 ">
-                    Długość trasy
-                  </span>
+                  <span className="text-sm font-medium text-neutral-900">Długość trasy</span>
                 </div>
                 <div className="text-lg font-semibold text-neutral-900 tracking-tight">
                   {routeDistance.toFixed(2)} km
                 </div>
               </div>
-
-              {/* Time */}
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <Icon icon="solar:clock-circle-bold-duotone" className="h-4 w-4 text-neutral-700" />
-                  <span className="text-sm font-medium text-neutral-900">
-                    Szacowany czas
-                  </span>
+                  <span className="text-sm font-medium text-neutral-900">Szacowany czas</span>
                 </div>
                 <div className="text-lg font-semibold text-neutral-900 tracking-tight">
                   {formattedTime}
                 </div>
               </div>
-
-              {/* Footnote */}
               <div className="text-xs text-neutral-500 pt-2 border-t border-neutral-200">
                 (przy prędkości 3 km/h)
               </div>
             </div>
-
           </div>
         )}
       </div>
 
 
-      {/* Prawa strona - Panel kroków */}
       <div className="w-1/3 border-r overflow-y-auto">
         <div className="p-4 space-y-4">
-          {/* Header z krokami */}
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-xl font-bold">
@@ -828,9 +695,7 @@ const RouteCreatorPage = () => {
             </div>
           </div>
 
-          {/* Keep form mounted to preserve state */}
           <div className={currentStep === 1 ? "space-y-4" : "hidden"}>
-            {/* Krok 1 - Ustawienia ogólne */}
             <InformationCard
               title="Krok 1: Ustawienia ogólne"
               description="Wypełnij podstawowe informacje o trasie. Po ukończeniu przejdź do kroku 2, aby dodać punkty."
@@ -852,8 +717,25 @@ const RouteCreatorPage = () => {
                   </div>
                 ) : (
                   <GeneralRouteForm
-                    onFormReady={(form) => { formRef.current = form }}
+                    onFormReady={(form) => { 
+                      formRef.current = form
+                      if (initialFormValues) {
+                        form.reset(initialFormValues, { keepDefaultValues: false })
+                        form.setValue("title", initialFormValues.title, { shouldValidate: false })
+                        form.setValue("shortDescription", initialFormValues.shortDescription, { shouldValidate: false })
+                        form.setValue("longDescription", initialFormValues.longDescription, { shouldValidate: false })
+                        form.setValue("category", initialFormValues.category, { shouldValidate: false })
+                        form.setValue("difficulty", initialFormValues.difficulty, { shouldValidate: false })
+                        form.setValue("stylePreset", initialFormValues.stylePreset, { shouldValidate: false })
+                        setTimeout(() => {
+                          form.trigger()
+                        }, 100)
+                      }
+                    }}
                     onValidationChange={(isValid) => setIsFormValid(isValid)}
+                    initialValues={initialFormValues || undefined}
+                    existingThumbnailUrl={existingThumbnailUrl}
+                    existingMarkerIconUrl={existingMarkerIconUrl}
                   />
                 )}
               </CardContent>
@@ -878,7 +760,6 @@ const RouteCreatorPage = () => {
             )}
           </div>
 
-          {/* Krok 2 - Punkty trasy */}
           {currentStep === 2 && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-4">
@@ -906,7 +787,7 @@ const RouteCreatorPage = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        const centerLat = 53.1235 // Bydgoszcz
+                        const centerLat = 53.1235
                         const centerLng = 18.0084
                         handleMapClick(centerLat, centerLng)
                       }}
@@ -997,7 +878,6 @@ const RouteCreatorPage = () => {
                 </CardContent>
               </Card>
 
-              {/* Panel edycji punktu */}
               {selectedPoint && isEditing && (
                 <Card className="border-blue-200 bg-blue-50/30">
                   <CardHeader>
