@@ -50,7 +50,7 @@ const CollectionsScreen: React.FC = () => {
 
   // Modal state - must be declared before any conditional returns
   const [selectedItem, setSelectedItem] = useState<CollectedItem | null>(null);
-  const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
+  const [selectedReward, setSelectedReward] = useState<RewardDisplay | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
@@ -322,79 +322,6 @@ const CollectionsScreen: React.FC = () => {
                 },
               ]}
             >
-              {selectedItem && (
-                <>
-                  {/* Accent strip */}
-                  <View style={styles.modalAccentStrip}>
-                    <View
-                      style={[
-                        styles.modalAccentSegment,
-                        { backgroundColor: COLORS.red },
-                      ]}
-                    />
-                    <View
-                      style={[
-                        styles.modalAccentSegment,
-                        { backgroundColor: COLORS.yellow },
-                      ]}
-                    />
-                    <View
-                      style={[
-                        styles.modalAccentSegment,
-                        { backgroundColor: COLORS.blue },
-                      ]}
-                    />
-                  </View>
-
-                  <View style={styles.modalContent}>
-                    <View style={styles.modalHeaderRow}>
-                      <View style={styles.modalEmojiWrapper}>
-                        <Text style={styles.modalEmoji}>{selectedItem.emoji}</Text>
-                      </View>
-
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.modalTitle}>
-                          {selectedItem.title}
-                        </Text>
-                        <Text style={styles.modalPlace}>
-                          {selectedItem.placeName ?? "Miejsce do uzupełnienia"}
-                        </Text>
-                      </View>
-                    </View>
-
-                    <Text style={styles.modalDescription}>
-                      {selectedItem.description}
-                    </Text>
-
-                    <View style={styles.modalMetaRow}>
-                      <View>
-                        <Text style={styles.modalMetaLabel}>Status:</Text>
-                        <Text style={styles.modalMetaValue}>
-                          {selectedItem.collected
-                            ? "Zebrano"
-                            : "Jeszcze nie zebrano"}
-                        </Text>
-                      </View>
-
-                      <View style={{ alignItems: "flex-end" }}>
-                        <Text style={styles.modalMetaLabel}>Data zebrania:</Text>
-                        <Text style={styles.modalMetaValue}>
-                          {selectedItem.collectedAt && selectedItem.collected
-                            ? selectedItem.collectedAt
-                            : "—"}
-                        </Text>
-                      </View>
-                    </View>
-
-                    <TouchableOpacity
-                      style={styles.modalCloseButton}
-                      onPress={closeModal}
-                    >
-                      <Text style={styles.modalCloseText}>Zamknij</Text>
-                    </TouchableOpacity>
-                  </View>
-                </>
-              )}
               {selectedReward && (
                 <>
                   {/* Accent strip */}
@@ -425,7 +352,6 @@ const CollectionsScreen: React.FC = () => {
                         source={selectedReward.imageSource}
                         style={styles.modalRewardImage}
                         resizeMode="cover"
-                        defaultSource={require("@/assets/images/rewards/rejewski.png")}
                       />
                     )}
                     <View style={styles.modalHeaderRow}>
