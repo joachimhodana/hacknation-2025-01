@@ -13,7 +13,7 @@ import InformationCard from "@/components/shared/CustomCards/InformationCard/Inf
 import { Form } from "@/components/ui/form.tsx"
 import CustomUsualInput from "@/components/shared/CustomCards/CustomInput/CustomUsualInput.tsx"
 import CustomFileInput from "@/components/shared/CustomCards/CustomInput/CustomFileInput.tsx"
-import { getCharacterById, createCharacter, updateCharacter } from "@/services/charactersApi.ts"
+import { getCharacterById } from "@/services/charactersApi.ts"
 
 interface DefaultPosition {
   latitude: number
@@ -171,17 +171,69 @@ const CharacterCreatorPage = () => {
         description: formValues.description || undefined,
       }
 
+      const API_BASE_URL = import.meta.env.VITE_BETTER_AUTH_URL || "http://localhost:8080"
+      const ADMIN_CHARACTERS_ENDPOINT = `${API_BASE_URL}/admin/characters`
+
       if (editCharacterId) {
-        // Update existing character
-        // Note: PUT endpoint doesn't support file upload, only avatarUrl
-        await updateCharacter(Number(editCharacterId), {
-          name: characterData.name,
-          description: characterData.description,
-          // avatarUrl is not updated here as PUT endpoint doesn't support file upload
+        // Update existing character using PATCH
+        const formData = new FormData()
+        formData.append('name', characterData.name)
+        
+        if (characterData.avatarFile) {
+          formData.append('avatarFile', characterData.avatarFile)
+        }
+        
+        if (characterData.description) {
+          formData.append('description', characterData.description)
+        }
+
+        const response = await fetch(`${ADMIN_CHARACTERS_ENDPOINT}/${Number(editCharacterId)}`, {
+          method: "PATCH",
+          headers: {
+            'Accept': 'application/json',
+          },
+          credentials: "include",
+          body: formData,
         })
+
+        if (!response.ok) {
+          throw new Error(`Failed to update character: ${response.statusText}`)
+        }
+
+        const result = await response.json()
+        if (!result.success || !result.data) {
+          throw new Error(result.error || "Failed to update character")
+        }
       } else {
-        // Create new character with file upload
-        await createCharacter(characterData)
+        // Create new character using PUT
+        const formData = new FormData()
+        formData.append('name', characterData.name)
+        
+        if (characterData.avatarFile) {
+          formData.append('avatarFile', characterData.avatarFile)
+        }
+        
+        if (characterData.description) {
+          formData.append('description', characterData.description)
+        }
+
+        const response = await fetch(ADMIN_CHARACTERS_ENDPOINT, {
+          method: "PUT",
+          headers: {
+            'Accept': 'application/json',
+          },
+          credentials: "include",
+          body: formData,
+        })
+
+        if (!response.ok) {
+          throw new Error(`Failed to create character: ${response.statusText}`)
+        }
+
+        const result = await response.json()
+        if (!result.success || !result.data) {
+          throw new Error(result.error || "Failed to create character")
+        }
       }
 
       // Redirect to characters list after successful save
@@ -221,21 +273,36 @@ const CharacterCreatorPage = () => {
       {/* Lewa strona - Mapa */}
       <div className="flex-1 relative h-full">
         {mounted ? (
-          <MapComponent
-            points={defaultPosition ? [{
-              id: "default-position",
-              name: "Pozycja domyślna",
-              description: defaultPosition.description || "",
-              lat: defaultPosition.latitude,
-              lng: defaultPosition.longitude,
-              order: 1,
-              hasCustomAudio: false,
-              audioFile: null,
-              characterName: "",
-              dialog: "",
-            }] : []}
-            onMapClick={handleMapClick}
-          />
+          <>
+            <MapComponent
+              points={defaultPosition ? [{
+                id: "default-position",
+                name: "Pozycja domyślna",
+                description: defaultPosition.description || "",
+                lat: defaultPosition.latitude,
+                lng: defaultPosition.longitude,
+                order: 1,
+                hasCustomAudio: false,
+                audioFile: null,
+                characterName: "",
+                dialog: "",
+              }] : []}
+              onMapClick={handleMapClick}
+            />
+            {currentStep === 1 && (
+              <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 max-w-md mx-4 shadow-lg border border-gray-200">
+                  <div className="flex items-center gap-3 mb-3">
+                    <MapPin className="h-6 w-6 text-blue-600" />
+                    <h3 className="text-lg font-semibold text-gray-900">Mapa niedostępna</h3>
+                  </div>
+                  <p className="text-gray-600">
+                    W kroku 1 nie możesz korzystać z mapy. Przejdź do kroku 2, aby ustawić pozycję domyślną postaci.
+                  </p>
+                </div>
+              </div>
+            )}
+          </>
         ) : (
           <div className="flex items-center justify-center h-full bg-muted">
             <div className="text-center">

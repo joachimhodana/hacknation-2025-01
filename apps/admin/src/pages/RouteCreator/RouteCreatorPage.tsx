@@ -664,15 +664,30 @@ const RouteCreatorPage = () => {
       {/*Lewa strona - Mapa*/}
       <div className="flex-1 relative">
         {mounted ? (
-          <MapComponent
-            points={points}
-            onMapClick={handleMapClick}
-            markerIconUrl={markerIconUrl}
-            onRouteDistanceChange={setRouteDistance}
-            onMarkerMove={handleMarkerMove}
-            onMarkerDelete={handleDeletePoint}
-            selectedPointId={selectedPoint?.id || null}
-          />
+          <>
+            <MapComponent
+              points={points}
+              onMapClick={handleMapClick}
+              markerIconUrl={markerIconUrl}
+              onRouteDistanceChange={setRouteDistance}
+              onMarkerMove={handleMarkerMove}
+              onMarkerDelete={handleDeletePoint}
+              selectedPointId={selectedPoint?.id || null}
+            />
+            {currentStep === 1 && (
+              <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 max-w-md mx-4 shadow-lg border border-gray-200">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Icon icon="solar:map-point-bold-duotone" className="h-6 w-6 text-blue-600" />
+                    <h3 className="text-lg font-semibold text-gray-900">Mapa niedostępna</h3>
+                  </div>
+                  <p className="text-gray-600">
+                    W kroku 1 nie możesz korzystać z mapy. Przejdź do kroku 2, aby dodać punkty trasy.
+                  </p>
+                </div>
+              </div>
+            )}
+          </>
         ) : (
           <div className="flex items-center justify-center h-full bg-muted">
             <div className="text-center">
