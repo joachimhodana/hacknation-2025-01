@@ -3,7 +3,7 @@ import { useDeviceDetection } from "@/hooks/use-device-detection";
 import { authClient } from "@/lib/auth-client";
 import { getActivePathProgress, markPointVisited, type PathProgress } from "@/lib/api-client";
 import { getAPIBaseURL } from "@/lib/api-url";
-import { isWithinGeofence } from "@/lib/geofence-utils";
+import { isWithinGeofence, calculateDistance } from "@/lib/geofence-utils";
 
 export type MapProps = {
   lat?: number;
@@ -78,9 +78,14 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
   const [routeSteps, setRouteSteps] = useState<OsrmStep[]>([]);
   const [pathProgress, setPathProgress] = useState<PathProgress | null>(null);
   const [selectedStop, setSelectedStop] = useState<PathProgress["path"]["stops"][0] | null>(null);
-  const [showStopDialog, setShowStopDialog] = useState(false);
+  const [showCharacterDialog, setShowCharacterDialog] = useState(false);
   const [markingVisited, setMarkingVisited] = useState(false);
+  const [showRewardNotification, setShowRewardNotification] = useState(false);
+  const [rewardData, setRewardData] = useState<{ label?: string; iconUrl?: string } | null>(null);
   const geofenceCheckIntervalRef = useRef<number | null>(null);
+  const isMarkingVisitedRef = useRef(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const currentlyPlayingAudioRef = useRef<string | null>(null);
 
   // Get user info for avatar
   const user = session?.user;
@@ -138,6 +143,9 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
         lng: stop.map_marker.coordinates.longitude,
         variant,
         label: stop.stop_id.toString(),
+        imageSource: pathProgress.path.marker_icon_url
+          ? { uri: `${getAPIBaseURL()}${pathProgress.path.marker_icon_url}` }
+          : undefined,
       };
     });
   }, [pathProgress]);
@@ -367,13 +375,91 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
     };
   }, [lat, lng]);
 
-  const handleMarkVisited = useCallback(async (stop: PathProgress["path"]["stops"][0]) => {
-    if (!pathProgress || markingVisited) return;
+  // Audio playback function
+  const playAudio = useCallback((audioUrl: string) => {
+    try {
+      // Stop any currently playing audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
 
+      // Set the currently playing audio URL
+      currentlyPlayingAudioRef.current = audioUrl;
+
+      // Create and play new audio
+      const fullAudioUrl = `${getAPIBaseURL()}${audioUrl}`;
+      console.log("[Map] Playing audio:", fullAudioUrl);
+      
+      const audio = new Audio(fullAudioUrl);
+      audioRef.current = audio;
+
+      audio.play().catch((error) => {
+        console.error("[Map] Error playing audio:", error);
+        currentlyPlayingAudioRef.current = null;
+        audioRef.current = null;
+      });
+
+      // Clean up when audio finishes
+      audio.addEventListener("ended", () => {
+        currentlyPlayingAudioRef.current = null;
+        audioRef.current = null;
+      });
+
+      audio.addEventListener("error", (error) => {
+        console.error("[Map] Audio playback error:", error);
+        currentlyPlayingAudioRef.current = null;
+        audioRef.current = null;
+      });
+    } catch (error) {
+      console.error("[Map] Error setting up audio:", error);
+      currentlyPlayingAudioRef.current = null;
+    }
+  }, []);
+
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      currentlyPlayingAudioRef.current = null;
+    };
+  }, []);
+
+  const handleMarkVisited = useCallback(async (stop: PathProgress["path"]["stops"][0]) => {
+    // Prevent double clicks using both state and ref
+    if (!pathProgress || markingVisited || isMarkingVisitedRef.current) {
+      console.log("[Map] handleMarkVisited: Already processing, ignoring click");
+      return;
+    }
+
+    // Set both state and ref immediately to prevent double clicks
+    isMarkingVisitedRef.current = true;
     setMarkingVisited(true);
+    
+    // Immediately hide dialog to prevent double clicks
+    setShowCharacterDialog(false);
+    setSelectedStop(null);
+
     try {
       const result = await markPointVisited(stop.point_id, pathProgress.progress.id);
       if (result.success) {
+        // Show reward notification if there's a reward
+        if (stop.reward_label || stop.reward_icon_url) {
+          setRewardData({
+            label: stop.reward_label || undefined,
+            iconUrl: stop.reward_icon_url || undefined,
+          });
+          setShowRewardNotification(true);
+          // Auto-hide after 3 seconds
+          setTimeout(() => {
+            setShowRewardNotification(false);
+            setRewardData(null);
+          }, 3000);
+        }
+
         // Reload progress to get updated state
         const updatedProgress = await getActivePathProgress();
         if (updatedProgress) {
@@ -382,22 +468,28 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
 
         // If path completed, show completion message
         if (result.isCompleted) {
-          setTimeout(() => {
-            setShowStopDialog(false);
-            // Could show completion modal here
-          }, 2000);
+          // Could show completion modal here
         }
+      } else {
+        // If failed, show dialog again
+        console.error("[Map] Failed to mark point as visited:", result.error);
+        setShowCharacterDialog(true);
+        setSelectedStop(stop);
       }
     } catch (error) {
       console.error("[Map] Error marking point as visited:", error);
+      // If error, show dialog again
+      setShowCharacterDialog(true);
+      setSelectedStop(stop);
     } finally {
       setMarkingVisited(false);
+      isMarkingVisitedRef.current = false;
     }
   }, [pathProgress, markingVisited]);
 
   // Geofence detection - check if user enters any unvisited stop
   useEffect(() => {
-    if (!userLocation || !pathProgress || showStopDialog) return;
+    if (!userLocation || !pathProgress || showCharacterDialog) return;
 
     const checkGeofences = () => {
       if (!pathProgress) return;
@@ -406,25 +498,41 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
       
       for (const stop of unvisitedStops) {
         const radius = stop.radius_meters || 50; // Default 50m if not set
-        if (
-          isWithinGeofence(
-            userLocation.lat,
-            userLocation.lng,
-            stop.map_marker.coordinates.latitude,
-            stop.map_marker.coordinates.longitude,
-            radius
-          )
-        ) {
-          // User entered geofence - show dialog and mark as visited
+        const distance = calculateDistance(
+          userLocation.lat,
+          userLocation.lng,
+          stop.map_marker.coordinates.latitude,
+          stop.map_marker.coordinates.longitude
+        );
+        
+        if (__DEV__) {
+          console.log(`[Geofence] Stop: ${stop.name}, Distance: ${distance.toFixed(2)}m, Radius: ${radius}m, Within: ${distance <= radius}`);
+        }
+        
+        if (distance <= radius) {
+          // User entered geofence - show character dialog
+          console.log(`[Geofence] ✅ TRIGGERED for stop: ${stop.name}`);
+          console.log(`[Geofence] Stop has character:`, stop.character ? "YES" : "NO");
+          console.log(`[Geofence] Stop character data:`, JSON.stringify(stop.character, null, 2));
+          console.log(`[Geofence] Setting selectedStop and showCharacterDialog to true`);
           setSelectedStop(stop);
-          setShowStopDialog(true);
-          handleMarkVisited(stop);
+          setShowCharacterDialog(true);
+          console.log(`[Geofence] State updated - dialog should appear now`);
+          
+          // Play audio if available
+          if (stop.audio_url && stop.audio_url !== currentlyPlayingAudioRef.current) {
+            playAudio(stop.audio_url);
+          }
+          
           break; // Only handle one stop at a time
         }
       }
     };
 
-    // Check every 2 seconds
+    // Check immediately when location changes
+    checkGeofences();
+
+    // Also check every 2 seconds for continuous monitoring
     geofenceCheckIntervalRef.current = window.setInterval(checkGeofences, 2000);
 
     return () => {
@@ -432,7 +540,7 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
         clearInterval(geofenceCheckIntervalRef.current);
       }
     };
-  }, [userLocation, pathProgress, showStopDialog, handleMarkVisited]);
+  }, [userLocation, pathProgress, showCharacterDialog]);
 
   useEffect(() => {
     // Only run on client and when we have location
@@ -692,6 +800,107 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
       });
     }
   }, [userLocation, defaultZoom, isLoaded]);
+
+  // Update radius circles when pathProgress changes
+  useEffect(() => {
+    if (!mapInstanceRef.current || !isLoaded || !pathProgress) return;
+
+    const map = mapInstanceRef.current;
+    
+    // Remove existing radius circles
+    if (map.getLayer("radius-circles")) {
+      map.removeLayer("radius-circles");
+    }
+    if (map.getSource("radius-circles")) {
+      map.removeSource("radius-circles");
+    }
+
+    // Create circles for each stop
+    const circles = pathProgress.path.stops.map((stop) => {
+      const radius = stop.radius_meters || 50;
+      const isVisited = stop.visited;
+      const isNext = !isVisited && pathProgress.path.stops.findIndex((s) => !s.visited) === pathProgress.path.stops.indexOf(stop);
+      
+      // Create a circle using a polygon approximation
+      const center = [stop.map_marker.coordinates.longitude, stop.map_marker.coordinates.latitude];
+      const points = 64; // Number of points to approximate circle
+      const coordinates: [number, number][] = [];
+      
+      for (let i = 0; i <= points; i++) {
+        const angle = (i / points) * 2 * Math.PI;
+        // Convert radius from meters to degrees (approximate)
+        const latOffset = (radius / 111000) * Math.cos(angle);
+        const lngOffset = (radius / (111000 * Math.cos(stop.map_marker.coordinates.latitude * Math.PI / 180))) * Math.sin(angle);
+        coordinates.push([
+          center[0] + lngOffset,
+          center[1] + latOffset,
+        ]);
+      }
+      
+      return {
+        type: "Feature" as const,
+        properties: {
+          isVisited,
+          isNext,
+        },
+        geometry: {
+          type: "Polygon" as const,
+          coordinates: [coordinates],
+        },
+      };
+    });
+
+    const circlesGeoJson = {
+      type: "FeatureCollection" as const,
+      features: circles,
+    };
+
+    map.addSource("radius-circles", {
+      type: "geojson",
+      data: circlesGeoJson as any,
+    });
+
+    map.addLayer({
+      id: "radius-circles",
+      type: "fill",
+      source: "radius-circles",
+      paint: {
+        "fill-color": [
+          "case",
+          ["get", "isVisited"],
+          "rgba(156, 163, 175, 0.2)",
+          ["get", "isNext"],
+          "rgba(237, 28, 36, 0.15)",
+          "rgba(255, 222, 0, 0.15)",
+        ],
+        "fill-outline-color": [
+          "case",
+          ["get", "isVisited"],
+          "#9CA3AF",
+          ["get", "isNext"],
+          COLORS.red,
+          COLORS.yellow,
+        ],
+      },
+    });
+
+    map.addLayer({
+      id: "radius-circles-stroke",
+      type: "line",
+      source: "radius-circles",
+      paint: {
+        "line-color": [
+          "case",
+          ["get", "isVisited"],
+          "#9CA3AF",
+          ["get", "isNext"],
+          COLORS.red,
+          COLORS.yellow,
+        ],
+        "line-width": 2,
+      },
+    });
+  }, [pathProgress, isLoaded]);
 
   // Update route pins when routePins change
   useEffect(() => {
@@ -1058,80 +1267,268 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
         >
           ⌖
         </button>
+
+        {/* Debug button - only in development */}
+        {__DEV__ && pathProgress && pathProgress.path.stops.length > 0 && (
+          <button
+            onClick={() => {
+              // Find first unvisited stop, or first stop if all visited
+              const firstStop = pathProgress.path.stops.find((stop) => !stop.visited) 
+                || pathProgress.path.stops[0];
+              
+              if (firstStop) {
+                const radius = firstStop.radius_meters || 50;
+                // Set location inside the radius (50% of radius to ensure we're well inside)
+                const latOffset = (radius * 0.5) / 111000; // 50% of radius in degrees
+                const lngOffset = (radius * 0.5) / (111000 * Math.cos(firstStop.map_marker.coordinates.latitude * Math.PI / 180));
+                
+                const newLocation = {
+                  lat: firstStop.map_marker.coordinates.latitude + latOffset,
+                  lng: firstStop.map_marker.coordinates.longitude + lngOffset,
+                };
+                
+                console.log("[DEBUG] Moving to stop:", firstStop.name);
+                console.log("[DEBUG] Stop location:", firstStop.map_marker.coordinates);
+                console.log("[DEBUG] New user location:", newLocation);
+                console.log("[DEBUG] Radius:", radius, "meters");
+                
+                setUserLocation(newLocation);
+                
+                // Also update map camera
+                if (mapInstanceRef.current) {
+                  mapInstanceRef.current.easeTo({
+                    center: [newLocation.lng, newLocation.lat],
+                    zoom: defaultZoom,
+                    duration: 500,
+                  });
+                }
+
+                // Force immediate geofence check
+                setTimeout(() => {
+                  const unvisitedStops = pathProgress.path.stops.filter((stop) => !stop.visited);
+                  for (const stop of unvisitedStops) {
+                    const stopRadius = stop.radius_meters || 50;
+                    if (
+                      isWithinGeofence(
+                        newLocation.lat,
+                        newLocation.lng,
+                        stop.map_marker.coordinates.latitude,
+                        stop.map_marker.coordinates.longitude,
+                        stopRadius
+                      )
+                    ) {
+                      console.log("[DEBUG] Geofence triggered for:", stop.name);
+                      console.log("[DEBUG] Stop has character:", stop.character ? "YES" : "NO");
+                      setSelectedStop(stop);
+                      setShowCharacterDialog(true);
+                      
+                      // Play audio if available
+                      if (stop.audio_url && stop.audio_url !== currentlyPlayingAudioRef.current) {
+                        playAudio(stop.audio_url);
+                      }
+                      
+                      break;
+                    }
+                  }
+                }, 600); // Wait for animation to complete
+              }
+            }}
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: 24,
+              backgroundColor: COLORS.yellow,
+              border: "3px solid white",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.3)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              fontSize: 20,
+              fontWeight: 700,
+            }}
+          >
+            🐛
+          </button>
+        )}
       </div>
 
-      {/* Stop Dialog Modal */}
-      {showStopDialog && selectedStop && (
+      {/* Character Dialog - Bottom Right */}
+      {showCharacterDialog && selectedStop && (
         <div
           style={{
             position: "fixed",
-            inset: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            bottom: 120,
+            right: 16,
             display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            padding: 20,
+            flexDirection: "row",
+            alignItems: "flex-end",
+            gap: 12,
+            maxWidth: "85%",
             zIndex: 1000,
           }}
-          onClick={() => setShowStopDialog(false)}>
+        >
+          {/* Speech Bubble - Left side */}
           <div
             style={{
+              flex: 1,
               backgroundColor: "#FFFFFF",
-              borderRadius: 20,
-              padding: 24,
-              width: "100%",
-              maxWidth: 400,
-              boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+              borderRadius: 16,
+              padding: 16,
+              boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+              marginBottom: 8,
             }}
-            onClick={(e) => e.stopPropagation()}>
-            {selectedStop.reward_icon_url && (
-              <img
-                src={`${getAPIBaseURL()}${selectedStop.reward_icon_url}`}
-                alt={selectedStop.name}
-                style={{
-                  width: "100%",
-                  height: 200,
-                  borderRadius: 12,
-                  marginBottom: 16,
-                  objectFit: "cover",
-                }}
-              />
+          >
+            {selectedStop.character ? (
+              <>
+                <div style={{ fontSize: 18, fontWeight: 700, color: COLORS.default, marginBottom: 4 }}>
+                  {selectedStop.character.name}
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: COLORS.blue, marginBottom: 8 }}>
+                  {selectedStop.character.description}
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: 18, fontWeight: 700, color: COLORS.default, marginBottom: 4 }}>
+                  {selectedStop.name}
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: COLORS.blue, marginBottom: 8 }}>
+                  Przystanek na trasie
+                </div>
+              </>
             )}
-            <h2 style={{ fontSize: 24, fontWeight: 700, color: COLORS.default, marginBottom: 12, margin: 0 }}>
-              {selectedStop.name}
-            </h2>
-            <p style={{ fontSize: 16, color: "#6B7280", lineHeight: 24, marginBottom: 16, margin: 0 }}>
+            <div style={{ fontSize: 14, color: "#6B7280", lineHeight: 20, marginBottom: 12 }}>
               {selectedStop.place_description}
-            </p>
-            {selectedStop.reward_label && (
-              <div
-                style={{
-                  backgroundColor: COLORS.yellow,
-                  padding: "8px 16px",
-                  borderRadius: 12,
-                  marginBottom: 16,
-                  display: "inline-block",
-                }}>
-                <span style={{ fontSize: 14, fontWeight: 600, color: COLORS.default }}>
-                  🎁 {selectedStop.reward_label}
-                </span>
-              </div>
-            )}
+            </div>
             <button
-              onClick={() => setShowStopDialog(false)}
+              onClick={() => handleMarkVisited(selectedStop)}
+              disabled={markingVisited}
               style={{
                 backgroundColor: COLORS.red,
-                padding: "12px 24px",
+                padding: "10px 16px",
                 borderRadius: 12,
                 border: "none",
                 color: "#FFFFFF",
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: 600,
-                cursor: "pointer",
-                float: "right",
-              }}>
-              Zamknij
+                cursor: markingVisited ? "not-allowed" : "pointer",
+                opacity: markingVisited ? 0.6 : 1,
+                width: "100%",
+              }}
+            >
+              {markingVisited ? "Zapisywanie..." : "Oznacz jako odwiedzone"}
             </button>
+          </div>
+          
+          {/* Character Avatar - Right side */}
+          {selectedStop.character && selectedStop.character.avatarUrl ? (
+            <div
+              style={{
+                width: 80,
+                height: 80,
+                borderRadius: 40,
+                border: "3px solid #FFFFFF",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+                overflow: "hidden",
+              }}
+            >
+              <img
+                src={`${getAPIBaseURL()}${selectedStop.character.avatarUrl}`}
+                alt={selectedStop.character.name}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                }}
+                onError={(e) => {
+                  console.error("[Map] Error loading character avatar:", e);
+                }}
+              />
+            </div>
+          ) : (
+            <div
+              style={{
+                width: 80,
+                height: 80,
+                borderRadius: 40,
+                backgroundColor: COLORS.blue,
+                border: "3px solid #FFFFFF",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <span style={{ color: "#FFFFFF", fontSize: 24, fontWeight: 700 }}>📍</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Reward Notification Overlay */}
+      {showRewardNotification && rewardData && (
+        <div
+          style={{
+            position: "fixed",
+            top: 60,
+            left: 16,
+            right: 16,
+            backgroundColor: COLORS.yellow,
+            borderRadius: 12,
+            padding: 16,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+            zIndex: 1001,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 12,
+            }}
+          >
+            {rewardData.iconUrl ? (
+              <img
+                src={`${getAPIBaseURL()}${rewardData.iconUrl}`}
+                alt="Reward"
+                style={{
+                  width: 50,
+                  height: 50,
+                  borderRadius: 25,
+                  border: "2px solid #FFFFFF",
+                  objectFit: "cover",
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: 50,
+                  height: 50,
+                  borderRadius: 25,
+                  backgroundColor: "#FFFFFF",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: "2px solid #FFFFFF",
+                }}
+              >
+                <span style={{ fontSize: 24 }}>🎁</span>
+              </div>
+            )}
+            <div style={{ flex: 1 }}>
+              <div
+                style={{
+                  fontSize: 16,
+                  fontWeight: 600,
+                  color: COLORS.default,
+                  marginLeft: 12,
+                }}
+              >
+                Otrzymałeś nagrodę{rewardData.label ? `: ${rewardData.label}` : "!"}
+              </div>
+            </div>
           </div>
         </div>
       )}

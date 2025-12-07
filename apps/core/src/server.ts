@@ -11,6 +11,9 @@ import { userPathsRoutes } from "./routes/user/paths";
 import { db } from "./db";
 import { user } from "./db/auth-schema";
 import { eq } from "drizzle-orm";
+import { readFile } from "fs/promises";
+import { existsSync } from "fs";
+import { join } from "path";
 
 const app = new Elysia();
 
@@ -39,14 +42,63 @@ app.use(corsConfig);
 app.use(serverTiming());
 app.use(openapi({ provider: "swagger-ui" }));
 
-// Serve static files from public/resources directory using staticPlugin
-// This is more efficient than custom route and handles caching, content-type, etc.
-app.use(staticPlugin({
-  assets: "./public/resources",
-  prefix: "/resources",
-  // Don't fail if directory doesn't exist - it will be created on first upload
-  ignorePatterns: [],
-}));
+// Custom route to serve static files from both public/resources and resources directories
+// This allows access to both uploaded files (public/resources) and seeded files (resources/)
+// We check public/resources first, then fall back to resources/ directory
+app.get("/resources/*", async ({ params, set }) => {
+  const path = params["*"] || "";
+  
+  // First try public/resources (for uploaded files)
+  const publicPath = join(process.cwd(), "public", "resources", path);
+  if (existsSync(publicPath)) {
+    try {
+      const file = await readFile(publicPath);
+      // Determine content type from extension
+      const ext = path.split(".").pop()?.toLowerCase();
+      const contentType = 
+        ext === "png" ? "image/png" :
+        ext === "jpg" || ext === "jpeg" ? "image/jpeg" :
+        ext === "gif" ? "image/gif" :
+        ext === "svg" ? "image/svg+xml" :
+        ext === "mp3" ? "audio/mpeg" :
+        ext === "wav" ? "audio/wav" :
+        "application/octet-stream";
+      
+      set.headers["Content-Type"] = contentType;
+      set.headers["Cache-Control"] = "public, max-age=31536000";
+      return file;
+    } catch (error) {
+      console.error(`[Static] Error reading ${publicPath}:`, error);
+    }
+  }
+  
+  // Fall back to resources directory (for seeded files)
+  const resourcesPath = join(process.cwd(), "resources", path);
+  if (existsSync(resourcesPath)) {
+    try {
+      const file = await readFile(resourcesPath);
+      // Determine content type from extension
+      const ext = path.split(".").pop()?.toLowerCase();
+      const contentType = 
+        ext === "png" ? "image/png" :
+        ext === "jpg" || ext === "jpeg" ? "image/jpeg" :
+        ext === "gif" ? "image/gif" :
+        ext === "svg" ? "image/svg+xml" :
+        ext === "mp3" ? "audio/mpeg" :
+        ext === "wav" ? "audio/wav" :
+        "application/octet-stream";
+      
+      set.headers["Content-Type"] = contentType;
+      set.headers["Cache-Control"] = "public, max-age=31536000";
+      return file;
+    } catch (error) {
+      console.error(`[Static] Error reading ${resourcesPath}:`, error);
+    }
+  }
+  
+  set.status = 404;
+  return "Not Found";
+});
 
 // Better Auth middleware using macro (as per Better Auth docs for Elysia)
 // This allows access to user and session in all routes

@@ -1,6 +1,6 @@
 import { Elysia } from "elysia";
 import { db } from "@/db";
-import { paths, pathPoints, points, userPathProgress, userPointVisit, userItems } from "@/db/schema";
+import { paths, pathPoints, points, userPathProgress, userPointVisit, userItems, characters } from "@/db/schema";
 import { eq, and, asc, desc } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 
@@ -403,14 +403,16 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
         };
       }
 
-      // Get points for this path
+      // Get points for this path with character data
       const pathPointsData = await db
         .select({
           point: points,
           orderIndex: pathPoints.orderIndex,
+          character: characters,
         })
         .from(pathPoints)
         .innerJoin(points, eq(pathPoints.pointId, points.id))
+        .leftJoin(characters, eq(points.characterId, characters.id))
         .where(eq(pathPoints.pathId, path.id))
         .orderBy(asc(pathPoints.orderIndex));
 
@@ -442,7 +444,14 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
         radius_meters: pp.point.radiusMeters,
         reward_label: pp.point.rewardLabel,
         reward_icon_url: pp.point.rewardIconUrl,
+        audio_url: pp.point.audioUrl || null,
         visited: visitedPointIds.has(pp.point.id),
+        character: pp.character ? {
+          id: pp.character.id,
+          name: pp.character.name,
+          avatarUrl: pp.character.avatarUrl,
+          description: pp.character.description,
+        } : null,
       }));
 
       return {
@@ -504,6 +513,7 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
       }
 
       // Verify the progress belongs to the user
+      // Allow both "in_progress" and "paused" statuses (user might want to continue)
       const [progress] = await db
         .select()
         .from(userPathProgress)
@@ -511,7 +521,8 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
           and(
             eq(userPathProgress.id, pathProgressId),
             eq(userPathProgress.userId, userId),
-            eq(userPathProgress.status, "in_progress")
+            // Allow both in_progress and paused statuses
+            // If paused, we'll automatically resume it
           )
         )
         .limit(1);
@@ -519,7 +530,23 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
       if (!progress) {
         return {
           success: false,
-          error: "Progress not found or not active",
+          error: "Progress not found or does not belong to user",
+        };
+      }
+
+      // If progress is paused, resume it
+      if (progress.status === "paused") {
+        await db
+          .update(userPathProgress)
+          .set({ status: "in_progress" })
+          .where(eq(userPathProgress.id, pathProgressId));
+      }
+
+      // Don't allow marking visited if already completed
+      if (progress.status === "completed") {
+        return {
+          success: false,
+          error: "Path is already completed",
         };
       }
 

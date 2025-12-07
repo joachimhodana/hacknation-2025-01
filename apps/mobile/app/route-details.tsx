@@ -16,6 +16,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { routes } from '@/data/routes';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { fetchPaths, getActivePathProgress, startPath, pausePath, type Path } from '@/lib/api-client';
+import { getAPIBaseURL } from '@/lib/api-url';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -182,7 +183,10 @@ export default function RouteDetailsScreen() {
   const isActive = activePathId === routeId;
   const hasOtherActivePath = activePathId !== null && !isActive;
 
-  const imageUrl = getRouteImage(route.route_id);
+  // Use thumbnail from API if available, otherwise fall back to hardcoded image
+  const imageUrl = route.thumbnail_url 
+    ? `${getAPIBaseURL()}${route.thumbnail_url}`
+    : getRouteImage(route.route_id);
   const backgroundTheme = getRouteBackgroundTheme(route.route_id);
 
   const formatTime = (minutes: number) => {

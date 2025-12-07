@@ -136,9 +136,20 @@ async function seedPoints(
     }
 
     if (existing && !FORCE_RESET) {
-      console.log(
-        `  ⏭️  Point "${point.locationLabel || "Unnamed"}" already exists, skipping...`
-      );
+      // Update audioUrl if it's missing or different
+      if (point.audioUrl && existing.audioUrl !== point.audioUrl) {
+        await db
+          .update(points)
+          .set({ audioUrl: point.audioUrl, updatedAt: new Date() })
+          .where(eq(points.id, existing.id));
+        console.log(
+          `  🔄 Updated audioUrl for point "${point.locationLabel || "Unnamed"}"`
+        );
+      } else {
+        console.log(
+          `  ⏭️  Point "${point.locationLabel || "Unnamed"}" already exists, skipping...`
+        );
+      }
       if (point.locationLabel) {
         pointIdMap.set(point.locationLabel, existing.id);
       }

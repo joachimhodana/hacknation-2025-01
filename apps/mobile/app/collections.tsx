@@ -15,51 +15,19 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { fetchUserStats, type CollectedItem } from "@/lib/api-client";
+import { fetchUserStats, type CollectedItem, type Reward } from "@/lib/api-client";
+import { getAPIBaseURL } from "@/lib/api-url";
 import Navbar from "@/components/Navbar";
 import { PointsBadge } from "@/components/PointsBadge";
 import { authClient } from "@/lib/auth-client";
 
-type Reward = {
+type RewardDisplay = {
   id: string;
   title: string;
   description: string;
-  imageSource?: ImageSourcePropType; // Lokalny obraz dla odkrytych nagród
+  imageSource?: ImageSourcePropType | { uri: string };
   discovered: boolean;
 };
-
-// 24 nagrody - 3 odkryte, 21 zakrytych
-const ALL_REWARDS: Reward[] = [
-  // 3 odkryte nagrody (z obrazkami)
-  {
-    id: "reward-1",
-    title: "Marian Rejewski",
-    description: "Kryptolog i matematyk",
-    imageSource: require("@/assets/images/rewards/rejewski.png"),
-    discovered: true,
-  },
-  {
-    id: "reward-2",
-    title: "Święcicki",
-    description: "Historyczna postać",
-    imageSource: require("@/assets/images/rewards/swiecicki.png"),
-    discovered: true,
-  },
-  {
-    id: "reward-3",
-    title: "Przechodzący przez rzekę",
-    description: "Historyczna scena",
-    imageSource: require("@/assets/images/rewards/przechodzacy_przez_rzeke.png"),
-    discovered: true,
-  },
-  // 21 zakrytych nagród
-  ...Array.from({ length: 21 }, (_, i) => ({
-    id: `reward-${i + 4}`,
-    title: `Nagroda ${i + 4}`,
-    description: "Odkryj, aby zobaczyć szczegóły",
-    discovered: false,
-  })),
-];
 
 const COLORS = {
   red: "#ED1C24",
@@ -77,7 +45,8 @@ const CollectionsScreen: React.FC = () => {
   const { data: session, isPending } = authClient.useSession();
   const [allItems, setAllItems] = useState<CollectedItem[]>([]);
   const [itemsLoading, setItemsLoading] = useState(true);
-  const [rewards] = useState<Reward[]>(ALL_REWARDS);
+  const [rewards, setRewards] = useState<RewardDisplay[]>([]);
+  const [rewardsLoading, setRewardsLoading] = useState(true);
 
   // Modal state - must be declared before any conditional returns
   const [selectedItem, setSelectedItem] = useState<CollectedItem | null>(null);
@@ -97,12 +66,52 @@ const CollectionsScreen: React.FC = () => {
     }
   }, [session, isPending, router]);
 
-  // Fetch user stats to get collected items
+  // Fetch user stats to get collected items and all rewards
   useEffect(() => {
     if (session && !isPending) {
       loadItems();
+      loadRewards();
     }
   }, [session, isPending]);
+
+  const loadRewards = async () => {
+    setRewardsLoading(true);
+    try {
+      // Use stats endpoint - same as profile.tsx
+      const userStats = await fetchUserStats();
+      console.log("[Collections] UserStats:", userStats);
+      console.log("[Collections] allRewards:", userStats?.allRewards);
+      
+      if (userStats) {
+        // Check if allRewards exists, otherwise use collectedItems as fallback
+        if (userStats.allRewards && Array.isArray(userStats.allRewards) && userStats.allRewards.length > 0) {
+          // Convert API rewards to display format
+          const displayRewards: RewardDisplay[] = userStats.allRewards.map((reward) => ({
+            id: reward.id,
+            title: reward.title,
+            description: reward.description,
+            imageSource: reward.rewardIconUrl
+              ? { uri: `${getAPIBaseURL()}${reward.rewardIconUrl}` }
+              : undefined,
+            discovered: reward.collected,
+          }));
+          console.log("[Collections] Display rewards:", displayRewards.length);
+          setRewards(displayRewards);
+        } else {
+          console.warn("[Collections] No allRewards found in userStats, using empty array");
+          setRewards([]);
+        }
+      } else {
+        console.warn("[Collections] No userStats returned");
+        setRewards([]);
+      }
+    } catch (error) {
+      console.error("[Collections] Error loading rewards:", error);
+      setRewards([]);
+    } finally {
+      setRewardsLoading(false);
+    }
+  };
 
   // Drive animations when isOpen changes - MUST be before conditional returns
   useEffect(() => {
@@ -185,7 +194,7 @@ const CollectionsScreen: React.FC = () => {
     setIsOpen(true);
   };
 
-  const openRewardModal = (reward: Reward) => {
+  const openRewardModal = (reward: RewardDisplay) => {
     if (!reward.discovered) return; // Nie otwieraj zakrytych nagród
     setSelectedReward(reward);
     setIsMounted(true);
@@ -196,7 +205,7 @@ const CollectionsScreen: React.FC = () => {
     setIsOpen(false);
   };
 
-  if (isPending || itemsLoading) {
+  if (isPending || itemsLoading || rewardsLoading) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.loadingContainer}>
@@ -210,9 +219,8 @@ const CollectionsScreen: React.FC = () => {
     return null; // Will redirect
   }
 
-  const collectedItems = allItems.filter((i) => i.collected);
-  const totalCount = allItems.length; // For now, total = collected (we only show collected items)
-  const collectedCount = collectedItems.length;
+  const collectedCount = rewards.filter((r) => r.discovered).length;
+  const totalCount = rewards.length;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -230,12 +238,12 @@ const CollectionsScreen: React.FC = () => {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.counterRow}>
           <Text style={styles.subtitle}>
-            {allItems.length > 0
+            {rewards.length > 0
               ? "Wszystkie przedmioty, które możesz zdobyć w mieście."
               : "Nie masz jeszcze zebranych przedmiotów. Odwiedź miejsca na mapie, aby je zdobyć!"}
           </Text>
 
-          {allItems.length > 0 && (
+          {rewards.length > 0 && (
             <View style={styles.counterPill}>
               <Text style={styles.counterText}>
                 {collectedCount} / {totalCount}
@@ -244,42 +252,51 @@ const CollectionsScreen: React.FC = () => {
           )}
         </View>
 
-        {/* Grid nagród: 3 w rzędzie, 24 nagrody */}
+        {/* Grid nagród: 3 w rzędzie */}
         <View style={styles.rewardsGrid}>
-          {rewards.map((reward) => {
-            const isDiscovered = reward.discovered;
-            const isActive = selectedReward?.id === reward.id && isOpen;
+          {rewards.length === 0 && !rewardsLoading ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateEmoji}>🎁</Text>
+              <Text style={styles.emptyStateText}>
+                Brak dostępnych nagród. Odwiedź miejsca na mapie, aby je odkryć!
+              </Text>
+            </View>
+          ) : (
+            rewards.map((reward) => {
+              const isDiscovered = reward.discovered;
+              const isActive = selectedReward?.id === reward.id && isOpen;
 
-            return (
-              <TouchableOpacity
-                key={reward.id}
-                style={styles.rewardTile}
-                onPress={() => openRewardModal(reward)}
-                disabled={!isDiscovered}
-                activeOpacity={isDiscovered ? 0.7 : 1}
-              >
-                <View
-                  style={[
-                    styles.rewardTileInner,
-                    !isDiscovered && styles.rewardTileInnerLocked,
-                    isDiscovered && isActive && styles.rewardTileInnerActive,
-                  ]}
+              return (
+                <TouchableOpacity
+                  key={reward.id}
+                  style={styles.rewardTile}
+                  onPress={() => openRewardModal(reward)}
+                  disabled={!isDiscovered}
+                  activeOpacity={isDiscovered ? 0.7 : 1}
                 >
-                  {isDiscovered && reward.imageSource ? (
-                    <Image
-                      source={reward.imageSource}
-                      style={styles.rewardImage}
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <View style={styles.lockedContainer}>
-                      <Text style={styles.lockedIcon}>🔒</Text>
-                    </View>
-                  )}
-                </View>
-              </TouchableOpacity>
-            );
-          })}
+                  <View
+                    style={[
+                      styles.rewardTileInner,
+                      !isDiscovered && styles.rewardTileInnerLocked,
+                      isDiscovered && isActive && styles.rewardTileInnerActive,
+                    ]}
+                  >
+                    {isDiscovered && reward.imageSource ? (
+                      <Image
+                        source={reward.imageSource}
+                        style={styles.rewardImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={styles.lockedContainer}>
+                        <Text style={styles.lockedIcon}>🔒</Text>
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+            })
+          )}
         </View>
 
         <View style={{ height: 32 }} />
@@ -408,6 +425,7 @@ const CollectionsScreen: React.FC = () => {
                         source={selectedReward.imageSource}
                         style={styles.modalRewardImage}
                         resizeMode="cover"
+                        defaultSource={require("@/assets/images/rewards/rejewski.png")}
                       />
                     )}
                     <View style={styles.modalHeaderRow}>

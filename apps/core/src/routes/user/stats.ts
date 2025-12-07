@@ -2,7 +2,7 @@ import { Elysia } from "elysia";
 import { db } from "@/db";
 import { paths, userPathProgress, userItems, points } from "@/db/schema";
 import { user } from "@/db/auth-schema";
-import { eq, and, inArray, desc, sum, not } from "drizzle-orm";
+import { eq, and, inArray, desc, sum, not, isNotNull, ne } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 
 // User stats endpoint - requires authentication but not admin
@@ -69,7 +69,7 @@ export const userStatsRoutes = new Elysia({ prefix: "/user" })
           ) || 0;
       }
 
-      // Get collected items (rewards from points)
+      // Get collected items (rewards from points) - same approach as before
       const collectedItems = await db
         .select({
           id: userItems.id,
@@ -83,6 +83,32 @@ export const userStatsRoutes = new Elysia({ prefix: "/user" })
         .leftJoin(points, eq(userItems.pointId, points.id))
         .where(eq(userItems.userId, userId))
         .orderBy(desc(userItems.collectedAt));
+
+      // Get all available rewards (all points with rewards) - same query structure as collectedItems
+      const allRewardPoints = await db
+        .select({
+          pointId: points.id,
+          rewardLabel: points.rewardLabel,
+          rewardIconUrl: points.rewardIconUrl,
+          locationLabel: points.locationLabel,
+        })
+        .from(points)
+        .where(isNotNull(points.rewardLabel));
+
+      // Get collected point IDs for this user
+      const collectedPointIds = new Set(collectedItems.map((item) => item.pointId));
+
+      // Map all rewards with collected status
+      const allRewards = allRewardPoints.map((point) => ({
+        id: point.pointId.toString(),
+        title: point.rewardLabel || "Nagroda",
+        description: point.locationLabel
+          ? `Znaleziony w: ${point.locationLabel}`
+          : "Odkryj, aby zobaczyć szczegóły",
+        rewardIconUrl: point.rewardIconUrl || undefined,
+        collected: collectedPointIds.has(point.pointId),
+        pointId: point.pointId,
+      }));
 
       return {
         success: true,
@@ -105,7 +131,9 @@ export const userStatsRoutes = new Elysia({ prefix: "/user" })
             collectedAt: item.collectedAt
               ? new Date(item.collectedAt).toISOString().split("T")[0]
               : undefined,
+            rewardIconUrl: item.rewardIconUrl || undefined,
           })),
+          allRewards, // Add all rewards to stats response
         },
       };
     } catch (error) {
@@ -158,6 +186,69 @@ export const userStatsRoutes = new Elysia({ prefix: "/user" })
       };
     } catch (error) {
       console.error("[user/leaderboard] Error:", error);
+      return {
+        success: false,
+        error: "Internal server error",
+      };
+    }
+  })
+  .get("/rewards", async ({ request }) => {
+    try {
+      // Get session from Better Auth
+      const session = await auth.api.getSession({
+        headers: request.headers,
+      });
+
+      if (!session?.user) {
+        return {
+          success: false,
+          error: "Unauthorized",
+        };
+      }
+
+      const userId = session.user.id;
+
+      // Get all points that have rewards
+      const allRewardPoints = await db
+        .select({
+          pointId: points.id,
+          rewardLabel: points.rewardLabel,
+          rewardIconUrl: points.rewardIconUrl,
+          locationLabel: points.locationLabel,
+        })
+        .from(points)
+        .where(ne(points.rewardLabel, null));
+
+      // Get collected items for this user
+      const collectedItems = await db
+        .select({
+          pointId: userItems.pointId,
+        })
+        .from(userItems)
+        .where(eq(userItems.userId, userId));
+
+      const collectedPointIds = new Set(collectedItems.map((item) => item.pointId));
+
+      // Map to rewards format
+      const rewards = allRewardPoints.map((point) => ({
+        id: point.pointId.toString(),
+        title: point.rewardLabel || "Nagroda",
+        description: point.locationLabel
+          ? `Znaleziony w: ${point.locationLabel}`
+          : "Odkryj, aby zobaczyć szczegóły",
+        rewardIconUrl: point.rewardIconUrl || undefined,
+        collected: collectedPointIds.has(point.pointId),
+        pointId: point.pointId,
+      }));
+
+      return {
+        success: true,
+        data: {
+          rewards,
+        },
+      };
+    } catch (error) {
+      console.error("[user/rewards] Error:", error);
       return {
         success: false,
         error: "Internal server error",

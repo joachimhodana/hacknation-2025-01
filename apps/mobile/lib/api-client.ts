@@ -15,6 +15,7 @@ export interface UserStats {
   totalDistanceKm: number;
   collectedItemsCount: number;
   collectedItems: CollectedItem[];
+  allRewards?: Reward[]; // All available rewards with collected status
 }
 
 export interface CollectedItem {
@@ -25,6 +26,16 @@ export interface CollectedItem {
   collected: boolean;
   placeName?: string;
   collectedAt?: string;
+  rewardIconUrl?: string;
+}
+
+export interface Reward {
+  id: string;
+  title: string;
+  description: string;
+  rewardIconUrl?: string;
+  collected: boolean;
+  pointId: number;
 }
 
 // Helper function to get auth headers for API requests
@@ -151,7 +162,14 @@ export interface PathProgress {
       radius_meters: number;
       reward_label?: string | null;
       reward_icon_url?: string | null;
+      audio_url?: string | null;
       visited: boolean;
+      character?: {
+        id: number;
+        name: string;
+        avatarUrl: string;
+        description: string;
+      } | null;
     }>;
   };
 }
@@ -338,6 +356,39 @@ export async function getActivePathProgress(): Promise<PathProgress | null> {
     return null;
   } catch (error) {
     console.error("[API] Error fetching active path progress:", error);
+    return null;
+  }
+}
+
+export async function fetchAllRewards(): Promise<Reward[] | null> {
+  try {
+    const headers = await getAuthHeaders();
+    const baseURL = getAPIBaseURL();
+    const fullURL = `${baseURL}/user/rewards`;
+    
+    if (__DEV__) {
+      console.log("[API] fetchAllRewards - Full URL:", fullURL);
+    }
+
+    const response = await fetch(fullURL, {
+      method: "GET",
+      headers,
+      credentials: Platform.OS === "web" ? "include" : "omit",
+    });
+
+    if (!response.ok) {
+      console.error("[API] Failed to fetch all rewards:", response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    if (data.success && data.data) {
+      return data.data.rewards;
+    }
+
+    return null;
+  } catch (error) {
+    console.error("[API] Error fetching all rewards:", error);
     return null;
   }
 }
