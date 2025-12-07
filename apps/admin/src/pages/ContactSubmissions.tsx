@@ -20,7 +20,6 @@ export function ContactSubmissions() {
 
   useEffect(() => {
     loadSubmissions()
-    // Odśwież co 5 sekund, aby zobaczyć nowe zgłoszenia
     const interval = setInterval(loadSubmissions, 5000)
     return () => clearInterval(interval)
   }, [])

@@ -6,14 +6,12 @@ import { Form } from "@/components/ui/form.tsx"
 import CustomUsualInput from "@/components/shared/CustomCards/CustomInput/CustomUsualInput.tsx"
 import CustomFileInput from "@/components/shared/CustomCards/CustomInput/CustomFileInput.tsx"
 
-// Typ dla formularza
 export interface CharacterFormData {
   name: string
   avatarFile: File | null
   description?: string
 }
 
-// Schemat walidacji Yup - avatar jest opcjonalny (może być null przy edycji lub gdy istnieje URL)
 const characterFormSchema = yup.object({
   name: yup
     .string()

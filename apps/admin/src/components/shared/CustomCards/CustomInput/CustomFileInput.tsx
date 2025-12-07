@@ -16,7 +16,6 @@ const CustomFileInput = ({name, label, description="", accept="image/*", existin
     const [preview, setPreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     
-    // Get full URL for existing image from backend
     const existingImageUrl = existingUrl ? getBackendImageUrl(existingUrl) : null;
 
     return (
@@ -111,7 +110,6 @@ const CustomFileInput = ({name, label, description="", accept="image/*", existin
                                                 className="max-w-full h-32 object-contain mx-auto rounded-md"
                                                 onError={(e) => {
                                                     console.error('Failed to load image from URL:', existingImageUrl, 'Original URL:', existingUrl);
-                                                    // Show error message instead of hiding
                                                     const img = e.target as HTMLImageElement;
                                                     img.style.display = 'none';
                                                     const parent = img.parentElement;

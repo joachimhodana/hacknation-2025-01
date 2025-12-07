@@ -11,7 +11,6 @@ export const authClient = createAuthClient({
   ],
 });
 
-// Create useSession hook using React hooks
 export const useSession = () => {
   const [session, setSession] = useState<any>(null);
   const [isPending, setIsPending] = useState(true);
@@ -33,7 +32,6 @@ export const useSession = () => {
 
   useEffect(() => {
     fetchSession();
-    // Removed polling - Better Auth client handles session updates automatically
   }, []);
 
   return {

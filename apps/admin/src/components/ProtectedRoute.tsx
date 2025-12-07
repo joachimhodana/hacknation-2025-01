@@ -11,7 +11,6 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const navigate = useNavigate();
   const { data: session, isPending, error } = useSession();
 
-  // Show loading state while checking session
   if (isPending) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -23,12 +22,10 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  // If there's an error or no session, show login
   if (error || !session?.user) {
     return <Login />;
   }
 
-  // Check if user has admin role
   const userRole = session.user.role;
   if (userRole !== "admin") {
     return (

@@ -29,7 +29,6 @@ interface MapComponentProps {
   selectedPointId?: string | null
 }
 
-// Fix for default marker icons in Leaflet with Vite
 import icon from "leaflet/dist/images/marker-icon.png"
 import iconShadow from "leaflet/dist/images/marker-shadow.png"
 import iconRetina from "leaflet/dist/images/marker-icon-2x.png"
@@ -47,15 +46,12 @@ const DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon
 
-// Function to create icon with number badge
 function createIconWithNumber(baseIcon: L.Icon, order: number, isSelected: boolean = false): L.DivIcon {
-  // Get icon size from base icon - handle both array and PointExpression types
   const iconSizeValue = baseIcon.options.iconSize
   const baseIconSize: [number, number] = Array.isArray(iconSizeValue) 
     ? [iconSizeValue[0], iconSizeValue[1]]
     : [25, 41]
   
-  // Make selected marker larger
   const iconSize: [number, number] = isSelected
     ? [baseIconSize[0] * 1.4, baseIconSize[1] * 1.4]
     : baseIconSize
@@ -65,7 +61,6 @@ function createIconWithNumber(baseIcon: L.Icon, order: number, isSelected: boole
     ? [iconAnchorValue[0], iconAnchorValue[1]]
     : [12, 41]
   
-  // Adjust anchor for larger selected marker
   const iconAnchor: [number, number] = isSelected
     ? [baseIconAnchor[0] * 1.4, baseIconAnchor[1] * 1.4]
     : baseIconAnchor
@@ -75,7 +70,6 @@ function createIconWithNumber(baseIcon: L.Icon, order: number, isSelected: boole
     ? [popupAnchorValue[0], popupAnchorValue[1]]
     : [0, -iconSize[1]]
   
-  // Selected marker styling
   const borderStyle = isSelected
     ? `border: 3px solid #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3), 0 4px 8px rgba(0,0,0,0.3);`
     : `box-shadow: 0 2px 4px rgba(0,0,0,0.2);`
@@ -84,7 +78,6 @@ function createIconWithNumber(baseIcon: L.Icon, order: number, isSelected: boole
     ? `animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;`
     : ``
   
-  // Create a div icon with the base icon image and a number badge
   return L.divIcon({
     html: `
       <style>
@@ -132,7 +125,6 @@ function createIconWithNumber(baseIcon: L.Icon, order: number, isSelected: boole
   })
 }
 
-// Draggable marker component with click-to-select, drag-to-move functionality
 function DraggableMarker({
   point,
   icon,
@@ -146,34 +138,28 @@ function DraggableMarker({
   onMarkerMove?: (pointId: string, lat: number, lng: number) => void
   onMarkerDelete?: (pointId: string) => void
 }) {
-  // Create icon with number badge - update when selection changes
   const iconWithNumber = createIconWithNumber(icon, point.order, isSelected)
   const [isDragEnabled, setIsDragEnabled] = useState(false)
   const clickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const markerRef = useRef<L.Marker | null>(null)
 
-  // Handle marker click - first click shows popup, second enables dragging
   const handleClick = (e: L.LeafletMouseEvent) => {
     e.originalEvent.stopPropagation()
     
-    // Clear any pending timeout
     if (clickTimeoutRef.current) {
       clearTimeout(clickTimeoutRef.current)
       clickTimeoutRef.current = null
-      // Second click within timeout - enable dragging
       setIsDragEnabled(true)
       if (markerRef.current) {
         markerRef.current.setOpacity(0.7)
       }
     } else {
-      // First click - set timeout to enable dragging on second click
       clickTimeoutRef.current = setTimeout(() => {
         clickTimeoutRef.current = null
-      }, 500) // 500ms window for second click
+      }, 500)
     }
   }
 
-  // Handle drag end to update position
   const handleDragEnd = (e: L.DragEndEvent) => {
     const marker = e.target as L.Marker
     const newLat = marker.getLatLng().lat
@@ -181,16 +167,14 @@ function DraggableMarker({
     if (onMarkerMove) {
       onMarkerMove(point.id, newLat, newLng)
     }
-    setIsDragEnabled(false) // Disable dragging after move
+    setIsDragEnabled(false)
     marker.setOpacity(1)
   }
 
-  // Handle when marker is added to map
   const handleMarkerAdd = (e: L.LeafletEvent) => {
     markerRef.current = e.target as L.Marker
   }
 
-  // Update dragging state when isDragEnabled changes
   useEffect(() => {
     if (markerRef.current) {
       if (isDragEnabled) {
@@ -201,7 +185,6 @@ function DraggableMarker({
     }
   }, [isDragEnabled])
 
-  // Update icon when selection changes
   useEffect(() => {
     if (markerRef.current) {
       const newIcon = createIconWithNumber(icon, point.order, isSelected)
@@ -209,7 +192,6 @@ function DraggableMarker({
     }
   }, [isSelected, icon, point.order])
 
-  // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
       if (clickTimeoutRef.current) {
@@ -271,7 +253,6 @@ function DraggableMarker({
   )
 }
 
-// Component to handle map click events
 function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number) => void }) {
   const map = useMap()
 
@@ -289,7 +270,6 @@ function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number
   return null
 }
 
-// Component to fit map bounds to show all points
 function MapBounds({ points }: { points: RoutePoint[] }) {
   const map = useMap()
 
@@ -305,7 +285,6 @@ function MapBounds({ points }: { points: RoutePoint[] }) {
   return null
 }
 
-// Component to focus on selected point
 function FocusOnSelectedPoint({ 
   selectedPoint
 }: { 
@@ -315,10 +294,9 @@ function FocusOnSelectedPoint({
 
   useEffect(() => {
     if (selectedPoint) {
-      // Smoothly pan and zoom to selected point
       map.setView(
         [selectedPoint.lat, selectedPoint.lng],
-        Math.max(map.getZoom(), 16), // Zoom in at least to level 16
+        Math.max(map.getZoom(), 16),
         { animate: true, duration: 0.5 }
       )
     }
@@ -327,7 +305,6 @@ function FocusOnSelectedPoint({
   return null
 }
 
-// Component to handle routing between points
 function RouteRenderer({ 
   points, 
   onRouteDistanceChange 
@@ -339,13 +316,11 @@ function RouteRenderer({
   const routingControlRef = useRef<L.Routing.Control | null>(null)
 
   useEffect(() => {
-    // Remove existing routing control
     if (routingControlRef.current) {
       map.removeControl(routingControlRef.current)
       routingControlRef.current = null
     }
 
-    // Reset distance if less than 2 points
     if (points.length < 2) {
       if (onRouteDistanceChange) {
         onRouteDistanceChange(0)
@@ -353,19 +328,16 @@ function RouteRenderer({
       return
     }
 
-    // Only create route if we have 2+ points
     const sortedPoints = [...points].sort((a, b) => a.order - b.order)
     const waypoints = sortedPoints.map(
       (point) => L.latLng(point.lat, point.lng)
     )
 
-      // Create routing control with OSRM (free routing service)
-      // Using walking profile for pedestrian routes
       const routingControl = L.Routing.control({
         waypoints: waypoints,
         router: L.Routing.osrmv1({
           serviceUrl: "https://router.project-osrm.org/route/v1",
-          profile: "foot", // Use 'foot' profile for walking/pedestrian routes
+          profile: "foot",
         }),
         lineOptions: {
           styles: [
@@ -378,18 +350,16 @@ function RouteRenderer({
           extendToWaypoints: true,
           missingRouteTolerance: 10,
         } as L.Routing.LineOptions,
-        addWaypoints: false, // Don't allow adding waypoints via UI
-        fitSelectedRoutes: false, // Don't auto-fit (we handle bounds separately)
-        showAlternatives: false, // Don't show alternative routes
+        addWaypoints: false,
+        fitSelectedRoutes: false,
+        showAlternatives: false,
         routeWhileDragging: false,
-        createMarker: () => null, // Don't create default markers (we use our own)
-      } as any) // Type assertion to avoid TypeScript issues with routing machine types
+        createMarker: () => null,
+      } as any)
 
-    // Listen for route calculation to get actual distance
     routingControl.on('routesfound', (e: any) => {
       if (e.routes && e.routes.length > 0) {
         const route = e.routes[0]
-        // OSRM returns distance in meters, convert to kilometers
         const distanceKm = route.summary.totalDistance / 1000
         if (onRouteDistanceChange) {
           onRouteDistanceChange(distanceKm)
@@ -400,7 +370,6 @@ function RouteRenderer({
     routingControl.addTo(map)
     routingControlRef.current = routingControl
 
-    // Cleanup
     return () => {
       if (routingControlRef.current) {
         map.removeControl(routingControlRef.current)
@@ -421,7 +390,6 @@ export default function MapComponent({
   onMarkerDelete,
   selectedPointId,
 }: MapComponentProps) {
-  // Create custom icon if markerIconUrl is provided
   const customIcon = markerIconUrl
     ? L.icon({
         iconUrl: markerIconUrl,
@@ -431,17 +399,14 @@ export default function MapComponent({
       })
     : DefaultIcon
 
-  // Default center (Bydgoszcz, Poland)
   const defaultCenter: [number, number] = [53.1235, 18.0084]
   const defaultZoom = 13
 
-  // Get center from points if available, otherwise use default
   const center: [number, number] =
     points.length > 0
       ? [points[0].lat, points[0].lng]
       : defaultCenter
 
-  // Find selected point
   const selectedPoint = selectedPointId
     ? points.find(p => p.id === selectedPointId) || null
     : null

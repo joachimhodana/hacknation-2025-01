@@ -156,13 +156,11 @@ const ProfileScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Background blobs */}
       <View style={[styles.blob, styles.blobRed]} />
       <View style={[styles.blob, styles.blobBlue]} />
       <View style={[styles.blob, styles.blobYellow]} />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header / Profile text */}
         <View style={styles.header}>
           <Text style={styles.pageTitle}>Profil gracza</Text>
           <Text style={styles.pageSubtitle}>
@@ -170,7 +168,6 @@ const ProfileScreen: React.FC = () => {
           </Text>
         </View>
 
-        {/* Anonymous user warning banner */}
         {isAnonymous && (
           <View style={styles.anonymousBanner}>
             <View style={styles.anonymousBannerContent}>
@@ -196,7 +193,6 @@ const ProfileScreen: React.FC = () => {
           </View>
         )}
 
-        {/* Profile card */}
         <View style={styles.profileCardOuter}>
           <View style={styles.accentStrip}>
             <View style={[styles.accentSegment, { backgroundColor: COLORS.red }]} />
@@ -208,7 +204,6 @@ const ProfileScreen: React.FC = () => {
 
           <View style={styles.profileCard}>
             <View style={styles.profileRow}>
-              {/* Avatar */}
               <View style={[styles.avatar, isAnonymous && styles.avatarAnonymous]}>
                 <Text style={styles.avatarInitials}>{userInitials}</Text>
               </View>
@@ -262,7 +257,6 @@ const ProfileScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Leader Board */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>🏆 Ranking</Text>
           <Text style={styles.sectionSubtitle}>
@@ -328,7 +322,6 @@ const ProfileScreen: React.FC = () => {
           )}
         </View>
 
-        {/* Collections / items – 3 in a row preview */}
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>Zebrane przedmioty</Text>
@@ -385,7 +378,6 @@ const ProfileScreen: React.FC = () => {
           )}
         </View>
 
-        {/* Settings */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Ustawienia</Text>
 
