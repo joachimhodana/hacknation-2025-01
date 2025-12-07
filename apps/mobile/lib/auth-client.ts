@@ -5,21 +5,28 @@ import { Platform } from "react-native";
 
 // Get base URL from environment variable or default to localhost
 const getBaseURL = () => {
-  // For Expo, we can use Constants.expoConfig?.extra?.apiUrl or environment variable
-  if (typeof process !== "undefined" && process.env?.EXPO_PUBLIC_BETTER_AUTH_URL) {
-    return process.env.EXPO_PUBLIC_BETTER_AUTH_URL;
+  // Use platform-specific environment variables
+  if (Platform.OS === "web") {
+    if (typeof process !== "undefined" && process.env?.EXPO_PUBLIC_BETTER_AUTH_URL_WEB) {
+      return process.env.EXPO_PUBLIC_BETTER_AUTH_URL_WEB;
+    }
+    // Default for web
+    return "http://localhost:8080";
+  } else {
+    // Native platforms (iOS, Android)
+    if (typeof process !== "undefined" && process.env?.EXPO_PUBLIC_BETTER_AUTH_URL_NATIVE) {
+      return process.env.EXPO_PUBLIC_BETTER_AUTH_URL_NATIVE;
+    }
+    
+    // Fallback defaults for native
+    if (Platform.OS === "android") {
+      // Android emulator special IP
+      return "http://10.0.2.2:8080";
+    }
+    
+    // Default for iOS simulator
+    return "http://localhost:8080";
   }
-  
-  // For Android emulator, use 10.0.2.2 instead of localhost
-  // For iOS simulator, localhost works fine
-  // For physical devices, you need your computer's IP address
-  if (Platform.OS === "android") {
-    // Android emulator special IP
-    return "http://10.0.2.2:8080";
-  }
-  
-  // Default to localhost:8080 for iOS simulator and web
-  return "http://localhost:8080";
 };
 
 // Configure auth client based on platform
