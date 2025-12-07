@@ -279,7 +279,7 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
     const [path] = await db
       .select()
       .from(paths)
-      .where(eq(paths.id, Number(params.id)))
+      .where(eq(paths.pathId, params.id))
       .limit(1);
 
     if (!path) {
@@ -297,7 +297,7 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
       })
       .from(pathPoints)
       .innerJoin(points, eq(pathPoints.pointId, points.id))
-      .where(eq(pathPoints.pathId, Number(params.id)))
+      .where(eq(pathPoints.pathId, path.id))
       .orderBy(pathPoints.orderIndex);
 
     return {
