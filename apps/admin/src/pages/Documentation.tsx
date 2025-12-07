@@ -52,20 +52,70 @@ export function Documentation() {
           </CardTitle>
           <CardDescription>Przegląd statystyk i metryk</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
           <p className="text-sm text-muted-foreground">
             Na stronie głównej znajdziesz ogólne statystyki dotyczące wszystkich tras,
-            w tym liczbę uczestników, wskaźniki ukończenia oraz szczegółowe informacje
-            o każdym projekcie trasy.
+            w tym liczbę tras, status publikacji, łączną długość tras oraz średni czas trwania.
           </p>
+          
+          {/* Statystyki ogólne */}
+          <div>
+            <h4 className="font-semibold mb-3">Statystyki ogólne</h4>
+            <div className="grid md:grid-cols-2 gap-3 text-sm text-muted-foreground">
+              <div className="bg-primary/5 rounded p-3 border border-primary/20">
+                <p className="font-semibold text-foreground mb-1">Wszystkie trasy</p>
+                <p>Wyświetla całkowitą liczbę wszystkich utworzonych tras w systemie</p>
+              </div>
+              <div className="bg-primary/5 rounded p-3 border border-primary/20">
+                <p className="font-semibold text-foreground mb-1">Opublikowane</p>
+                <p>Liczba tras dostępnych publicznie dla użytkowników aplikacji mobilnej</p>
+              </div>
+              <div className="bg-primary/5 rounded p-3 border border-primary/20">
+                <p className="font-semibold text-foreground mb-1">Łączna długość</p>
+                <p>Suma długości wszystkich tras wyrażona w kilometrach (automatyczna konwersja z metrów)</p>
+              </div>
+              <div className="bg-primary/5 rounded p-3 border border-primary/20">
+                <p className="font-semibold text-foreground mb-1">Średni czas</p>
+                <p>Średni czas trwania trasy obliczany na podstawie wszystkich tras (w minutach)</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Projekty tras */}
+          <div>
+            <h4 className="font-semibold mb-3">Projekty tras</h4>
+            <p className="text-sm text-muted-foreground mb-3">
+              Sekcja wyświetla karty z informacjami o trasach. Dla pierwszych 9 tras system automatycznie
+              ładuje pełne dane, w tym punkty trasy, aby wyświetlić dokładne informacje.
+            </p>
+            <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside ml-4">
+              <li>
+                <strong>Automatyczne ładowanie danych</strong> - system pobiera szczegóły tras z API
+              </li>
+              <li>
+                <strong>Karty tras</strong> - każda karta pokazuje podstawowe informacje o trasie
+              </li>
+              <li>
+                <strong>Status ładowania</strong> - podczas pobierania danych wyświetlane są animowane placeholdery
+              </li>
+              <li>
+                <strong>Obsługa błędów</strong> - w przypadku błędu wyświetlany jest komunikat z informacją o problemie
+              </li>
+              <li>
+                <strong>Pusta lista</strong> - jeśli nie ma tras, wyświetlany jest komunikat zachęcający do utworzenia pierwszej trasy
+              </li>
+            </ul>
+          </div>
+
+          {/* Funkcjonalności */}
           <div>
             <h4 className="font-semibold mb-2">Dostępne funkcje:</h4>
             <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-              <li>Przegląd wszystkich aktywnych tras</li>
-              <li>Statystyki uczestników i ukończeń</li>
-              <li>Interaktywny wykres z możliwością zmiany danych</li>
-              <li>Szczegółowe karty dla każdej trasy</li>
-              <li>Karty informacyjne z kluczowymi metrykami</li>
+              <li>Przegląd wszystkich tras w systemie</li>
+              <li>Statystyki w czasie rzeczywistym (aktualizowane przy każdym załadowaniu strony)</li>
+              <li>Szczegółowe karty dla każdej trasy z podstawowymi informacjami</li>
+              <li>Automatyczne formatowanie danych (dystans, czas, daty)</li>
+              <li>Obsługa stanów ładowania i błędów</li>
             </ul>
           </div>
         </CardContent>
@@ -80,37 +130,88 @@ export function Documentation() {
           </CardTitle>
           <CardDescription>Zarządzanie wszystkimi trasami</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
           <p className="text-sm text-muted-foreground">
             Strona z listą wszystkich tras pozwala na przeglądanie, edycję i zarządzanie trasami.
+            Wszystkie dane są pobierane z API w czasie rzeczywistym.
           </p>
+          
           <div>
-            <h4 className="font-semibold mb-2">Funkcjonalności:</h4>
-            <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
+            <h4 className="font-semibold mb-3">Funkcjonalności:</h4>
+            <ul className="text-sm text-muted-foreground space-y-3 list-disc list-inside">
               <li>
                 <strong>Przełączanie widoku</strong> - możesz wybrać widok kafelków (grid) lub widok listy
-                za pomocą przycisków w prawym górnym rogu
+                za pomocą przycisków w prawym górnym rogu. Widok jest zapisywany w stanie komponentu.
               </li>
               <li>
-                <strong>Paginacja</strong> - trasy są podzielone na strony (6 tras na stronę)
+                <strong>Paginacja</strong> - trasy są podzielone na strony (6 tras na stronę). 
+                Możesz nawigować między stronami za pomocą przycisków "Poprzednia" i "Następna".
               </li>
               <li>
                 <strong>Informacje o trasie</strong> - każda karta pokazuje:
-                <ul className="ml-4 mt-1 space-y-1">
-                  <li>Liczbę punktów (z poprawną odmianą)</li>
-                  <li>Dystans w kilometrach lub metrach</li>
-                  <li>Czas trwania w godzinach i minutach</li>
-                  <li>Poziom trudności</li>
-                  <li>Datę ostatniej edycji</li>
+                <ul className="ml-4 mt-2 space-y-2">
+                  <li>
+                    <strong>Liczbę punktów</strong> - z poprawną odmianą (1 punkt, 2-4 punkty, 5+ punktów)
+                  </li>
+                  <li>
+                    <strong>Dystans</strong> - automatycznie formatowany:
+                    <ul className="ml-4 mt-1 space-y-1">
+                      <li>Dystans ≥ 1000m wyświetlany jako "X.X km"</li>
+                      <li>Dystans &lt; 1000m wyświetlany jako "X m"</li>
+                    </ul>
+                  </li>
+                  <li>
+                    <strong>Czas trwania</strong> - formatowany jako:
+                    <ul className="ml-4 mt-1 space-y-1">
+                      <li>"Xh Ymin" dla tras dłuższych niż 60 minut</li>
+                      <li>"Xmin" dla tras krótszych niż 60 minut</li>
+                    </ul>
+                  </li>
+                  <li>
+                    <strong>Poziom trudności</strong> - wyświetlany z odpowiednim kolorem i etykietą
+                  </li>
+                  <li>
+                    <strong>Datę ostatniej edycji</strong> - formatowana w formacie polskim (np. "15 stycznia 2024, 14:30")
+                  </li>
+                  <li>
+                    <strong>Miniaturę trasy</strong> - jeśli dostępna, wyświetlana jako obrazek
+                  </li>
                 </ul>
               </li>
               <li>
-                <strong>Publikacja</strong> - przycisk "Opublikuj" / "Zdejmij" pozwala na zmianę statusu trasy
+                <strong>Publikacja</strong> - przycisk "Opublikuj" / "Zdejmij" pozwala na natychmiastową zmianę statusu trasy.
+                Status jest aktualizowany przez API endpoint `/admin/paths/:id/toggle` i od razu odzwierciedlany w interfejsie.
               </li>
               <li>
-                <strong>Edycja</strong> - przycisk "Edytuj" otwiera kreator z wypełnionymi danymi trasy
+                <strong>Edycja</strong> - przycisk "Edytuj" otwiera kreator z wypełnionymi danymi trasy.
+                Przekierowuje do `/route-creator?edit=pathId` gdzie `pathId` to identyfikator trasy.
+              </li>
+              <li>
+                <strong>Dodawanie nowej trasy</strong> - przycisk "Dodaj trasę" w nagłówku przekierowuje do kreatora tras.
               </li>
             </ul>
+          </div>
+
+          <div className="bg-primary/5 rounded p-3 border border-primary/20">
+            <p className="font-semibold text-foreground mb-2">
+              💡 Formatowanie danych:
+            </p>
+            <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+              <li>Dystans jest automatycznie konwertowany z metrów na kilometry dla wartości ≥ 1000m</li>
+              <li>Czas jest formatowany z podziałem na godziny i minuty</li>
+              <li>Daty są wyświetlane w formacie polskim z godziną</li>
+              <li>Liczba punktów ma poprawną odmianę w języku polskim</li>
+            </ul>
+          </div>
+
+          <div className="bg-secondary/20 rounded p-3 border border-secondary/40">
+            <p className="font-semibold text-foreground mb-2">
+              ⚠️ Uwaga:
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Zmiana statusu publikacji jest natychmiastowa i nieodwracalna bez ponownego kliknięcia przycisku.
+              Opublikowane trasy są widoczne dla użytkowników aplikacji mobilnej.
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -248,17 +349,53 @@ export function Documentation() {
                 <ul className="list-disc list-inside space-y-1 ml-4">
                   <li>
                     <strong>Kliknięcie na mapie</strong> - najszybszy sposób, punkt pojawi się dokładnie
-                    w miejscu kliknięcia
+                    w miejscu kliknięcia. Współrzędne są automatycznie zapisywane.
                   </li>
                   <li>
-                    <strong>Przycisk "Dodaj punkt"</strong> - dodaje punkt w centrum mapy (Warszawa)
+                    <strong>Przycisk "Dodaj punkt"</strong> - dodaje punkt w centrum mapy (domyślnie Bydgoszcz).
+                    Możesz później przesunąć marker na mapie.
+                  </li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">Funkcje mapy:</h4>
+                <ul className="list-disc list-inside space-y-1 ml-4">
+                  <li>
+                    <strong>Przesuwanie markerów</strong> - możesz przesuwać markery punktów bezpośrednio na mapie
+                    (drag & drop). Współrzędne są automatycznie aktualizowane.
+                  </li>
+                  <li>
+                    <strong>Obliczanie dystansu</strong> - system automatycznie oblicza całkowity dystans trasy
+                    na podstawie kolejności punktów. Dystans jest wyświetlany w kilometrach w panelu statystyk.
+                  </li>
+                  <li>
+                    <strong>Szacowany czas</strong> - system oblicza szacowany czas trwania trasy na podstawie
+                    dystansu (przy założeniu prędkości 3 km/h). Czas jest wyświetlany w formacie "Xh Ymin".
+                  </li>
+                  <li>
+                    <strong>Wizualizacja trasy</strong> - punkty są połączone linią pokazującą kolejność trasy.
+                    Linia jest aktualizowana automatycznie przy zmianie kolejności punktów.
+                  </li>
+                  <li>
+                    <strong>Zaznaczony punkt</strong> - aktualnie edytowany punkt jest wyróżniony na mapie
+                    (inny kolor/rozmiar markera).
                   </li>
                 </ul>
               </div>
               <p className="mt-2">
                 Punkty są automatycznie numerowane w kolejności dodania, ale możesz zmienić ich kolejność
-                (patrz sekcja 6).
+                (patrz sekcja 6). Kolejność punktów określa również kolejność, w jakiej użytkownicy będą je odwiedzać.
               </p>
+              <div className="bg-primary/5 rounded p-3 border border-primary/20">
+                <p className="font-semibold text-foreground mb-1">
+                  💡 Wskazówka:
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Statystyki trasy (dystans i czas) są aktualizowane w czasie rzeczywistym podczas dodawania,
+                  usuwania lub przesuwania punktów. Panel statystyk jest widoczny w prawym dolnym rogu mapy,
+                  gdy trasa ma co najmniej 2 punkty.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -316,20 +453,65 @@ export function Documentation() {
             <div className="space-y-3 text-sm text-muted-foreground">
               <p>
                 Aby edytować istniejącą trasę, przejdź do listy tras i kliknij przycisk "Edytuj" na karcie trasy.
+                System automatycznie załaduje wszystkie dane trasy z API.
               </p>
-              <ul className="list-disc list-inside space-y-1 ml-4">
-                <li>Formularz automatycznie wypełni się danymi trasy</li>
-                <li>Wszystkie punkty zostaną załadowane i wyświetlone na mapie</li>
-                <li>Automatycznie przejdziesz do kroku 2, jeśli trasa ma punkty</li>
-                <li>Możesz edytować wszystkie pola i zapisać zmiany</li>
-              </ul>
+              <div>
+                <h4 className="font-semibold mb-2">Proces ładowania danych:</h4>
+                <ul className="list-disc list-inside space-y-1 ml-4">
+                  <li>
+                    <strong>Ładowanie podstawowych danych</strong> - system pobiera informacje o trasie (tytuł, opis, kategoria, itp.)
+                  </li>
+                  <li>
+                    <strong>Ładowanie punktów</strong> - wszystkie punkty trasy są pobierane i konwertowane do formatu edytowalnego
+                  </li>
+                  <li>
+                    <strong>Ładowanie plików</strong> - miniatura i ikona markera są wyświetlane (jeśli dostępne)
+                  </li>
+                  <li>
+                    <strong>Wypełnienie formularza</strong> - wszystkie pola formularza są automatycznie wypełnione
+                  </li>
+                  <li>
+                    <strong>Wyświetlenie na mapie</strong> - wszystkie punkty są wyświetlone na mapie z zachowaniem kolejności
+                  </li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">Funkcje edycji:</h4>
+                <ul className="list-disc list-inside space-y-1 ml-4">
+                  <li>
+                    <strong>Edycja ustawień ogólnych</strong> - możesz zmienić wszystkie pola z kroku 1
+                  </li>
+                  <li>
+                    <strong>Zmiana plików</strong> - możesz zmienić miniatury i ikony (tylko nowe pliki są wysyłane do API)
+                  </li>
+                  <li>
+                    <strong>Edycja punktów</strong> - możesz edytować istniejące punkty, dodawać nowe lub usuwać stare
+                  </li>
+                  <li>
+                    <strong>Zmiana kolejności</strong> - możesz zmienić kolejność punktów
+                  </li>
+                  <li>
+                    <strong>Zachowanie ID</strong> - istniejące punkty zachowują swoje ID, co pozwala na ich aktualizację zamiast tworzenia nowych
+                  </li>
+                </ul>
+              </div>
               <div className="bg-primary/5 rounded p-3 border border-primary/20">
                 <p className="font-semibold text-foreground mb-1">
                   ✅ Wskazówka:
                 </p>
                 <p className="text-sm text-muted-foreground">
                   Wszystkie dane są automatycznie wypełnione, więc możesz od razu przejść do edycji punktów
-                  lub zmienić ustawienia ogólne.
+                  lub zmienić ustawienia ogólne. W trybie edycji avatar postaci jest opcjonalny - jeśli nie wybierzesz
+                  nowego pliku, stary zostanie zachowany.
+                </p>
+              </div>
+              <div className="bg-secondary/20 rounded p-3 border border-secondary/40">
+                <p className="font-semibold text-foreground mb-1">
+                  ⚠️ Uwaga techniczna:
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  W trybie edycji system najpierw aktualizuje podstawowe dane trasy, a następnie zarządza punktami
+                  osobno. Nowe punkty są tworzone, istniejące są aktualizowane, a usunięte są usuwane z bazy danych.
                 </p>
               </div>
             </div>
@@ -402,6 +584,7 @@ export function Documentation() {
                 <ul className="list-disc list-inside space-y-1 ml-4">
                   <li>Wszystkie pola formularza muszą być wypełnione poprawnie</li>
                   <li>Walidacja musi przejść pomyślnie</li>
+                  <li>Miniatura jest wymagana (tylko przy tworzeniu nowej trasy)</li>
                 </ul>
               </div>
               <div>
@@ -412,16 +595,34 @@ export function Documentation() {
                     Każdy punkt musi mieć wypełnione:
                     <ul className="ml-4 mt-1 space-y-1">
                       <li>Nazwę (wymagane)</li>
-                      <li>Opis (wymagane)</li>
-                      <li>Postać (wymagane)</li>
-                      <li>Dialog (wymagane)</li>
+                      <li>Dialog (wymagane) - używany jako narrationText</li>
                     </ul>
+                  </li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">Proces zapisywania:</h4>
+                <ul className="list-disc list-inside space-y-1 ml-4">
+                  <li>
+                    <strong>Walidacja</strong> - system sprawdza wszystkie wymagania przed zapisaniem
+                  </li>
+                  <li>
+                    <strong>Przygotowanie danych</strong> - dane są formatowane i przygotowywane do wysłania do API
+                  </li>
+                  <li>
+                    <strong>Obliczanie statystyk</strong> - dystans i czas są automatycznie obliczane na podstawie punktów
+                  </li>
+                  <li>
+                    <strong>Wysłanie do API</strong> - dane są wysyłane przez odpowiedni endpoint (POST dla nowych, PATCH dla edycji)
+                  </li>
+                  <li>
+                    <strong>Przekierowanie</strong> - po udanym zapisaniu następuje przekierowanie do listy tras
                   </li>
                 </ul>
               </div>
               <p className="mt-2">
                 Przycisk "Zapisz trasę" jest nieaktywny, dopóki nie spełnisz wszystkich powyższych warunków.
-                Po zapisaniu, dane trasy zostaną wyświetlone w konsoli (w produkcji zostaną wysłane do API).
+                Podczas zapisywania przycisk wyświetla stan "Zapisywanie..." i jest nieaktywny.
               </p>
               <div className="bg-primary/5 rounded p-3 border border-primary/20">
                 <p className="font-semibold text-foreground mb-1">
@@ -430,6 +631,17 @@ export function Documentation() {
                 <p className="text-sm text-muted-foreground">
                   Wszystkie dane trasy (ustawienia ogólne + punkty) zostaną zapisane. W trybie edycji
                   zmiany zostaną zaktualizowane, a w trybie tworzenia zostanie utworzona nowa trasa.
+                  Po udanym zapisaniu zostaniesz przekierowany do listy tras.
+                </p>
+              </div>
+              <div className="bg-secondary/20 rounded p-3 border border-secondary/40">
+                <p className="font-semibold text-foreground mb-1">
+                  ⚠️ Obsługa błędów:
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  W przypadku błędu podczas zapisywania, wyświetlony zostanie komunikat błędu. Możesz poprawić
+                  dane i spróbować ponownie. Błędy mogą wynikać z problemów z API, nieprawidłowych danych
+                  lub problemów z plikami.
                 </p>
               </div>
             </div>
@@ -577,12 +789,176 @@ export function Documentation() {
             <div className="space-y-3 text-sm text-muted-foreground">
               <p>
                 Aby edytować istniejącą postać, przejdź do listy postaci i kliknij przycisk "Edytuj" na karcie postaci.
+                System automatycznie załaduje wszystkie dane postaci z API.
               </p>
-              <ul className="list-disc list-inside space-y-1 ml-4">
-                <li>Formularz automatycznie wypełni się danymi postaci</li>
-                <li>Pozycja domyślna (jeśli ustawiona) zostanie załadowana i wyświetlona na mapie</li>
-                <li>Automatycznie przejdziesz do kroku 2, jeśli postać ma pozycję domyślną</li>
-                <li>Możesz edytować wszystkie pola i zapisać zmiany</li>
+              <div>
+                <h4 className="font-semibold mb-2">Proces ładowania danych:</h4>
+                <ul className="list-disc list-inside space-y-1 ml-4">
+                  <li>
+                    <strong>Ładowanie podstawowych danych</strong> - system pobiera informacje o postaci (nazwa, opis)
+                  </li>
+                  <li>
+                    <strong>Ładowanie avatara</strong> - avatar jest wyświetlany (jeśli dostępny), ale nie jest wymagany przy edycji
+                  </li>
+                  <li>
+                    <strong>Ładowanie pozycji</strong> - pozycja domyślna jest załadowana i wyświetlona na mapie (jeśli ustawiona)
+                  </li>
+                  <li>
+                    <strong>Wypełnienie formularza</strong> - wszystkie pola formularza są automatycznie wypełnione
+                  </li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">Funkcje edycji:</h4>
+                <ul className="list-disc list-inside space-y-1 ml-4">
+                  <li>
+                    <strong>Edycja nazwy</strong> - możesz zmienić nazwę postaci
+                  </li>
+                  <li>
+                    <strong>Edycja opisu</strong> - możesz zmienić opis postaci (opcjonalne)
+                  </li>
+                  <li>
+                    <strong>Zmiana avatara</strong> - możesz zmienić avatar (tylko nowy plik jest wysyłany do API)
+                  </li>
+                  <li>
+                    <strong>Edycja pozycji</strong> - możesz zmienić lub usunąć pozycję domyślną
+                  </li>
+                  <li>
+                    <strong>Zachowanie danych</strong> - jeśli nie zmienisz pola, stara wartość zostanie zachowana
+                  </li>
+                </ul>
+              </div>
+              <div className="bg-primary/5 rounded p-3 border border-primary/20">
+                <p className="font-semibold text-foreground mb-1">
+                  ✅ Wskazówka:
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  W trybie edycji avatar jest opcjonalny - jeśli nie wybierzesz nowego pliku, stary zostanie zachowany.
+                  To samo dotyczy pozycji domyślnej - możesz ją usunąć lub zmienić.
+                </p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Funkcje techniczne */}
+      <Card className="border-border">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="h-5 w-5 text-primary" />
+            Funkcje techniczne
+          </CardTitle>
+          <CardDescription>Szczegóły techniczne i funkcje systemu</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* API i komunikacja */}
+          <div>
+            <h3 className="font-semibold mb-3">Komunikacja z API</h3>
+            <div className="space-y-3 text-sm text-muted-foreground">
+              <p>
+                Wszystkie dane są pobierane i wysyłane przez REST API. System używa autoryzacji opartej na cookies.
+              </p>
+              <ul className="list-disc list-inside space-y-2 ml-4">
+                <li>
+                  <strong>Autoryzacja</strong> - wszystkie requesty wymagają sesji w cookies (Better Auth)
+                </li>
+                <li>
+                  <strong>Format danych</strong> - dane są wysyłane jako FormData (dla plików) lub JSON
+                </li>
+                <li>
+                  <strong>Obsługa błędów</strong> - wszystkie błędy API są wyświetlane użytkownikowi
+                </li>
+                <li>
+                  <strong>Loading states</strong> - podczas ładowania danych wyświetlane są placeholdery
+                </li>
+                <li>
+                  <strong>Automatyczne odświeżanie</strong> - niektóre dane są automatycznie odświeżane po operacjach
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Walidacja */}
+          <div>
+            <h3 className="font-semibold mb-3">Walidacja formularzy</h3>
+            <div className="space-y-3 text-sm text-muted-foreground">
+              <p>
+                Wszystkie formularze używają React Hook Form z Yup do walidacji. Walidacja odbywa się w czasie rzeczywistym.
+              </p>
+              <ul className="list-disc list-inside space-y-2 ml-4">
+                <li>
+                  <strong>Walidacja w czasie rzeczywistym</strong> - błędy są wyświetlane natychmiast po wprowadzeniu zmian
+                </li>
+                <li>
+                  <strong>Walidacja przed zapisaniem</strong> - system sprawdza wszystkie pola przed wysłaniem do API
+                </li>
+                <li>
+                  <strong>Komunikaty błędów</strong> - każdy błąd ma czytelny komunikat w języku polskim
+                </li>
+                <li>
+                  <strong>Blokowanie przycisków</strong> - przyciski są nieaktywne, dopóki walidacja nie przejdzie
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Formatowanie danych */}
+          <div>
+            <h3 className="font-semibold mb-3">Formatowanie danych</h3>
+            <div className="space-y-3 text-sm text-muted-foreground">
+              <p>
+                System automatycznie formatuje dane dla lepszej czytelności:
+              </p>
+              <ul className="list-disc list-inside space-y-2 ml-4">
+                <li>
+                  <strong>Dystans</strong> - automatyczna konwersja metrów na kilometry (≥1000m)
+                </li>
+                <li>
+                  <strong>Czas</strong> - formatowanie na godziny i minuty (np. "2h 30min")
+                </li>
+                <li>
+                  <strong>Daty</strong> - formatowanie w formacie polskim z godziną
+                </li>
+                <li>
+                  <strong>Liczba punktów</strong> - poprawna odmiana w języku polskim
+                </li>
+                <li>
+                  <strong>Poziomy trudności</strong> - wyświetlanie z odpowiednimi kolorami
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Mapa */}
+          <div>
+            <h3 className="font-semibold mb-3">Funkcje mapy</h3>
+            <div className="space-y-3 text-sm text-muted-foreground">
+              <p>
+                Mapa oferuje wiele funkcji do zarządzania punktami:
+              </p>
+              <ul className="list-disc list-inside space-y-2 ml-4">
+                <li>
+                  <strong>Dodawanie punktów</strong> - przez kliknięcie na mapie lub przycisk
+                </li>
+                <li>
+                  <strong>Przesuwanie markerów</strong> - drag & drop markerów na mapie
+                </li>
+                <li>
+                  <strong>Obliczanie dystansu</strong> - automatyczne obliczanie całkowitego dystansu trasy
+                </li>
+                <li>
+                  <strong>Szacowanie czasu</strong> - obliczanie czasu na podstawie dystansu (3 km/h)
+                </li>
+                <li>
+                  <strong>Wizualizacja trasy</strong> - linia łącząca punkty w kolejności
+                </li>
+                <li>
+                  <strong>Zaznaczanie punktów</strong> - wyróżnianie aktualnie edytowanego punktu
+                </li>
+                <li>
+                  <strong>Usuwanie z mapy</strong> - możliwość usunięcia punktu bezpośrednio z mapy
+                </li>
               </ul>
             </div>
           </div>
