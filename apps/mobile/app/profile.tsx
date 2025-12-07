@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import Navbar from "@/components/Navbar";
+import { PointsBadge } from "@/components/PointsBadge";
 import { authClient } from "@/lib/auth-client";
 import { fetchUserStats, type CollectedItem } from "@/lib/api-client";
 
@@ -160,27 +161,19 @@ const ProfileScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <PointsBadge />
       {/* Background blobs */}
       <View style={[styles.blob, styles.blobRed]} />
       <View style={[styles.blob, styles.blobBlue]} />
       <View style={[styles.blob, styles.blobYellow]} />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header / Profile text with points */}
+        {/* Header / Profile text */}
         <View style={styles.header}>
-          <View style={styles.headerTop}>
-            <View>
-              <Text style={styles.pageTitle}>Profil gracza</Text>
-              <Text style={styles.pageSubtitle}>
-                Zobacz swoje przedmioty, postęp i ustawienia gry.
-              </Text>
-            </View>
-            {/* Points badge */}
-            <View style={styles.pointsBadge}>
-              <Text style={styles.pointsIcon}>⭐</Text>
-              <Text style={styles.pointsValue}>{calculateUserPoints()}</Text>
-            </View>
-          </View>
+          <Text style={styles.pageTitle}>Profil gracza</Text>
+          <Text style={styles.pageSubtitle}>
+            Zobacz swoje przedmioty, postęp i ustawienia gry.
+          </Text>
         </View>
 
         {/* Anonymous user warning banner */}
@@ -427,11 +420,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingHorizontal: 8,
   },
-  headerTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
   pageTitle: {
     fontSize: 22,
     fontWeight: "700",
@@ -441,28 +429,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 13,
     color: COLORS.textMuted,
-  },
-  pointsBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.yellow,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  pointsIcon: {
-    fontSize: 18,
-    marginRight: 6,
-  },
-  pointsValue: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: COLORS.textDark,
   },
 
   profileCardOuter: {

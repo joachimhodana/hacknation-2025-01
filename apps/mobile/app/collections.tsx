@@ -15,6 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { fetchUserStats, type CollectedItem } from "@/lib/api-client";
 import Navbar from "@/components/Navbar";
+import { PointsBadge } from "@/components/PointsBadge";
 import { authClient } from "@/lib/auth-client";
 
 const COLORS = {
@@ -163,6 +164,7 @@ const CollectionsScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <PointsBadge />
       {/* Background blobs */}
       <View style={[styles.blob, styles.blobRed]} />
       <View style={[styles.blob, styles.blobBlue]} />

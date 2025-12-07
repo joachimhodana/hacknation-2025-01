@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { RouteCard } from '@/components/route-card';
 import { routes } from '@/data/routes';
 import Navbar from '@/components/Navbar';
+import { PointsBadge } from '@/components/PointsBadge';
 import { authClient } from '@/lib/auth-client';
 
 const COLORS = {
@@ -47,6 +48,7 @@ export default function ExploreScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <PointsBadge />
       {/* Decorative background blobs - jak w start.tsx */}
       <View style={[styles.blob, styles.blobRed]} />
       <View style={[styles.blob, styles.blobBlue]} />
