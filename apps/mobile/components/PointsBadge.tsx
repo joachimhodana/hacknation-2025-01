@@ -23,7 +23,6 @@ export function PointsBadge({ showIcon = false }: PointsBadgeProps) {
     totalDistanceKm: number
   ): number => {
     const pathsPoints = completedPathsCount * 100;
-    // Punkty za zebrane przedmioty: 50 pkt za każdy
     const itemsPoints = collectedItemsCount * 50;
     const distancePoints = Math.floor(totalDistanceKm) * 10;
     return pathsPoints + itemsPoints + distancePoints;
