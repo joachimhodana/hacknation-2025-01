@@ -31,7 +31,7 @@ export const getAPIBaseURL = () => {
       try {
         const url = new URL(envUrl);
         const result = url.origin;
-        if (__DEV__) {
+    if (__DEV__) {
           console.log("[API] Using env URL:", result);
         }
         return result;
@@ -52,7 +52,7 @@ export const getAPIBaseURL = () => {
 
   if (__DEV__) {
     console.log("[API] Using default URL:", defaultUrl, "for platform:", Platform.OS);
-  }
+    }
 
   return defaultUrl;
 };
