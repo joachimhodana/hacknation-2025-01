@@ -108,7 +108,7 @@ const DashboardRoutes = () => {
       <div>
         <h2 className="text-2xl font-semibold mb-4">Projekty tras</h2>
         <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 text-center">
-          <p className="text-red-600">{error}</p>
+          <p className="text-destructive">{error}</p>
         </div>
       </div>
     )
@@ -118,7 +118,7 @@ const DashboardRoutes = () => {
     return (
       <div>
         <h2 className="text-2xl font-semibold mb-4">Projekty tras</h2>
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-8 text-center">
+        <div className="bg-primary/5 border border-primary/20 rounded-lg p-8 text-center">
           <p className="text-primary">Brak tras. Stwórz pierwszą trasę!</p>
         </div>
       </div>

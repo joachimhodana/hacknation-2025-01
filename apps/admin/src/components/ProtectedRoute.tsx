@@ -15,7 +15,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-muted-foreground">Loading...</p>
         </div>
       </div>
@@ -33,7 +33,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="text-center max-w-md">
-          <h1 className="text-2xl font-bold text-red-600 mb-2">Access Denied</h1>
+          <h1 className="text-2xl font-bold text-destructive mb-2">Access Denied</h1>
           <p className="text-muted-foreground mb-4">
             You do not have admin privileges to access this page.
           </p>
