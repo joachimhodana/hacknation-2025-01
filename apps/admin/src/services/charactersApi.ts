@@ -3,23 +3,18 @@ import type { CharacterType, CharacterCreateData, CharacterUpdateData, ApiRespon
 const API_BASE_URL = import.meta.env.VITE_BETTER_AUTH_URL || "http://localhost:8080"
 const ADMIN_CHARACTERS_ENDPOINT = `${API_BASE_URL}/admin/characters`
 
-// Helper function to get auth headers
 const getAuthHeaders = (): HeadersInit => {
-  // Get session token from better-auth
-  // This will be handled by cookies automatically if using cookie-based auth
-  // If using token-based auth, you might need to get it from authClient
   return {
     "Content-Type": "application/json",
   }
 }
 
-// Get all characters
 export const getCharacters = async (): Promise<CharacterType[]> => {
   try {
     const response = await fetch(ADMIN_CHARACTERS_ENDPOINT, {
       method: "GET",
       headers: getAuthHeaders(),
-      credentials: "include", // Include cookies for auth
+      credentials: "include",
     })
 
     if (!response.ok) {
@@ -39,7 +34,6 @@ export const getCharacters = async (): Promise<CharacterType[]> => {
   }
 }
 
-// Get single character by ID
 export const getCharacterById = async (id: number): Promise<CharacterType> => {
   try {
     const response = await fetch(`${ADMIN_CHARACTERS_ENDPOINT}/${id}`, {
@@ -65,7 +59,6 @@ export const getCharacterById = async (id: number): Promise<CharacterType> => {
   }
 }
 
-// Create new character
 export const createCharacter = async (data: CharacterCreateData): Promise<CharacterType> => {
   try {
     const formData = new FormData()
@@ -86,7 +79,6 @@ export const createCharacter = async (data: CharacterCreateData): Promise<Charac
     const response = await fetch(ADMIN_CHARACTERS_ENDPOINT, {
       method: "POST",
       headers: {
-        // Don't set Content-Type header - browser will set it with boundary for FormData
         'Accept': 'application/json',
       },
       credentials: "include",
@@ -110,16 +102,13 @@ export const createCharacter = async (data: CharacterCreateData): Promise<Charac
   }
 }
 
-// Update character
 export const updateCharacter = async (id: number, data: CharacterUpdateData & { avatarFile?: File }): Promise<CharacterType> => {
   try {
-    // If avatarFile is present, use FormData, otherwise use JSON
     let body: FormData | string
     let headers: HeadersInit
 
     if (data.avatarFile) {
       const formData = new FormData()
-      // Zawsze wysyłaj name, nawet gdy jest plik
       formData.append('name', data.name || '')
       if (data.description) formData.append('description', data.description)
       if (data.voicePreset) formData.append('voicePreset', data.voicePreset)
@@ -128,7 +117,6 @@ export const updateCharacter = async (id: number, data: CharacterUpdateData & { 
       body = formData
       headers = {
         'Accept': 'application/json',
-        // Don't set Content-Type - browser will set it with boundary for FormData
       }
     } else {
       body = JSON.stringify(data)
@@ -159,7 +147,6 @@ export const updateCharacter = async (id: number, data: CharacterUpdateData & { 
   }
 }
 
-// Delete character
 export const deleteCharacter = async (id: number): Promise<void> => {
   try {
     const response = await fetch(`${ADMIN_CHARACTERS_ENDPOINT}/${id}`, {

@@ -11,7 +11,6 @@ export interface ApiResponse<T> {
  * Get auth token from session cookie
  */
 async function getAuthHeaders(): Promise<HeadersInit> {
-  // Better Auth stores session in cookies, so we just need to include credentials
   return {
     'Accept': 'application/json',
   };
@@ -82,9 +81,7 @@ export async function createPath(data: {
     formData.append('stylePreset', data.stylePreset);
   }
 
-  // Add points as JSON string
   if (data.points && data.points.length > 0) {
-    // Prepare points data (without File objects, they'll be added separately)
     const pointsData = data.points.map((point, index) => ({
       latitude: point.latitude,
       longitude: point.longitude,
@@ -98,7 +95,6 @@ export async function createPath(data: {
     
     formData.append('points', JSON.stringify(pointsData));
 
-    // Add audio files with indices (audioFile_0, audioFile_1, etc.)
     data.points.forEach((point, index) => {
       if (point.audioFile) {
         formData.append(`audioFile_${index}`, point.audioFile);
