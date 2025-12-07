@@ -48,25 +48,21 @@ const CollectionsScreen: React.FC = () => {
   const [rewards, setRewards] = useState<RewardDisplay[]>([]);
   const [rewardsLoading, setRewardsLoading] = useState(true);
 
-  // Modal state - must be declared before any conditional returns
   const [selectedItem, setSelectedItem] = useState<CollectedItem | null>(null);
-  const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
+  const [selectedReward, setSelectedReward] = useState<RewardDisplay | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
-  // Animation values - must be declared before any conditional returns
   const [backdropOpacity] = useState(new Animated.Value(0));
   const [cardOpacity] = useState(new Animated.Value(0));
   const [cardTranslateY] = useState(new Animated.Value(24));
 
-  // All useEffect hooks must be before conditional returns
   useEffect(() => {
     if (!isPending && !session) {
       router.replace("/");
     }
   }, [session, isPending, router]);
 
-  // Fetch user stats to get collected items and all rewards
   useEffect(() => {
     if (session && !isPending) {
       loadItems();
@@ -77,15 +73,12 @@ const CollectionsScreen: React.FC = () => {
   const loadRewards = async () => {
     setRewardsLoading(true);
     try {
-      // Use stats endpoint - same as profile.tsx
       const userStats = await fetchUserStats();
       console.log("[Collections] UserStats:", userStats);
       console.log("[Collections] allRewards:", userStats?.allRewards);
-      
+
       if (userStats) {
-        // Check if allRewards exists, otherwise use collectedItems as fallback
         if (userStats.allRewards && Array.isArray(userStats.allRewards) && userStats.allRewards.length > 0) {
-          // Convert API rewards to display format
           const displayRewards: RewardDisplay[] = userStats.allRewards.map((reward) => ({
             id: reward.id,
             title: reward.title,
@@ -113,12 +106,10 @@ const CollectionsScreen: React.FC = () => {
     }
   };
 
-  // Drive animations when isOpen changes - MUST be before conditional returns
   useEffect(() => {
     if (!isMounted) return;
 
     if (isOpen) {
-      // animate in
       Animated.parallel([
         Animated.timing(backdropOpacity, {
           toValue: 1,
@@ -140,7 +131,6 @@ const CollectionsScreen: React.FC = () => {
         }),
       ]).start();
     } else {
-      // animate out
       Animated.parallel([
         Animated.timing(backdropOpacity, {
           toValue: 0,
@@ -173,10 +163,7 @@ const CollectionsScreen: React.FC = () => {
     try {
       const userStats = await fetchUserStats();
       if (userStats) {
-        // For now, we only show collected items
-        // In the future, we might want to show all available items with collected status
         setAllItems(userStats.collectedItems);
-        // Set initial selected item if available
         if (userStats.collectedItems.length > 0) {
           setSelectedItem(userStats.collectedItems[0]);
         }
@@ -195,7 +182,7 @@ const CollectionsScreen: React.FC = () => {
   };
 
   const openRewardModal = (reward: RewardDisplay) => {
-    if (!reward.discovered) return; // Nie otwieraj zakrytych nagród
+    if (!reward.discovered) return;
     setSelectedReward(reward);
     setIsMounted(true);
     setIsOpen(true);
@@ -216,7 +203,7 @@ const CollectionsScreen: React.FC = () => {
   }
 
   if (!session) {
-    return null; // Will redirect
+    return null;
   }
 
   const collectedCount = rewards.filter((r) => r.discovered).length;
@@ -224,12 +211,10 @@ const CollectionsScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Background blobs */}
       <View style={[styles.blob, styles.blobRed]} />
       <View style={[styles.blob, styles.blobBlue]} />
       <View style={[styles.blob, styles.blobYellow]} />
 
-      {/* Header */}
       <View style={styles.headerRow}>
         <Text style={styles.headerTitle}>Zebrane przedmioty</Text>
         <View style={{ width: 48 }} />
@@ -252,7 +237,6 @@ const CollectionsScreen: React.FC = () => {
           )}
         </View>
 
-        {/* Grid nagród: 3 w rzędzie */}
         <View style={styles.rewardsGrid}>
           {rewards.length === 0 && !rewardsLoading ? (
             <View style={styles.emptyState}>
@@ -302,7 +286,6 @@ const CollectionsScreen: React.FC = () => {
         <View style={{ height: 32 }} />
       </ScrollView>
 
-      {/* Animated modal */}
       <Modal
         visible={isMounted}
         animationType="none"
@@ -324,7 +307,6 @@ const CollectionsScreen: React.FC = () => {
             >
               {selectedItem && (
                 <>
-                  {/* Accent strip */}
                   <View style={styles.modalAccentStrip}>
                     <View
                       style={[
@@ -397,7 +379,6 @@ const CollectionsScreen: React.FC = () => {
               )}
               {selectedReward && (
                 <>
-                  {/* Accent strip */}
                   <View style={styles.modalAccentStrip}>
                     <View
                       style={[
@@ -468,10 +449,8 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 8,
-    paddingBottom: 100, // Extra padding for absolute navbar
+    paddingBottom: 100,
   },
-
-  // blobs
   blob: {
     position: "absolute",
     opacity: 0.28,
@@ -498,7 +477,6 @@ const styles = StyleSheet.create({
     bottom: 60,
     right: -40,
   },
-
   headerRow: {
     paddingHorizontal: 16,
     paddingTop: 8,
@@ -517,7 +495,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: COLORS.textDark,
   },
-
   counterRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -543,8 +520,6 @@ const styles = StyleSheet.create({
     color: COLORS.textDark,
     fontWeight: "600",
   },
-
-  // Grid: 3 in a row
   itemsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -587,8 +562,6 @@ const styles = StyleSheet.create({
   itemTileEmojiMissing: {
     color: "#9CA3AF",
   },
-
-  // Grid nagród: 3 w rzędzie
   rewardsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -644,8 +617,6 @@ const styles = StyleSheet.create({
     fontSize: 32,
     opacity: 0.5,
   },
-
-  // Modal
   modalBackdrop: {
     flex: 1,
     justifyContent: "center",

@@ -57,7 +57,6 @@ export default function ExploreScreen() {
       console.log("[Explore] Length:", apiPaths?.length);
       
       if (apiPaths && Array.isArray(apiPaths) && apiPaths.length > 0) {
-        // Transform API paths to Route format
         const routes: Route[] = apiPaths.map((path) => ({
           route_id: path.pathId,
           title: path.title,
@@ -92,7 +91,6 @@ export default function ExploreScreen() {
     }
   }, []);
 
-  // Fetch active path progress
   const loadActivePath = useCallback(async () => {
     try {
       const progress = await getActivePathProgress();
@@ -107,7 +105,6 @@ export default function ExploreScreen() {
     }
   }, []);
 
-  // Fetch paths when session is available
   useEffect(() => {
     console.log("[Explore] ===== FETCH EFFECT TRIGGERED =====");
     console.log("[Explore] Session state:", { 
@@ -140,7 +137,7 @@ export default function ExploreScreen() {
   }
 
   if (!session) {
-    return null; // Will redirect
+    return null;
   }
 
   const handleRoutePress = (routeId: string) => {
@@ -149,13 +146,11 @@ export default function ExploreScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Decorative background blobs - jak w start.tsx */}
       <View style={[styles.blob, styles.blobRed]} />
       <View style={[styles.blob, styles.blobBlue]} />
       <View style={[styles.blob, styles.blobYellow]} />
 
       <View style={styles.container}>
-        {/* Header */}
         <View style={styles.header}>
           <View style={styles.badgeRow}>
             <View
@@ -187,7 +182,6 @@ export default function ExploreScreen() {
           </Text>
         </View>
 
-        {/* Routes List */}
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
@@ -225,7 +219,6 @@ export default function ExploreScreen() {
           ) : null}
         </ScrollView>
 
-        {/* Footer path - jak w start.tsx */}
         <View style={styles.footer}>
           <View style={styles.footerPath}>
             <View
@@ -257,7 +250,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
   },
-  // Decorative blobs
   blob: {
     position: 'absolute',
     opacity: 0.28,
@@ -331,7 +323,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 100, // Extra padding for absolute navbar
+    paddingBottom: 100,
   },
   footer: {
     marginTop: 16,

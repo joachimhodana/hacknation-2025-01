@@ -1,4 +1,3 @@
-// screens/SignupScreen.tsx
 import React, { useState } from "react";
 import {
   View,
@@ -33,7 +32,6 @@ export default function SignupScreen() {
 
   const handleSignup = async () => {
     if (!name.trim() || !email.trim() || !password.trim()) {
-      // TODO: Show validation error
       return;
     }
 
@@ -47,7 +45,6 @@ export default function SignupScreen() {
       router.replace("/map");
     } catch (error) {
       console.error("Signup error:", error);
-      // TODO: Show error message to user
     } finally {
       setIsLoading(false);
     }
@@ -196,7 +193,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
 
-  // decorative soft blobs
   blob: {
     position: "absolute",
     opacity: 0.32,

@@ -20,80 +20,79 @@ interface RouteCardProps {
   isDisabled?: boolean;
 }
 
-// Funkcja zwracająca unikalny styl i hook dla każdej ścieżki
 function getRouteTheme(routeId: string) {
   switch (routeId) {
-    case 'route_001': // Kod/Matematyka - techniczny, cyfrowy
+    case 'route_001':
       return {
-        accentColors: ['#0d9488', '#14b8a6', '#2dd4bf'], // Teal/Matrix
-        cardBgColor: '#0f172a', // Ciemny granat
+        accentColors: ['#0d9488', '#14b8a6', '#2dd4bf'],
+        cardBgColor: '#0f172a',
         cardBgLight: '#1e293b',
         textColor: '#ffffff',
         hook: 'Złam szyfr Enigmy, zanim zrobią to wrodzy agenci!',
-        imageUrl: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=800', // Enigma/maszyna
+        imageUrl: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=800',
       };
-    case 'route_002': // Magia/Legendy - tajemniczy, mistyczny
+    case 'route_002':
       return {
-        accentColors: ['#a855f7', '#c084fc', '#d8b4fe'], // Fiolety
-        cardBgColor: '#581c87', // Ciemny fiolet
+        accentColors: ['#a855f7', '#c084fc', '#d8b4fe'],
+        cardBgColor: '#581c87',
         cardBgLight: '#6b21a8',
         textColor: '#ffffff',
         hook: 'Odkryj magiczną stronę Bydgoszczy zaklętą w pomnikach.',
-        imageUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800', // Rzeka o zachodzie
+        imageUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800',
       };
-    case 'route_003': // Historia/Wojna - poważny, refleksyjny
+    case 'route_003':
       return {
-        accentColors: ['#92400e', '#b45309', '#d97706'], // Brązy
-        cardBgColor: '#451a03', // Ciemny brąz
+        accentColors: ['#92400e', '#b45309', '#d97706'],
+        cardBgColor: '#451a03',
         cardBgLight: '#78350f',
         textColor: '#ffffff',
         hook: 'Posłuchaj niemych świadków historii i zapal światło pamięci.',
-        imageUrl: 'https://images.unsplash.com/photo-1581833971358-2c8b550f87b3?w=800', // Pomnik/pamięć
+        imageUrl: 'https://images.unsplash.com/photo-1581833971358-2c8b550f87b3?w=800',
       };
-    case 'route_004': // Technika/Przemysł - industrialny
+    case 'route_004':
       return {
-        accentColors: ['#475569', '#64748b', '#94a3b8'], // Szary, metaliczny
-        cardBgColor: '#1e293b', // Ciemny szary
+        accentColors: ['#475569', '#64748b', '#94a3b8'],
+        cardBgColor: '#1e293b',
         cardBgLight: '#334155',
         textColor: '#ffffff',
         hook: 'Zostań inżynierem z XIX wieku. Posłuchaj huku maszyn i szumu wody.',
-        imageUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800', // Maszyny/przemysł
+        imageUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800',
       };
-    case 'route_006': // Muzyka/Sztuka - artystyczny
+    case 'route_006':
       return {
-        accentColors: ['#dc2626', '#ef4444', '#f87171'], // Czerwony, pasjonujący
-        cardBgColor: '#7f1d1d', // Ciemny czerwony
+        accentColors: ['#dc2626', '#ef4444', '#f87171'],
+        cardBgColor: '#7f1d1d',
         cardBgLight: '#991b1b',
         textColor: '#ffffff',
         hook: 'Wsłuchaj się w melodię płynącą z pomników i gmachów kultury.',
-        imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800', // Muzyka/sztuka
+        imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800',
       };
-    case 'route_007': // Architektura/Secesja - elegancki
+    case 'route_007':
       return {
-        accentColors: ['#d97706', '#f59e0b', '#fbbf24'], // Złoty, luksusowy
-        cardBgColor: '#78350f', // Ciemny złoty
+        accentColors: ['#d97706', '#f59e0b', '#fbbf24'],
+        cardBgColor: '#78350f',
         cardBgLight: '#92400e',
         textColor: '#ffffff',
         hook: 'Podnieś głowę! Posłuchaj opowieści zaklętych w fasadach kamienic.',
-        imageUrl: 'https://images.unsplash.com/photo-1511818966892-d7d671e672a2?w=800', // Architektura
+        imageUrl: 'https://images.unsplash.com/photo-1511818966892-d7d671e672a2?w=800',
       };
-    case 'route_010': // Nostalgia/Lifestyle - ciepły
+    case 'route_010':
       return {
-        accentColors: ['#ea580c', '#f97316', '#fb923c'], // Pomarańczowy, ciepły
-        cardBgColor: '#7c2d12', // Ciemny pomarańcz
+        accentColors: ['#ea580c', '#f97316', '#fb923c'],
+        cardBgColor: '#7c2d12',
         cardBgLight: '#9a3412',
         textColor: '#ffffff',
         hook: 'Poczuj smak dawnej Bydgoszczy w miejscach, których już nie ma.',
-        imageUrl: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&q=80', // Retro kawiarnia/restauracja
+        imageUrl: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&q=80',
       };
-    case 'route_011': // Edukacja/Studencki - dynamiczny
+    case 'route_011':
       return {
-        accentColors: [COLORS.blue, '#3b82f6', '#60a5fa'], // Niebieski, młody
-        cardBgColor: '#1e3a8a', // Ciemny niebieski
+        accentColors: [COLORS.blue, '#3b82f6', '#60a5fa'],
+        cardBgColor: '#1e3a8a',
         cardBgLight: '#1e40af',
         textColor: '#ffffff',
         hook: 'Szlak Wiecznego Studenta. Odkryj historię nauki i najlepsze miejscówki.',
-        imageUrl: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800&q=80', // Biblioteka/studenci
+        imageUrl: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800&q=80',
       };
     default:
       return {
@@ -126,21 +125,21 @@ export function RouteCard({ route, onPress, isActive = false, isDisabled = false
     if (lower.includes('łatwy')) {
       return {
         label: 'Dla rodzin z dziećmi',
-        color: '#10b981', // Zielony
+        color: '#10b981',
         bgColor: '#10b981',
       };
     }
     if (lower.includes('średni')) {
       return {
         label: 'Dla dorosłych (+18)',
-        color: '#f59e0b', // Pomarańczowy
+        color: '#f59e0b',
         bgColor: '#f59e0b',
       };
     }
     if (lower.includes('trudny')) {
       return {
         label: 'Zaawansowany',
-        color: '#ef4444', // Czerwony
+        color: '#ef4444',
         bgColor: '#ef4444',
       };
     }
@@ -153,9 +152,6 @@ export function RouteCard({ route, onPress, isActive = false, isDisabled = false
 
   const difficultyInfo = getDifficultyInfo(route.difficulty);
 
-  // Use thumbnail from API if available, otherwise fall back to theme image
-  // Note: thumbnail_url from API should already be a full path like /resources/...
-  // We need to prepend the API base URL
   const imageUrl = route.thumbnail_url 
     ? `${getAPIBaseURL()}${route.thumbnail_url}`
     : theme.imageUrl;
@@ -170,17 +166,13 @@ export function RouteCard({ route, onPress, isActive = false, isDisabled = false
         isDisabled && styles.containerDisabled,
         isActive && styles.containerActive,
       ]}>
-      {/* Hero Image */}
       <ImageBackground
         source={{ uri: imageUrl }}
         style={styles.heroImage}
         imageStyle={styles.heroImageStyle}>
-        {/* Unified dark overlay for better text readability */}
         <View style={styles.darkOverlay} />
         <View style={styles.contentWrapper}>
-          {/* Content */}
           <View style={styles.content}>
-            {/* Header */}
             <View style={styles.header}>
               <Text
                 style={[styles.title, { color: '#ffffff' }]}
@@ -189,14 +181,12 @@ export function RouteCard({ route, onPress, isActive = false, isDisabled = false
               </Text>
             </View>
 
-            {/* Hook - krótki, chwytliwy opis */}
             <Text
               style={[styles.hook, { color: 'rgba(255, 255, 255, 0.95)' }]}
               numberOfLines={2}>
               {theme.hook}
             </Text>
 
-            {/* Info Row */}
             <View style={styles.infoRow}>
               <View style={styles.infoLeft}>
                 <Text style={styles.infoText}>
@@ -208,13 +198,11 @@ export function RouteCard({ route, onPress, isActive = false, isDisabled = false
                 </Text>
               </View>
               <View style={styles.infoRight}>
-                {/* Active badge */}
                 {isActive && (
                   <View style={styles.activeBadge}>
                     <Text style={styles.activeBadgeText}>W trakcie</Text>
                   </View>
                 )}
-                {/* Difficulty badge with color */}
                 <View
                   style={[
                     styles.difficultyBadge,

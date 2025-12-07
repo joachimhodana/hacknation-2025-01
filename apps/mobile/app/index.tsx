@@ -1,4 +1,3 @@
-// screens/StartScreen.tsx
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -28,7 +27,6 @@ export default function StartScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const { data: session, isPending } = authClient.useSession();
 
-  // If user is already logged in, redirect to map
   useEffect(() => {
     if (!isPending && session) {
       console.log("[Index] Session found, redirecting to /map");
@@ -38,7 +36,6 @@ export default function StartScreen() {
     }
   }, [session, isPending, router]);
 
-  // Show loading while checking session
   if (isPending) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -49,7 +46,6 @@ export default function StartScreen() {
     );
   }
 
-  // Don't show start screen if already logged in (will redirect)
   if (session) {
     return null;
   }
@@ -61,7 +57,6 @@ export default function StartScreen() {
       router.replace("/map");
     } catch (error) {
       console.error("Anonymous signin error:", error);
-      // TODO: Show error message to user
     } finally {
       setIsLoading(false);
     }
@@ -73,7 +68,6 @@ export default function StartScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Decorative background shapes */}
       <View style={[styles.blob, styles.blobRed]} />
       <View style={[styles.blob, styles.blobBlue]} />
       <View style={[styles.blob, styles.blobYellow]} />
@@ -83,9 +77,7 @@ export default function StartScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <View style={styles.container}>
-          {/* Top section */}
           <View style={styles.header}>
-
             <Text style={styles.title}>Zacznij odkrywanie Bydgoszczy</Text>
             <Text style={styles.subtitle}>
               Odkrywaj muzea, pomniki i ukryte tajemnice miasta. Możesz zacząć
@@ -93,7 +85,6 @@ export default function StartScreen() {
             </Text>
           </View>
 
-          {/* Card with choices */}
           <View style={styles.cardOuter}>
             <View style={styles.accentStrip}>
               <View
@@ -140,7 +131,6 @@ export default function StartScreen() {
             </View>
           </View>
 
-          {/* Footer path */}
           <View style={styles.footer}>
             <View style={styles.footerPath}>
               <View
@@ -176,8 +166,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     justifyContent: "space-between",
   },
-
-  // decorative soft blobs (same motive as Login)
   blob: {
     position: "absolute",
     opacity: 0.32,
@@ -204,7 +192,6 @@ const styles = StyleSheet.create({
     top: 120,
     left: -20,
   },
-
   header: {
     gap: 14,
   },
@@ -237,7 +224,6 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 999,
   },
-
   title: {
     fontSize: 26,
     fontWeight: "700",
@@ -248,7 +234,6 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     lineHeight: 20,
   },
-
   cardOuter: {
     shadowColor: "#000",
     shadowOpacity: 0.06,
@@ -286,7 +271,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 16,
   },
-
   primaryButton: {
     backgroundColor: COLORS.red,
     borderRadius: 999,
@@ -302,7 +286,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
   },
-
   secondaryButtonFilled: {
     marginTop: 10,
     borderRadius: 999,
@@ -318,13 +301,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
   },
-
   smallNote: {
     marginTop: 10,
     fontSize: 11,
     color: COLORS.textMuted,
   },
-
   footer: {
     marginTop: 16,
     gap: 10,
@@ -353,4 +334,3 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 });
-

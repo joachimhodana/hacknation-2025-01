@@ -7,7 +7,6 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
-// Keep the native splash screen visible while we load the app
 SplashScreen.preventAutoHideAsync();
 
 export const unstable_settings = {
@@ -18,9 +17,7 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   useEffect(() => {
-    // Hide the native splash screen immediately so our custom splash shows
     SplashScreen.hideAsync().catch(() => {
-      // Ignore errors if splash screen is already hidden
     });
   }, []);
 

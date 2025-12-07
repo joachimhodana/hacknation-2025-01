@@ -21,10 +21,15 @@ import * as Location from "expo-location";
 import { Audio } from "expo-av";
 import { authClient } from "@/lib/auth-client";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { getActivePathProgress, markPointVisited, type PathProgress, fetchPublicPoints, type PublicPoint } from "@/lib/api-client";
+import {
+  getActivePathProgress,
+  markPointVisited,
+  type PathProgress,
+  fetchPublicPoints,
+  type PublicPoint,
+} from "@/lib/api-client";
 import { getAPIBaseURL } from "@/lib/api-url";
 import { isWithinGeofence, calculateDistance } from "@/lib/geofence-utils";
-import { Modal } from "react-native";
 
 const COLORS = {
   red: "#ED1C24",
@@ -33,15 +38,13 @@ const COLORS = {
   default: "#111827",
 };
 
-// zoom po stronie kamery
 const MIN_ZOOM = 13;
 const MAX_ZOOM = 19;
 const ZOOM_STEP = 0.6;
 
-// fallback na altitude (jak zoom nie działa)
 const MIN_ALT = 80;
 const MAX_ALT = 8000;
-const ALT_FACTOR = 0.7; // < 1 → przybliżenie, > 1 → oddalenie
+const ALT_FACTOR = 0.7;
 
 type ActiveRoute = {
   title: string;
@@ -85,31 +88,35 @@ export const Map: React.FC = () => {
     null,
   );
   const [pathProgress, setPathProgress] = useState<PathProgress | null>(null);
-  const [selectedStop, setSelectedStop] = useState<PathProgress["path"]["stops"][0] | null>(null);
+  const [selectedStop, setSelectedStop] =
+    useState<PathProgress["path"]["stops"][0] | null>(null);
   const [showCharacterDialog, setShowCharacterDialog] = useState(false);
   const [markingVisited, setMarkingVisited] = useState(false);
   const [showRewardNotification, setShowRewardNotification] = useState(false);
-  const [rewardData, setRewardData] = useState<{ label?: string; iconUrl?: string } | null>(null);
-  const geofenceCheckIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [rewardData, setRewardData] = useState<{ label?: string; iconUrl?: string } | null>(
+    null,
+  );
+  const geofenceCheckIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null,
+  );
   const isMarkingVisitedRef = useRef(false);
   const audioSoundRef = useRef<Audio.Sound | null>(null);
   const currentlyPlayingAudioRef = useRef<string | null>(null);
   const [audioPermissionsGranted, setAudioPermissionsGranted] = useState(false);
   const recentlyVisitedStopIdRef = useRef<number | null>(null);
   const [publicPoints, setPublicPoints] = useState<PublicPoint[] | null>(null);
-  const [selectedPublicPoint, setSelectedPublicPoint] = useState<PublicPoint | null>(null);
+  const [selectedPublicPoint, setSelectedPublicPoint] = useState<PublicPoint | null>(
+    null,
+  );
   const [showPublicPointDialog, setShowPublicPointDialog] = useState(false);
   const recentlyTriggeredPublicPointIdRef = useRef<number | null>(null);
 
-  // Request audio permissions and set audio mode
   useEffect(() => {
     const setupAudio = async () => {
       try {
-        // Request audio permissions
         const { status } = await Audio.requestPermissionsAsync();
-        if (status === 'granted') {
+        if (status === "granted") {
           setAudioPermissionsGranted(true);
-          // Set audio mode to allow playback
           await Audio.setAudioModeAsync({
             playsInSilentModeIOS: true,
             staysActiveInBackground: false,
@@ -127,7 +134,6 @@ export const Map: React.FC = () => {
     setupAudio();
   }, []);
 
-  // Fetch active path progress
   useEffect(() => {
     const loadProgress = async () => {
       try {
@@ -142,7 +148,6 @@ export const Map: React.FC = () => {
     loadProgress();
   }, []);
 
-  // Fetch public points
   useEffect(() => {
     const loadPublicPoints = async () => {
       try {
@@ -167,7 +172,6 @@ export const Map: React.FC = () => {
       ? `${completedStops} / ${totalStops} przystanków`
       : "Brak przystanków na trasie";
 
-  // User info
   const user = session?.user;
   const userName = user?.name as string | undefined;
   const userInitials = userName
@@ -179,15 +183,15 @@ export const Map: React.FC = () => {
         .slice(0, 2)
     : "U";
 
-  // Convert path stops to route pins - memoized to prevent infinite loops
   const routePins: RoutePin[] = useMemo(() => {
     if (!pathProgress) return [];
-    
+
     return pathProgress.path.stops.map((stop, index) => {
       const isVisited = stop.visited;
-      const isNext = !isVisited && index === pathProgress.path.stops.findIndex((s) => !s.visited);
-      
-      // Determine variant based on status
+      const isNext =
+        !isVisited &&
+        index === pathProgress.path.stops.findIndex((s) => !s.visited);
+
       let variant: MarkerVariant = "default";
       if (isNext) variant = "primary";
       else if (isVisited) variant = "default";
@@ -261,7 +265,6 @@ export const Map: React.FC = () => {
   const nextStepDistance = nextStep ? formatDistance(nextStep.distance) : null;
   const nextStepText = formatManeuverText(nextStep);
 
-  // OSRM – policz trasę od usera do następnego nieodwiedzonego przystanku
   useEffect(() => {
     const fetchOsrmRoute = async () => {
       if (!userLocation || !pathProgress || routePins.length === 0) {
@@ -270,11 +273,12 @@ export const Map: React.FC = () => {
         return;
       }
 
-      // Find next unvisited stop
-      const nextUnvisitedStop = pathProgress.path.stops.find((stop) => !stop.visited);
+      const nextUnvisitedStop = pathProgress.path.stops.find(
+        (stop) => !stop.visited,
+      );
       if (!nextUnvisitedStop) {
-        // All stops visited, route to last stop
-        const lastStop = pathProgress.path.stops[pathProgress.path.stops.length - 1];
+        const lastStop =
+          pathProgress.path.stops[pathProgress.path.stops.length - 1];
         if (lastStop) {
           const coordsStr = `${userLocation.lng},${userLocation.lat};${lastStop.map_marker.coordinates.longitude},${lastStop.map_marker.coordinates.latitude}`;
           await fetchRoute(coordsStr);
@@ -282,7 +286,6 @@ export const Map: React.FC = () => {
         return;
       }
 
-      // Route from user to next unvisited stop
       const coordsStr = `${userLocation.lng},${userLocation.lat};${nextUnvisitedStop.map_marker.coordinates.longitude},${nextUnvisitedStop.map_marker.coordinates.latitude}`;
       await fetchRoute(coordsStr);
     };
@@ -326,9 +329,8 @@ export const Map: React.FC = () => {
     };
 
     fetchOsrmRoute();
-  }, [userLocation, pathProgress]); // Removed routePins - it's derived from pathProgress
+  }, [userLocation, pathProgress]);
 
-  // Lokalizacja usera
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -349,7 +351,6 @@ export const Map: React.FC = () => {
 
         setUserLocation(base);
 
-        // startowa kamera
         const cam: Camera = {
           center: {
             latitude: base.lat,
@@ -392,99 +393,92 @@ export const Map: React.FC = () => {
     };
   }, []);
 
-  // Audio playback function
-  const playAudio = useCallback(async (audioUrl: string) => {
-    try {
-      console.log("[Map] playAudio called with URL:", audioUrl);
-      
-      // Check if we have audio permissions
-      if (!audioPermissionsGranted) {
-        console.log("[Map] Audio permissions not granted, requesting...");
-        const { status } = await Audio.requestPermissionsAsync();
-        if (status !== 'granted') {
-          console.warn("[Map] Audio permissions denied, cannot play audio");
-          return;
-        }
-        setAudioPermissionsGranted(true);
-      }
+  const playAudio = useCallback(
+    async (audioUrl: string) => {
+      try {
+        console.log("[Map] playAudio called with URL:", audioUrl);
 
-      // Always set audio mode before playing (important for iOS)
-      await Audio.setAudioModeAsync({
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: false,
-        shouldDuckAndroid: true,
-        allowsRecordingIOS: false,
-      });
-      console.log("[Map] Audio mode set");
-
-      // Stop any currently playing audio
-      if (audioSoundRef.current) {
-        console.log("[Map] Stopping current audio");
-        await audioSoundRef.current.unloadAsync();
-        audioSoundRef.current = null;
-      }
-
-      // Set the currently playing audio URL
-      currentlyPlayingAudioRef.current = audioUrl;
-
-      // Create and play new audio
-      const fullAudioUrl = `${getAPIBaseURL()}${audioUrl}`;
-      console.log("[Map] Playing audio from URL:", fullAudioUrl);
-      
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: fullAudioUrl },
-        { 
-          shouldPlay: true,
-          volume: 1.0,
-        }
-      );
-      
-      console.log("[Map] Audio sound created, setting up status listener");
-      audioSoundRef.current = sound;
-
-      // Set up playback status listener to track errors and completion
-      sound.setOnPlaybackStatusUpdate((status: any) => {
-        if (status.isLoaded) {
-          if (status.error) {
-            console.error("[Map] Audio playback error:", status.error);
-            currentlyPlayingAudioRef.current = null;
-            sound.unloadAsync();
-            audioSoundRef.current = null;
-          } else if (status.didJustFinish) {
-            console.log("[Map] Audio playback finished");
-            currentlyPlayingAudioRef.current = null;
-            sound.unloadAsync();
-            audioSoundRef.current = null;
-          } else {
-            // Log playback status for debugging
-            if (__DEV__) {
-              console.log("[Map] Audio status:", {
-                isPlaying: status.isPlaying,
-                positionMillis: status.positionMillis,
-                durationMillis: status.durationMillis,
-              });
-            }
+        if (!audioPermissionsGranted) {
+          console.log("[Map] Audio permissions not granted, requesting...");
+          const { status } = await Audio.requestPermissionsAsync();
+          if (status !== "granted") {
+            console.warn("[Map] Audio permissions denied, cannot play audio");
+            return;
           }
-        } else {
-          console.warn("[Map] Audio status not loaded:", status);
+          setAudioPermissionsGranted(true);
         }
-      });
 
-      // Wait a bit and check if audio actually started playing
-      setTimeout(async () => {
-        const status = await sound.getStatusAsync();
-        if (status.isLoaded && !status.isPlaying) {
-          console.warn("[Map] Audio created but not playing, attempting to play");
-          await sound.playAsync();
+        await Audio.setAudioModeAsync({
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: false,
+          shouldDuckAndroid: true,
+          allowsRecordingIOS: false,
+        });
+        console.log("[Map] Audio mode set");
+
+        if (audioSoundRef.current) {
+          console.log("[Map] Stopping current audio");
+          await audioSoundRef.current.unloadAsync();
+          audioSoundRef.current = null;
         }
-      }, 100);
-    } catch (error) {
-      console.error("[Map] Error playing audio:", error);
-      currentlyPlayingAudioRef.current = null;
-    }
-  }, [audioPermissionsGranted]);
 
-  // Cleanup audio on unmount
+        currentlyPlayingAudioRef.current = audioUrl;
+
+        const fullAudioUrl = `${getAPIBaseURL()}${audioUrl}`;
+        console.log("[Map] Playing audio from URL:", fullAudioUrl);
+
+        const { sound } = await Audio.Sound.createAsync(
+          { uri: fullAudioUrl },
+          {
+            shouldPlay: true,
+            volume: 1.0,
+          },
+        );
+
+        console.log("[Map] Audio sound created, setting up status listener");
+        audioSoundRef.current = sound;
+
+        sound.setOnPlaybackStatusUpdate((status: any) => {
+          if (status.isLoaded) {
+            if (status.error) {
+              console.error("[Map] Audio playback error:", status.error);
+              currentlyPlayingAudioRef.current = null;
+              sound.unloadAsync();
+              audioSoundRef.current = null;
+            } else if (status.didJustFinish) {
+              console.log("[Map] Audio playback finished");
+              currentlyPlayingAudioRef.current = null;
+              sound.unloadAsync();
+              audioSoundRef.current = null;
+            } else {
+              if (__DEV__) {
+                console.log("[Map] Audio status:", {
+                  isPlaying: status.isPlaying,
+                  positionMillis: status.positionMillis,
+                  durationMillis: status.durationMillis,
+                });
+              }
+            }
+          } else {
+            console.warn("[Map] Audio status not loaded:", status);
+          }
+        });
+
+        setTimeout(async () => {
+          const status = await sound.getStatusAsync();
+          if (status.isLoaded && !status.isPlaying) {
+            console.warn("[Map] Audio created but not playing, attempting to play");
+            await sound.playAsync();
+          }
+        }, 100);
+      } catch (error) {
+        console.error("[Map] Error playing audio:", error);
+        currentlyPlayingAudioRef.current = null;
+      }
+    },
+    [audioPermissionsGranted],
+  );
+
   useEffect(() => {
     return () => {
       if (audioSoundRef.current) {
@@ -495,141 +489,142 @@ export const Map: React.FC = () => {
     };
   }, []);
 
-  const handleMarkVisited = useCallback(async (stop: PathProgress["path"]["stops"][0]) => {
-    // Prevent double clicks using both state and ref
-    if (!pathProgress || markingVisited || isMarkingVisitedRef.current) {
-      console.log("[Map] handleMarkVisited: Already processing, ignoring click");
-      return;
-    }
-
-    // Set both state and ref immediately to prevent double clicks
-    isMarkingVisitedRef.current = true;
-    setMarkingVisited(true);
-    
-    // Keep dialog visible but button will be disabled via markingVisited state
-
-    try {
-      const result = await markPointVisited(stop.point_id, pathProgress.progress.id);
-      if (result.success) {
-        // Mark this stop as recently visited to prevent geofence re-triggering
-        recentlyVisitedStopIdRef.current = stop.point_id;
-        // Clear the recently visited flag after 5 seconds
-        setTimeout(() => {
-          recentlyVisitedStopIdRef.current = null;
-        }, 5000);
-        
-        // Hide dialog on success - do this immediately
-        setShowCharacterDialog(false);
-        setSelectedStop(null);
-        
-        // Show reward notification if there's a reward
-        if (stop.reward_label || stop.reward_icon_url) {
-          setRewardData({
-            label: stop.reward_label || undefined,
-            iconUrl: stop.reward_icon_url || undefined,
-          });
-          setShowRewardNotification(true);
-          // Auto-hide after 3 seconds
-          setTimeout(() => {
-            setShowRewardNotification(false);
-            setRewardData(null);
-          }, 3000);
-        }
-
-        // If path completed, clear progress and show completion message
-        if (result.isCompleted) {
-          // Path is completed - clear progress to hide route UI
-          setPathProgress(null);
-          // Show completion notification
-          // setRewardData({
-          //   label: "Trasa ukończona! 🎉",
-          // });
-          // setShowRewardNotification(true);
-          // Auto-hide after 5 seconds
-          setTimeout(() => {
-            setShowRewardNotification(false);
-            setRewardData(null);
-          }, 5000);
-        } else {
-          // Path not completed yet - reload progress to get updated state
-          const updatedProgress = await getActivePathProgress();
-          if (updatedProgress) {
-            setPathProgress(updatedProgress);
-          } else {
-            // If no progress returned, it might have been completed or paused
-            // Clear the progress state
-            setPathProgress(null);
-          }
-        }
-      } else {
-        // If failed, keep dialog visible and show error
-        console.error("[Map] Failed to mark point as visited:", result.error);
-        // Dialog is already visible, just reset the loading state
+  const handleMarkVisited = useCallback(
+    async (stop: PathProgress["path"]["stops"][0]) => {
+      if (!pathProgress || markingVisited || isMarkingVisitedRef.current) {
+        console.log("[Map] handleMarkVisited: Already processing, ignoring click");
+        return;
       }
-    } catch (error) {
-      console.error("[Map] Error marking point as visited:", error);
-      // Dialog is already visible, just reset the loading state
-    } finally {
-      setMarkingVisited(false);
-      isMarkingVisitedRef.current = false;
-    }
-  }, [pathProgress, markingVisited]);
 
-  // Geofence detection - check if user enters any unvisited stop or public point
+      isMarkingVisitedRef.current = true;
+      setMarkingVisited(true);
+
+      try {
+        const result = await markPointVisited(stop.point_id, pathProgress.progress.id);
+        if (result.success) {
+          recentlyVisitedStopIdRef.current = stop.point_id;
+          setTimeout(() => {
+            recentlyVisitedStopIdRef.current = null;
+          }, 5000);
+
+          setShowCharacterDialog(false);
+          setSelectedStop(null);
+
+          if (stop.reward_label || stop.reward_icon_url) {
+            setRewardData({
+              label: stop.reward_label || undefined,
+              iconUrl: stop.reward_icon_url || undefined,
+            });
+            setShowRewardNotification(true);
+            setTimeout(() => {
+              setShowRewardNotification(false);
+              setRewardData(null);
+            }, 3000);
+          }
+
+          if (result.isCompleted) {
+            setPathProgress(null);
+            setTimeout(() => {
+              setShowRewardNotification(false);
+              setRewardData(null);
+            }, 5000);
+          } else {
+            const updatedProgress = await getActivePathProgress();
+            if (updatedProgress) {
+              setPathProgress(updatedProgress);
+            } else {
+              setPathProgress(null);
+            }
+          }
+        } else {
+          console.error("[Map] Failed to mark point as visited:", result.error);
+        }
+      } catch (error) {
+        console.error("[Map] Error marking point as visited:", error);
+      } finally {
+        setMarkingVisited(false);
+        isMarkingVisitedRef.current = false;
+      }
+    },
+    [pathProgress, markingVisited],
+  );
+
   useEffect(() => {
     if (!userLocation || showCharacterDialog || showPublicPointDialog) return;
 
     const checkGeofences = () => {
-      // First check path points (prioritize if user has active path)
       if (pathProgress) {
-        const unvisitedStops = pathProgress.path.stops.filter((stop) => !stop.visited);
-        
+        const unvisitedStops = pathProgress.path.stops.filter(
+          (stop) => !stop.visited,
+        );
+
         if (__DEV__ && unvisitedStops.length > 0) {
           console.log(`[Geofence] Checking ${unvisitedStops.length} unvisited stops`);
           unvisitedStops.forEach((stop, idx) => {
-            console.log(`[Geofence] Stop ${idx + 1}: ${stop.name}, audio_url: ${stop.audio_url || 'MISSING'}`);
+            console.log(
+              `[Geofence] Stop ${idx + 1}: ${stop.name}, audio_url: ${
+                stop.audio_url || "MISSING"
+              }`,
+            );
           });
         }
-        
+
         for (const stop of unvisitedStops) {
-          // Skip if this stop was recently visited (prevents re-triggering)
           if (recentlyVisitedStopIdRef.current === stop.point_id) {
             continue;
           }
-          
-          const radius = stop.radius_meters || 50; // Default 50m if not set
+
+          const radius = stop.radius_meters || 50;
           const distance = calculateDistance(
             userLocation.lat,
             userLocation.lng,
             stop.map_marker.coordinates.latitude,
-            stop.map_marker.coordinates.longitude
+            stop.map_marker.coordinates.longitude,
           );
-          
+
           if (__DEV__) {
-            console.log(`[Geofence] Stop: ${stop.name}, Distance: ${distance.toFixed(2)}m, Radius: ${radius}m, Within: ${distance <= radius}`);
+            console.log(
+              `[Geofence] Stop: ${stop.name}, Distance: ${distance.toFixed(
+                2,
+              )}m, Radius: ${radius}m, Within: ${distance <= radius}`,
+            );
           }
-          
+
           if (distance <= radius) {
-            // User entered geofence - show character dialog
             console.log(`[Geofence] ✅ TRIGGERED for stop: ${stop.name}`);
-            console.log(`[Geofence] Stop data:`, JSON.stringify({
-              name: stop.name,
-              point_id: stop.point_id,
-              audio_url: stop.audio_url,
-              has_character: !!stop.character,
-            }, null, 2));
-            console.log(`[Geofence] Setting selectedStop and showCharacterDialog to true`);
+            console.log(
+              `[Geofence] Stop data:`,
+              JSON.stringify(
+                {
+                  name: stop.name,
+                  point_id: stop.point_id,
+                  audio_url: stop.audio_url,
+                  has_character: !!stop.character,
+                },
+                null,
+                2,
+              ),
+            );
+            console.log(
+              `[Geofence] Setting selectedStop and showCharacterDialog to true`,
+            );
             setSelectedStop(stop);
             setShowCharacterDialog(true);
             console.log(`[Geofence] State updated - dialog should appear now`);
-            
-            // Play audio if available
+
             console.log(`[Geofence] Checking audio - audio_url:`, stop.audio_url);
-            console.log(`[Geofence] Currently playing:`, currentlyPlayingAudioRef.current);
+            console.log(
+              `[Geofence] Currently playing:`,
+              currentlyPlayingAudioRef.current,
+            );
             if (stop.audio_url) {
-              console.log(`[Geofence] ✅ Stop has audio_url: ${stop.audio_url}`);
+              console.log(
+                `[Geofence] ✅ Stop has audio_url: ${stop.audio_url}`,
+              );
               if (stop.audio_url !== currentlyPlayingAudioRef.current) {
-                console.log(`[Geofence] 🎵 Triggering audio playback for: ${stop.audio_url}`);
+                console.log(
+                  `[Geofence] 🎵 Triggering audio playback for: ${stop.audio_url}`,
+                );
                 playAudio(stop.audio_url);
               } else {
                 console.log(`[Geofence] ⏸️ Audio already playing, skipping`);
@@ -637,71 +632,83 @@ export const Map: React.FC = () => {
             } else {
               console.log(`[Geofence] ❌ Stop has no audio_url property`);
             }
-            
-            return; // Only handle one stop at a time, exit early
+
+            return;
           }
         }
       }
 
-      // Then check public points (always active, no visited check)
       if (publicPoints && publicPoints.length > 0) {
         for (const publicPoint of publicPoints) {
-          // Skip if this point was recently triggered (prevents immediate re-triggering)
-          if (recentlyTriggeredPublicPointIdRef.current === publicPoint.point_id) {
+          if (
+            recentlyTriggeredPublicPointIdRef.current === publicPoint.point_id
+          ) {
             continue;
           }
-          
+
           const radius = publicPoint.radius_meters || 50;
           const distance = calculateDistance(
             userLocation.lat,
             userLocation.lng,
             publicPoint.map_marker.coordinates.latitude,
-            publicPoint.map_marker.coordinates.longitude
+            publicPoint.map_marker.coordinates.longitude,
           );
-          
+
           if (__DEV__) {
-            console.log(`[Geofence] Public Point: ${publicPoint.name}, Distance: ${distance.toFixed(2)}m, Radius: ${radius}m, Within: ${distance <= radius}`);
+            console.log(
+              `[Geofence] Public Point: ${publicPoint.name}, Distance: ${distance.toFixed(
+                2,
+              )}m, Radius: ${radius}m, Within: ${distance <= radius}`,
+            );
           }
-          
+
           if (distance <= radius) {
-            // User entered geofence - show character dialog
-            console.log(`[Geofence] ✅ TRIGGERED for public point: ${publicPoint.name}`);
-            console.log(`[Geofence] Public point data:`, JSON.stringify({
-              name: publicPoint.name,
-              point_id: publicPoint.point_id,
-              audio_url: publicPoint.audio_url,
-              has_character: !!publicPoint.character,
-            }, null, 2));
+            console.log(
+              `[Geofence] ✅ TRIGGERED for public point: ${publicPoint.name}`,
+            );
+            console.log(
+              `[Geofence] Public point data:`,
+              JSON.stringify(
+                {
+                  name: publicPoint.name,
+                  point_id: publicPoint.point_id,
+                  audio_url: publicPoint.audio_url,
+                  has_character: !!publicPoint.character,
+                },
+                null,
+                2,
+              ),
+            );
             setSelectedPublicPoint(publicPoint);
             setShowPublicPointDialog(true);
-            
-            // Mark as recently triggered to prevent immediate re-triggering
+
             recentlyTriggeredPublicPointIdRef.current = publicPoint.point_id;
-            // Clear after 5 seconds to allow re-triggering
             setTimeout(() => {
-              if (recentlyTriggeredPublicPointIdRef.current === publicPoint.point_id) {
+              if (
+                recentlyTriggeredPublicPointIdRef.current ===
+                publicPoint.point_id
+              ) {
                 recentlyTriggeredPublicPointIdRef.current = null;
               }
             }, 5000);
-            
-            // Play audio if available (always plays)
+
             if (publicPoint.audio_url) {
-              console.log(`[Geofence] 🎵 Triggering audio playback for public point: ${publicPoint.audio_url}`);
+              console.log(
+                `[Geofence] 🎵 Triggering audio playback for public point: ${publicPoint.audio_url}`,
+              );
               if (publicPoint.audio_url !== currentlyPlayingAudioRef.current) {
                 playAudio(publicPoint.audio_url);
               }
             }
-            
-            return; // Only handle one point at a time
+
+            return;
           }
         }
       }
     };
 
-    // Check immediately when location changes
     checkGeofences();
 
-    // Also check every 2 seconds for continuous monitoring
     geofenceCheckIntervalRef.current = setInterval(checkGeofences, 2000);
 
     return () => {
@@ -709,7 +716,14 @@ export const Map: React.FC = () => {
         clearInterval(geofenceCheckIntervalRef.current);
       }
     };
-  }, [userLocation, pathProgress, publicPoints, showCharacterDialog, showPublicPointDialog, playAudio]);
+  }, [
+    userLocation,
+    pathProgress,
+    publicPoints,
+    showCharacterDialog,
+    showPublicPointDialog,
+    playAudio,
+  ]);
 
   const clampZoom = (z: number) => {
     if (!Number.isFinite(z)) return 16;
@@ -842,7 +856,6 @@ export const Map: React.FC = () => {
         pitchEnabled={false}
         mapType="standard"
       >
-        {/* OSRM Polyline pomiędzy pinami */}
         {routeCoordinates.length >= 2 && (
           <Polyline
             coordinates={routeCoordinates}
@@ -853,47 +866,57 @@ export const Map: React.FC = () => {
           />
         )}
 
-        {/* Radius circles for stops */}
-        {pathProgress && pathProgress.path.stops.map((stop) => {
-          const radius = stop.radius_meters || 50;
-          const isVisited = stop.visited;
-          const isNext = !isVisited && pathProgress.path.stops.findIndex((s) => !s.visited) === pathProgress.path.stops.indexOf(stop);
-          
-          return (
-            <Circle
-              key={`radius-${stop.point_id}`}
-              center={{
-                latitude: stop.map_marker.coordinates.latitude,
-                longitude: stop.map_marker.coordinates.longitude,
-              }}
-              radius={radius}
-              fillColor={isVisited ? "rgba(156, 163, 175, 0.2)" : isNext ? "rgba(237, 28, 36, 0.15)" : "rgba(255, 222, 0, 0.15)"}
-              strokeColor={isVisited ? "#9CA3AF" : isNext ? COLORS.red : COLORS.yellow}
-              strokeWidth={2}
-            />
-          );
-        })}
+        {pathProgress &&
+          pathProgress.path.stops.map((stop) => {
+            const radius = stop.radius_meters || 50;
+            const isVisited = stop.visited;
+            const isNext =
+              !isVisited &&
+              pathProgress.path.stops.findIndex((s) => !s.visited) ===
+                pathProgress.path.stops.indexOf(stop);
 
-        {/* Radius circles for public points */}
-        {publicPoints && publicPoints.map((publicPoint) => {
-          const radius = publicPoint.radius_meters || 50;
-          
-          return (
-            <Circle
-              key={`public-radius-${publicPoint.point_id}`}
-              center={{
-                latitude: publicPoint.map_marker.coordinates.latitude,
-                longitude: publicPoint.map_marker.coordinates.longitude,
-              }}
-              radius={radius}
-              fillColor="rgba(0, 149, 218, 0.15)"
-              strokeColor={COLORS.blue}
-              strokeWidth={2}
-            />
-          );
-        })}
+            return (
+              <Circle
+                key={`radius-${stop.point_id}`}
+                center={{
+                  latitude: stop.map_marker.coordinates.latitude,
+                  longitude: stop.map_marker.coordinates.longitude,
+                }}
+                radius={radius}
+                fillColor={
+                  isVisited
+                    ? "rgba(156, 163, 175, 0.2)"
+                    : isNext
+                    ? "rgba(237, 28, 36, 0.15)"
+                    : "rgba(255, 222, 0, 0.15)"
+                }
+                strokeColor={
+                  isVisited ? "#9CA3AF" : isNext ? COLORS.red : COLORS.yellow
+                }
+                strokeWidth={2}
+              />
+            );
+          })}
 
-        {/* marker użytkownika */}
+        {publicPoints &&
+          publicPoints.map((publicPoint) => {
+            const radius = publicPoint.radius_meters || 50;
+
+            return (
+              <Circle
+                key={`public-radius-${publicPoint.point_id}`}
+                center={{
+                  latitude: publicPoint.map_marker.coordinates.latitude,
+                  longitude: publicPoint.map_marker.coordinates.longitude,
+                }}
+                radius={radius}
+                fillColor="rgba(0, 149, 218, 0.15)"
+                strokeColor={COLORS.blue}
+                strokeWidth={2}
+              />
+            );
+          })}
+
         <Marker
           coordinate={{
             latitude: userLocation.lat,
@@ -906,7 +929,6 @@ export const Map: React.FC = () => {
           </View>
         </Marker>
 
-        {/* piny trasy – kółka */}
         {routePins.map((pin) => {
           const { bg, ring } = getPinColors(pin.variant);
 
@@ -933,14 +955,9 @@ export const Map: React.FC = () => {
                   ]}
                 >
                   {pin.imageSource ? (
-                    <Image
-                      source={pin.imageSource}
-                      style={styles.pinImage}
-                    />
+                    <Image source={pin.imageSource} style={styles.pinImage} />
                   ) : (
-                    <Text style={styles.pinLabel}>
-                      {pin.label ?? ""}
-                    </Text>
+                    <Text style={styles.pinLabel}>{pin.label ?? ""}</Text>
                   )}
                 </View>
               </View>
@@ -948,40 +965,56 @@ export const Map: React.FC = () => {
           );
         })}
 
-        {/* Public points - circular character avatars */}
-        {publicPoints && publicPoints.map((publicPoint) => {
-          if (!publicPoint.character) return null;
-          
-          return (
-            <Marker
-              key={`public-${publicPoint.point_id}`}
-              coordinate={{
-                latitude: publicPoint.map_marker.coordinates.latitude,
-                longitude: publicPoint.map_marker.coordinates.longitude,
-              }}
-              anchor={{ x: 0.5, y: 0.5 }}
-            >
-              <View style={styles.publicPointMarker}>
-                {publicPoint.character.avatarUrl ? (
-                  <Image
-                    source={{ uri: `${getAPIBaseURL()}${publicPoint.character.avatarUrl}` }}
-                    style={styles.publicPointAvatar}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <View style={[styles.publicPointAvatar, { backgroundColor: COLORS.blue, justifyContent: 'center', alignItems: 'center' }]}>
-                    <Text style={{ color: '#FFFFFF', fontSize: 20, fontWeight: '700' }}>
-                      {publicPoint.character.name.charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </Marker>
-          );
-        })}
+        {publicPoints &&
+          publicPoints.map((publicPoint) => {
+            if (!publicPoint.character) return null;
+
+            return (
+              <Marker
+                key={`public-${publicPoint.point_id}`}
+                coordinate={{
+                  latitude: publicPoint.map_marker.coordinates.latitude,
+                  longitude: publicPoint.map_marker.coordinates.longitude,
+                }}
+                anchor={{ x: 0.5, y: 0.5 }}
+              >
+                <View style={styles.publicPointMarker}>
+                  {publicPoint.character.avatarUrl ? (
+                    <Image
+                      source={{
+                        uri: `${getAPIBaseURL()}${publicPoint.character.avatarUrl}`,
+                      }}
+                      style={styles.publicPointAvatar}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View
+                      style={[
+                        styles.publicPointAvatar,
+                        {
+                          backgroundColor: COLORS.blue,
+                          justifyContent: "center",
+                          alignItems: "center",
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={{
+                          color: "#FFFFFF",
+                          fontSize: 20,
+                          fontWeight: "700",
+                        }}
+                      >
+                        {publicPoint.character.name.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </Marker>
+            );
+          })}
       </MapView>
 
-      {/* pływająca wyspa z progresem trasy + następnym manewrem */}
       {hasRoute && (
         <View style={[styles.floatingRouteCard, { top: floatingTop }]}>
           <View style={styles.routeCardHeaderRow}>
@@ -1008,7 +1041,6 @@ export const Map: React.FC = () => {
             />
           </View>
 
-          {/* Next turn info */}
           <View style={styles.nextStepRow}>
             <View style={styles.nextStepIcon}>
               <Text style={styles.nextStepIconText}>↱</Text>
@@ -1024,7 +1056,6 @@ export const Map: React.FC = () => {
             </View>
           </View>
 
-          {/* Google Maps CTA */}
           <View style={styles.appleRow}>
             <TouchableOpacity
               style={styles.appleButton}
@@ -1036,7 +1067,6 @@ export const Map: React.FC = () => {
         </View>
       )}
 
-      {/* kontrolki mapy */}
       <View style={styles.controlsContainer}>
         <TouchableOpacity
           style={styles.controlButton}
@@ -1056,57 +1086,69 @@ export const Map: React.FC = () => {
           <Text style={styles.controlIcon}>⌖</Text>
         </TouchableOpacity>
 
-        {/* Debug button - only in development */}
         {__DEV__ && pathProgress && pathProgress.path.stops.length > 0 && (
           <TouchableOpacity
             style={[styles.controlButton, styles.debugButton]}
             onPress={() => {
-              // Find first unvisited stop, or first stop if all visited
-              const firstStop = pathProgress.path.stops.find((stop) => !stop.visited) 
-                || pathProgress.path.stops[0];
-              
+              const firstStop =
+                pathProgress.path.stops.find((stop) => !stop.visited) ||
+                pathProgress.path.stops[0];
+
               if (firstStop) {
                 const radius = firstStop.radius_meters || 50;
-                // Set location inside the radius (50% of radius to ensure we're well inside)
-                // Use a more accurate conversion: 1 degree latitude ≈ 111,000 meters
-                // For longitude, we need to account for latitude (cos(lat) factor)
-                const latOffset = (radius * 0.5) / 111000; // 50% of radius in degrees
-                const lngOffset = (radius * 0.5) / (111000 * Math.cos(firstStop.map_marker.coordinates.latitude * Math.PI / 180));
-                
+                const latOffset = (radius * 0.5) / 111000;
+                const lngOffset =
+                  (radius * 0.5) /
+                  (111000 *
+                    Math.cos(
+                      (firstStop.map_marker.coordinates.latitude *
+                        Math.PI) /
+                        180,
+                    ));
+
                 const newLocation = {
                   lat: firstStop.map_marker.coordinates.latitude + latOffset,
                   lng: firstStop.map_marker.coordinates.longitude + lngOffset,
                 };
-                
+
                 console.log("[DEBUG] Moving to stop:", firstStop.name);
-                console.log("[DEBUG] Stop location:", firstStop.map_marker.coordinates);
+                console.log(
+                  "[DEBUG] Stop location:",
+                  firstStop.map_marker.coordinates,
+                );
                 console.log("[DEBUG] New user location:", newLocation);
                 console.log("[DEBUG] Radius:", radius, "meters");
-                console.log("[DEBUG] Distance from stop:", 
+                console.log(
+                  "[DEBUG] Distance from stop:",
                   isWithinGeofence(
                     newLocation.lat,
                     newLocation.lng,
                     firstStop.map_marker.coordinates.latitude,
                     firstStop.map_marker.coordinates.longitude,
-                    radius
-                  ) ? "INSIDE" : "OUTSIDE"
+                    radius,
+                  )
+                    ? "INSIDE"
+                    : "OUTSIDE",
                 );
-                
+
                 setUserLocation(newLocation);
-                
-                // Also update map camera
+
                 if (mapRef.current) {
-                  mapRef.current.animateToRegion({
-                    latitude: newLocation.lat,
-                    longitude: newLocation.lng,
-                    latitudeDelta: 0.01,
-                    longitudeDelta: 0.01,
-                  }, 500);
+                  mapRef.current.animateToRegion(
+                    {
+                      latitude: newLocation.lat,
+                      longitude: newLocation.lng,
+                      latitudeDelta: 0.01,
+                      longitudeDelta: 0.01,
+                    },
+                    500,
+                  );
                 }
 
-                // Force immediate geofence check
                 setTimeout(() => {
-                  const unvisitedStops = pathProgress.path.stops.filter((stop) => !stop.visited);
+                  const unvisitedStops = pathProgress.path.stops.filter(
+                    (stop) => !stop.visited,
+                  );
                   for (const stop of unvisitedStops) {
                     const stopRadius = stop.radius_meters || 50;
                     if (
@@ -1115,22 +1157,24 @@ export const Map: React.FC = () => {
                         newLocation.lng,
                         stop.map_marker.coordinates.latitude,
                         stop.map_marker.coordinates.longitude,
-                        stopRadius
+                        stopRadius,
                       )
                     ) {
                       console.log("[DEBUG] Geofence triggered for:", stop.name);
                       console.log("[DEBUG] Stop audio_url:", stop.audio_url);
                       setSelectedStop(stop);
                       setShowCharacterDialog(true);
-                      // Also trigger audio if available
-                      if (stop.audio_url && stop.audio_url !== currentlyPlayingAudioRef.current) {
+                      if (
+                        stop.audio_url &&
+                        stop.audio_url !== currentlyPlayingAudioRef.current
+                      ) {
                         console.log("[DEBUG] Triggering audio playback");
                         playAudio(stop.audio_url);
                       }
                       break;
                     }
                   }
-                }, 600); // Wait for animation to complete
+                }, 600);
               }
             }}
           >
@@ -1139,72 +1183,109 @@ export const Map: React.FC = () => {
         )}
       </View>
 
-      {/* Character Dialog - Bottom Right */}
       {(() => {
         if (__DEV__) {
-          console.log(`[Render] showCharacterDialog: ${showCharacterDialog}, selectedStop: ${selectedStop ? selectedStop.name : 'null'}`);
+          console.log(
+            `[Render] showCharacterDialog: ${showCharacterDialog}, selectedStop: ${
+              selectedStop ? selectedStop.name : "null"
+            }`,
+          );
         }
         return null;
       })()}
+
       {showCharacterDialog && selectedStop && (
         <View style={styles.characterContainer}>
-          {/* Speech Bubble - Left side */}
           <View style={styles.speechBubble}>
             {selectedStop.character ? (
               <>
-                <Text style={styles.characterName}>{selectedStop.character.name}</Text>
-                <Text style={styles.characterDescription}>{selectedStop.character.description}</Text>
+                <Text style={styles.characterName}>
+                  {selectedStop.character.name}
+                </Text>
+                <Text style={styles.characterDescription}>
+                  {selectedStop.character.description}
+                </Text>
               </>
             ) : (
               <Text style={styles.characterName}>{selectedStop.name}</Text>
             )}
-            <Text style={styles.stopDescription}>{selectedStop.place_description}</Text>
+            <Text style={styles.stopDescription}>
+              {selectedStop.place_description}
+            </Text>
             <TouchableOpacity
               style={styles.completeButton}
               onPress={() => handleMarkVisited(selectedStop)}
-              disabled={markingVisited}>
+              disabled={markingVisited}
+            >
               <Text style={styles.completeButtonText}>
                 {markingVisited ? "Zapisywanie..." : "Oznacz jako odwiedzone"}
               </Text>
             </TouchableOpacity>
           </View>
-          
-          {/* Character Avatar - Right side */}
+
           {selectedStop.character && selectedStop.character.avatarUrl ? (
             <View style={styles.characterAvatarContainer}>
               <Image
-                source={{ uri: `${getAPIBaseURL()}${selectedStop.character.avatarUrl}` }}
+                source={{
+                  uri: `${getAPIBaseURL()}${selectedStop.character.avatarUrl}`,
+                }}
                 style={styles.characterAvatar}
                 resizeMode="cover"
                 onError={(e) => {
-                  console.error("[Map] Error loading character avatar:", e.nativeEvent.error);
+                  console.error(
+                    "[Map] Error loading character avatar:",
+                    e.nativeEvent.error,
+                  );
                 }}
               />
             </View>
           ) : (
             <View style={styles.characterAvatarContainer}>
-              <View style={[styles.characterAvatar, { backgroundColor: COLORS.blue, justifyContent: 'center', alignItems: 'center' }]}>
-                <Text style={{ color: '#FFFFFF', fontSize: 24, fontWeight: '700' }}>📍</Text>
+              <View
+                style={[
+                  styles.characterAvatar,
+                  {
+                    backgroundColor: COLORS.blue,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  },
+                ]}
+              >
+                <Text
+                  style={{
+                    color: "#FFFFFF",
+                    fontSize: 24,
+                    fontWeight: "700",
+                  }}
+                >
+                  📍
+                </Text>
               </View>
             </View>
           )}
         </View>
       )}
 
-      {/* Public Point Dialog - Bottom Right */}
       {showPublicPointDialog && selectedPublicPoint && (
         <View style={styles.characterContainer}>
-          {/* Speech Bubble - Left side */}
           <View style={styles.speechBubble}>
             {selectedPublicPoint.character ? (
               <>
-                <Text style={styles.characterName}>{selectedPublicPoint.character.name}</Text>
-                <Text style={styles.characterDescription}>{selectedPublicPoint.character.description}</Text>
+                <Text style={styles.characterName}>
+                  {selectedPublicPoint.character.name}
+                </Text>
+                <Text style={styles.characterDescription}>
+                  {selectedPublicPoint.character.description}
+                </Text>
               </>
             ) : (
-              <Text style={styles.characterName}>{selectedPublicPoint.name}</Text>
+              <Text style={styles.characterName}>
+                {selectedPublicPoint.name}
+              </Text>
             )}
-            <Text style={styles.stopDescription}>{selectedPublicPoint.place_description}</Text>
+            <Text style={styles.stopDescription}>
+              {selectedPublicPoint.place_description}
+            </Text>
             {selectedPublicPoint.reward_label && (
               <View style={styles.rewardInfoContainer}>
                 <Text style={styles.rewardInfoText}>
@@ -1217,36 +1298,56 @@ export const Map: React.FC = () => {
               onPress={() => {
                 setShowPublicPointDialog(false);
                 setSelectedPublicPoint(null);
-              }}>
-              <Text style={styles.closeButtonText}>
-                Zamknij
-              </Text>
+              }}
+            >
+              <Text style={styles.closeButtonText}>Zamknij</Text>
             </TouchableOpacity>
           </View>
-          
-          {/* Character Avatar - Right side */}
-          {selectedPublicPoint.character && selectedPublicPoint.character.avatarUrl ? (
+
+          {selectedPublicPoint.character &&
+          selectedPublicPoint.character.avatarUrl ? (
             <View style={styles.characterAvatarContainer}>
               <Image
-                source={{ uri: `${getAPIBaseURL()}${selectedPublicPoint.character.avatarUrl}` }}
+                source={{
+                  uri: `${getAPIBaseURL()}${selectedPublicPoint.character.avatarUrl}`,
+                }}
                 style={styles.characterAvatar}
                 resizeMode="cover"
                 onError={(e) => {
-                  console.error("[Map] Error loading character avatar:", e.nativeEvent.error);
+                  console.error(
+                    "[Map] Error loading character avatar:",
+                    e.nativeEvent.error,
+                  );
                 }}
               />
             </View>
           ) : (
             <View style={styles.characterAvatarContainer}>
-              <View style={[styles.characterAvatar, { backgroundColor: COLORS.blue, justifyContent: 'center', alignItems: 'center' }]}>
-                <Text style={{ color: '#FFFFFF', fontSize: 24, fontWeight: '700' }}>📍</Text>
+              <View
+                style={[
+                  styles.characterAvatar,
+                  {
+                    backgroundColor: COLORS.blue,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  },
+                ]}
+              >
+                <Text
+                  style={{
+                    color: "#FFFFFF",
+                    fontSize: 24,
+                    fontWeight: "700",
+                  }}
+                >
+                  📍
+                </Text>
               </View>
             </View>
           )}
         </View>
       )}
 
-      {/* Reward Notification Overlay */}
       {showRewardNotification && rewardData && (
         <View style={styles.rewardNotification}>
           <View style={styles.rewardNotificationContent}>
@@ -1263,7 +1364,8 @@ export const Map: React.FC = () => {
             )}
             <View style={{ flex: 1 }}>
               <Text style={styles.rewardNotificationText}>
-                Otrzymałeś nagrodę{rewardData.label ? `: ${rewardData.label}` : "!"}
+                Otrzymałeś nagrodę
+                {rewardData.label ? `: ${rewardData.label}` : "!"}
               </Text>
             </View>
           </View>

@@ -1,4 +1,3 @@
-// app/profile.tsx
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -28,7 +27,6 @@ const COLORS = {
   softBg: "#F3F4F6",
 };
 
-// Export CollectedItem type for collections.tsx
 export type { CollectedItem } from "@/lib/api-client";
 
 const ProfileScreen: React.FC = () => {
@@ -50,7 +48,6 @@ const ProfileScreen: React.FC = () => {
     }
   }, [session, isPending, router]);
 
-  // Fetch user stats when session is available
   useEffect(() => {
     if (session && !isPending) {
       loadStats();
@@ -84,7 +81,6 @@ const ProfileScreen: React.FC = () => {
       if (leaderboardData && leaderboardData.leaderboard) {
         setLeaderboard(leaderboardData.leaderboard);
       } else {
-        // Fallback to empty array if fetch fails
         setLeaderboard([]);
       }
     } catch (error) {
@@ -113,7 +109,7 @@ const ProfileScreen: React.FC = () => {
   }
 
   if (!session) {
-    return null; // Will redirect
+    return null; 
   }
 
   const user = session.user;
@@ -399,10 +395,9 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: 100, // Extra padding for absolute navbar
+    paddingBottom: 100,
   },
 
-  // blobs
   blob: {
     position: "absolute",
     opacity: 0.28,
@@ -578,7 +573,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
-  // Preview grid: 3 in a row
   itemsGridPreview: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -612,7 +606,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
 
-  // Settings
   settingsCard: {
     marginTop: 6,
     backgroundColor: COLORS.cardBg,
@@ -754,7 +747,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
-  // Empty state
   emptyStateCard: {
     backgroundColor: COLORS.cardBg,
     borderRadius: 16,

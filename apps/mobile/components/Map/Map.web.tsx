@@ -44,7 +44,6 @@ const COLORS = {
   default: "#111827",
 };
 
-// zoom po stronie kamery
 const MIN_ZOOM = 13;
 const MAX_ZOOM = 19;
 const ZOOM_STEP = 0.6;
@@ -53,7 +52,6 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
   const { isMobile } = useDeviceDetection();
   const { data: session } = authClient.useSession();
 
-  // Adjust default zoom based on device type
   const defaultZoom = useMemo(
     () => zoom ?? (isMobile ? 15 : 13),
     [zoom, isMobile],
@@ -71,7 +69,7 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
   const watchIdRef = useRef<number | null>(null);
   const routePinsRef = useRef<any[]>([]);
   const routeLineRef = useRef<any>(null);
-  
+
   const [routeCoordinates, setRouteCoordinates] = useState<
     { latitude: number; longitude: number }[]
   >([]);
@@ -87,7 +85,6 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const currentlyPlayingAudioRef = useRef<string | null>(null);
 
-  // Get user info for avatar
   const user = session?.user;
   const userName = user?.name as string | undefined;
   const userInitials = userName
@@ -99,7 +96,6 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
         .slice(0, 2)
     : "U";
 
-  // Fetch active path progress
   useEffect(() => {
     const loadProgress = async () => {
       try {
@@ -124,14 +120,13 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
       ? `${completedStops} / ${totalStops} przystanków`
       : "Brak przystanków na trasie";
 
-  // Convert path stops to route pins - memoized to prevent infinite loops
   const routePins: RoutePin[] = useMemo(() => {
     if (!pathProgress) return [];
-    
+
     return pathProgress.path.stops.map((stop, index) => {
       const isVisited = stop.visited;
       const isNext = !isVisited && index === pathProgress.path.stops.findIndex((s) => !s.visited);
-      
+
       let variant: MarkerVariant = "default";
       if (isNext) variant = "primary";
       else if (isVisited) variant = "default";
@@ -216,13 +211,13 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
     if (!mapInstanceRef.current) return;
     const currentZoom = mapInstanceRef.current.getZoom();
     let newZoom = currentZoom;
-    
+
     if (direction === "in") {
       newZoom += ZOOM_STEP;
     } else {
       newZoom -= ZOOM_STEP;
     }
-    
+
     newZoom = clampZoom(newZoom);
     mapInstanceRef.current.easeTo({
       zoom: newZoom,
@@ -244,10 +239,9 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
     if (!routePins.length) return;
     const dest = routePins[routePins.length - 1];
     const url = `https://www.google.com/maps/dir/?api=1&destination=${dest.lat},${dest.lng}&travelmode=walking`;
-    window.open(url, '_blank');
+    window.open(url, "_blank");
   };
 
-  // OSRM – policz trasę od usera do następnego nieodwiedzonego przystanku
   useEffect(() => {
     const fetchOsrmRoute = async () => {
       if (!userLocation || !pathProgress || routePins.length === 0) {
@@ -256,10 +250,8 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
         return;
       }
 
-      // Find next unvisited stop
       const nextUnvisitedStop = pathProgress.path.stops.find((stop) => !stop.visited);
       if (!nextUnvisitedStop) {
-        // All stops visited, route to last stop
         const lastStop = pathProgress.path.stops[pathProgress.path.stops.length - 1];
         if (lastStop) {
           const coordsStr = `${userLocation.lng},${userLocation.lat};${lastStop.map_marker.coordinates.longitude},${lastStop.map_marker.coordinates.latitude}`;
@@ -268,7 +260,6 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
         return;
       }
 
-      // Route from user to next unvisited stop
       const coordsStr = `${userLocation.lng},${userLocation.lat};${nextUnvisitedStop.map_marker.coordinates.longitude},${nextUnvisitedStop.map_marker.coordinates.latitude}`;
       await fetchRoute(coordsStr);
     };
@@ -313,22 +304,18 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
     };
 
     fetchOsrmRoute();
-  }, [userLocation, pathProgress]); // Removed routePins - it's derived from pathProgress
+  }, [userLocation, pathProgress]);
 
-  // Watch user location in real-time
   useEffect(() => {
     if (typeof window === "undefined" || !navigator.geolocation) {
-      // Fallback to provided coordinates or default
       if (lat && lng) {
         setUserLocation({ lat, lng });
       } else {
-        // Default to Bydgoszcz
         setUserLocation({ lat: 53.1235, lng: 18.0084 });
       }
       return;
     }
 
-    // Get initial position
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setUserLocation({
@@ -338,7 +325,6 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
       },
       (error) => {
         console.error("Error getting location:", error);
-        // Fallback to provided coordinates or default
         if (lat && lng) {
           setUserLocation({ lat, lng });
         } else {
@@ -348,7 +334,6 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
     );
 
-    // Watch position changes in real-time
     watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
         const newLocation = {
@@ -367,7 +352,6 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
       },
     );
 
-    // Cleanup watch on unmount
     return () => {
       if (watchIdRef.current !== null) {
         navigator.geolocation.clearWatch(watchIdRef.current);
@@ -375,22 +359,18 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
     };
   }, [lat, lng]);
 
-  // Audio playback function
   const playAudio = useCallback((audioUrl: string) => {
     try {
-      // Stop any currently playing audio
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current = null;
       }
 
-      // Set the currently playing audio URL
       currentlyPlayingAudioRef.current = audioUrl;
 
-      // Create and play new audio
       const fullAudioUrl = `${getAPIBaseURL()}${audioUrl}`;
       console.log("[Map] Playing audio:", fullAudioUrl);
-      
+
       const audio = new Audio(fullAudioUrl);
       audioRef.current = audio;
 
@@ -400,7 +380,6 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
         audioRef.current = null;
       });
 
-      // Clean up when audio finishes
       audio.addEventListener("ended", () => {
         currentlyPlayingAudioRef.current = null;
         audioRef.current = null;
@@ -417,7 +396,6 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
     }
   }, []);
 
-  // Cleanup audio on unmount
   useEffect(() => {
     return () => {
       if (audioRef.current) {
@@ -429,56 +407,46 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
   }, []);
 
   const handleMarkVisited = useCallback(async (stop: PathProgress["path"]["stops"][0]) => {
-    // Prevent double clicks using both state and ref
     if (!pathProgress || markingVisited || isMarkingVisitedRef.current) {
       console.log("[Map] handleMarkVisited: Already processing, ignoring click");
       return;
     }
 
-    // Set both state and ref immediately to prevent double clicks
     isMarkingVisitedRef.current = true;
     setMarkingVisited(true);
-    
-    // Immediately hide dialog to prevent double clicks
+
     setShowCharacterDialog(false);
     setSelectedStop(null);
 
     try {
       const result = await markPointVisited(stop.point_id, pathProgress.progress.id);
       if (result.success) {
-        // Show reward notification if there's a reward
         if (stop.reward_label || stop.reward_icon_url) {
           setRewardData({
             label: stop.reward_label || undefined,
             iconUrl: stop.reward_icon_url || undefined,
           });
           setShowRewardNotification(true);
-          // Auto-hide after 3 seconds
           setTimeout(() => {
             setShowRewardNotification(false);
             setRewardData(null);
           }, 3000);
         }
 
-        // Reload progress to get updated state
         const updatedProgress = await getActivePathProgress();
         if (updatedProgress) {
           setPathProgress(updatedProgress);
         }
 
-        // If path completed, show completion message
         if (result.isCompleted) {
-          // Could show completion modal here
         }
       } else {
-        // If failed, show dialog again
         console.error("[Map] Failed to mark point as visited:", result.error);
         setShowCharacterDialog(true);
         setSelectedStop(stop);
       }
     } catch (error) {
       console.error("[Map] Error marking point as visited:", error);
-      // If error, show dialog again
       setShowCharacterDialog(true);
       setSelectedStop(stop);
     } finally {
@@ -487,7 +455,6 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
     }
   }, [pathProgress, markingVisited]);
 
-  // Geofence detection - check if user enters any unvisited stop
   useEffect(() => {
     if (!userLocation || !pathProgress || showCharacterDialog) return;
 
@@ -495,44 +462,49 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
       if (!pathProgress) return;
 
       const unvisitedStops = pathProgress.path.stops.filter((stop) => !stop.visited);
-      
+
       for (const stop of unvisitedStops) {
-        const radius = stop.radius_meters || 50; // Default 50m if not set
+        const radius = stop.radius_meters || 50;
         const distance = calculateDistance(
           userLocation.lat,
           userLocation.lng,
           stop.map_marker.coordinates.latitude,
           stop.map_marker.coordinates.longitude
         );
-        
+
         if (__DEV__) {
-          console.log(`[Geofence] Stop: ${stop.name}, Distance: ${distance.toFixed(2)}m, Radius: ${radius}m, Within: ${distance <= radius}`);
+          console.log(
+            `[Geofence] Stop: ${stop.name}, Distance: ${distance.toFixed(
+              2,
+            )}m, Radius: ${radius}m, Within: ${distance <= radius}`,
+          );
         }
-        
+
         if (distance <= radius) {
-          // User entered geofence - show character dialog
           console.log(`[Geofence] ✅ TRIGGERED for stop: ${stop.name}`);
           console.log(`[Geofence] Stop has character:`, stop.character ? "YES" : "NO");
-          console.log(`[Geofence] Stop character data:`, JSON.stringify(stop.character, null, 2));
-          console.log(`[Geofence] Setting selectedStop and showCharacterDialog to true`);
+          console.log(
+            `[Geofence] Stop character data:`,
+            JSON.stringify(stop.character, null, 2),
+          );
+          console.log(
+            `[Geofence] Setting selectedStop and showCharacterDialog to true`,
+          );
           setSelectedStop(stop);
           setShowCharacterDialog(true);
           console.log(`[Geofence] State updated - dialog should appear now`);
-          
-          // Play audio if available
+
           if (stop.audio_url && stop.audio_url !== currentlyPlayingAudioRef.current) {
             playAudio(stop.audio_url);
           }
-          
-          break; // Only handle one stop at a time
+
+          break;
         }
       }
     };
 
-    // Check immediately when location changes
     checkGeofences();
 
-    // Also check every 2 seconds for continuous monitoring
     geofenceCheckIntervalRef.current = window.setInterval(checkGeofences, 2000);
 
     return () => {
@@ -543,26 +515,22 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
   }, [userLocation, pathProgress, showCharacterDialog]);
 
   useEffect(() => {
-    // Only run on client and when we have location
     if (typeof window === "undefined" || !mapRef.current || !userLocation)
       return;
 
     const loadMapLibre = () => {
       return new Promise<void>((resolve) => {
-        // Check if already loaded
         if ((window as any).maplibregl) {
           resolve();
           return;
         }
 
-        // Load CSS
         const link = document.createElement("link");
         link.rel = "stylesheet";
         link.href =
           "https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css";
         document.head.appendChild(link);
 
-        // Load JS
         const script = document.createElement("script");
         script.src = "https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js";
         script.onload = () => resolve();
@@ -574,7 +542,6 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
       const maplibregl = (window as any).maplibregl;
       if (!maplibregl || !mapRef.current) return;
 
-      // Default OpenStreetMap style
       const defaultStyle = {
         version: 8,
         sources: {
@@ -599,18 +566,16 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
           "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
       };
 
-      // Initialize map with 3D support
       const map = new maplibregl.Map({
         container: mapRef.current,
         style: defaultStyle,
         center: [userLocation.lng, userLocation.lat],
         zoom: defaultZoom,
-        pitch: 45, // True 3D 45-degree tilt
+        pitch: 45,
         bearing: 0,
       });
 
       map.on("load", () => {
-        // Custom marker with user avatar
         const markerElement = document.createElement("div");
         markerElement.style.width = "48px";
         markerElement.style.height = "48px";
@@ -634,7 +599,6 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
           .setLngLat([userLocation.lng, userLocation.lat])
           .addTo(map);
 
-        // Add route pins
         routePinsRef.current = routePins.map((pin) => {
           const { bg, ring } = getPinColors(pin.variant);
           const pinElement = document.createElement("div");
@@ -647,7 +611,7 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
           pinElement.style.alignItems = "center";
           pinElement.style.justifyContent = "center";
           pinElement.style.boxShadow = "0 2px 4px rgba(0,0,0,0.25)";
-          
+
           const innerCircle = document.createElement("div");
           innerCircle.style.width = "30px";
           innerCircle.style.height = "30px";
@@ -656,9 +620,8 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
           innerCircle.style.display = "flex";
           innerCircle.style.alignItems = "center";
           innerCircle.style.justifyContent = "center";
-          
-          // Use custom icon if available, otherwise use label
-          if (pin.imageSource && typeof pin.imageSource === 'object' && 'uri' in pin.imageSource) {
+
+          if (pin.imageSource && typeof pin.imageSource === "object" && "uri" in pin.imageSource) {
             const img = document.createElement("img");
             img.src = pin.imageSource.uri;
             img.style.width = "22px";
@@ -672,7 +635,7 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
             innerCircle.style.color = "#FFFFFF";
             innerCircle.textContent = pin.label || "";
           }
-          
+
           pinElement.appendChild(innerCircle);
 
           return new maplibregl.Marker({
@@ -683,7 +646,6 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
             .addTo(map);
         });
 
-        // Add route line if coordinates are available
         if (routeCoordinates.length >= 2) {
           const routeGeoJson = {
             type: "Feature" as const,
@@ -718,7 +680,6 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
       mapInstanceRef.current = map;
       setIsLoaded(true);
 
-      // Cleanup map instance on unmount
       return () => {
         if (mapInstanceRef.current) {
           mapInstanceRef.current.remove();
@@ -727,19 +688,17 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
     });
   }, [userLocation, defaultZoom, userInitials]);
 
-  // Remove dark theme filter when map is loaded
   useEffect(() => {
     if (isLoaded && mapRef.current) {
       mapRef.current.style.filter = "none";
     }
   }, [isLoaded]);
 
-  // Update route line when coordinates change
   useEffect(() => {
     if (!mapInstanceRef.current || !isLoaded || routeCoordinates.length < 2) return;
 
     const map = mapInstanceRef.current;
-    
+
     if (map.getSource("route")) {
       const routeGeoJson = {
         type: "Feature" as const,
@@ -783,15 +742,12 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
     }
   }, [routeCoordinates, isLoaded]);
 
-  // Update map and marker when location changes
   useEffect(() => {
     if (mapInstanceRef.current && isLoaded && userLocation) {
-      // Update marker position
       if (markerRef.current) {
         markerRef.current.setLngLat([userLocation.lng, userLocation.lat]);
       }
 
-      // Smoothly center map on user location
       mapInstanceRef.current.easeTo({
         center: [userLocation.lng, userLocation.lat],
         zoom: defaultZoom,
@@ -801,13 +757,11 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
     }
   }, [userLocation, defaultZoom, isLoaded]);
 
-  // Update radius circles when pathProgress changes
   useEffect(() => {
     if (!mapInstanceRef.current || !isLoaded || !pathProgress) return;
 
     const map = mapInstanceRef.current;
-    
-    // Remove existing radius circles
+
     if (map.getLayer("radius-circles")) {
       map.removeLayer("radius-circles");
     }
@@ -815,28 +769,28 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
       map.removeSource("radius-circles");
     }
 
-    // Create circles for each stop
     const circles = pathProgress.path.stops.map((stop) => {
       const radius = stop.radius_meters || 50;
       const isVisited = stop.visited;
       const isNext = !isVisited && pathProgress.path.stops.findIndex((s) => !s.visited) === pathProgress.path.stops.indexOf(stop);
-      
-      // Create a circle using a polygon approximation
+
       const center = [stop.map_marker.coordinates.longitude, stop.map_marker.coordinates.latitude];
-      const points = 64; // Number of points to approximate circle
+      const points = 64;
       const coordinates: [number, number][] = [];
-      
+
       for (let i = 0; i <= points; i++) {
         const angle = (i / points) * 2 * Math.PI;
-        // Convert radius from meters to degrees (approximate)
         const latOffset = (radius / 111000) * Math.cos(angle);
-        const lngOffset = (radius / (111000 * Math.cos(stop.map_marker.coordinates.latitude * Math.PI / 180))) * Math.sin(angle);
+        const lngOffset =
+          (radius /
+            (111000 * Math.cos((stop.map_marker.coordinates.latitude * Math.PI) / 180))) *
+          Math.sin(angle);
         coordinates.push([
           center[0] + lngOffset,
           center[1] + latOffset,
         ]);
       }
-      
+
       return {
         type: "Feature" as const,
         properties: {
@@ -902,19 +856,16 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
     });
   }, [pathProgress, isLoaded]);
 
-  // Update route pins when routePins change
   useEffect(() => {
     if (!mapInstanceRef.current || !isLoaded) return;
 
     const map = mapInstanceRef.current;
-    
-    // Remove existing markers
+
     routePinsRef.current.forEach((marker) => {
       marker.remove();
     });
     routePinsRef.current = [];
 
-    // Add new markers
     if (routePins.length > 0) {
       const maplibregl = (window as any).maplibregl;
       if (!maplibregl) return;
@@ -931,7 +882,7 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
         pinElement.style.alignItems = "center";
         pinElement.style.justifyContent = "center";
         pinElement.style.boxShadow = "0 2px 4px rgba(0,0,0,0.25)";
-        
+
         const innerCircle = document.createElement("div");
         innerCircle.style.width = "30px";
         innerCircle.style.height = "30px";
@@ -940,9 +891,8 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
         innerCircle.style.display = "flex";
         innerCircle.style.alignItems = "center";
         innerCircle.style.justifyContent = "center";
-        
-        // Use custom icon if available, otherwise use label
-        if (pin.imageSource && typeof pin.imageSource === 'object' && 'uri' in pin.imageSource) {
+
+        if (pin.imageSource && typeof pin.imageSource === "object" && "uri" in pin.imageSource) {
           const img = document.createElement("img");
           img.src = pin.imageSource.uri;
           img.style.width = "22px";
@@ -956,7 +906,7 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
           innerCircle.style.color = "#FFFFFF";
           innerCircle.textContent = pin.label || "";
         }
-        
+
         pinElement.appendChild(innerCircle);
 
         return new maplibregl.Marker({
@@ -999,7 +949,6 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
         overflow: "hidden",
       }}
     >
-      {/* Kontener mapy */}
       <div
         ref={mapRef}
         style={{
@@ -1024,7 +973,6 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
         )}
       </div>
 
-      {/* 🏝️ Pływająca wyspa z info o trasie – ten sam motyw co w appce */}
       {hasRoute && (
         <div
           style={{
@@ -1040,7 +988,6 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
             backdropFilter: "blur(8px)",
           }}
         >
-          {/* Treść */}
           <div
             style={{
               display: "flex",
@@ -1058,7 +1005,8 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
                   whiteSpace: "nowrap",
                   textOverflow: "ellipsis",
                   overflow: "hidden",
-                  fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+                  fontFamily:
+                    "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
                 }}
               >
                 {routeTitle}
@@ -1068,7 +1016,8 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
                   marginTop: 2,
                   fontSize: 12,
                   color: "#6B7280",
-                  fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+                  fontFamily:
+                    "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
                 }}
               >
                 {progressText}
@@ -1093,7 +1042,6 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
             </div>
           </div>
 
-          {/* Pasek postępu */}
           <div
             style={{
               height: 5,
@@ -1112,7 +1060,6 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
             />
           </div>
 
-          {/* Next turn info */}
           <div
             style={{
               display: "flex",
@@ -1144,7 +1091,8 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
                   fontSize: 11,
                   fontWeight: 600,
                   color: "#6B7280",
-                  fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+                  fontFamily:
+                    "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
                 }}
               >
                 Następny manewr
@@ -1156,7 +1104,8 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
                   fontWeight: 500,
                   color: "#111827",
                   marginTop: 2,
-                  fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+                  fontFamily:
+                    "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
                 }}
               >
                 {nextStepText}
@@ -1164,7 +1113,6 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
             </div>
           </div>
 
-          {/* Google Maps CTA */}
           <div
             style={{
               marginTop: 10,
@@ -1184,7 +1132,8 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
                 fontWeight: 600,
                 color: COLORS.blue,
                 cursor: "pointer",
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+                fontFamily:
+                  "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
               }}
             >
               Otwórz w Google Maps
@@ -1193,7 +1142,6 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
         </div>
       )}
 
-      {/* Kontrolki mapy */}
       <div
         style={{
           position: "absolute",
@@ -1268,33 +1216,36 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
           ⌖
         </button>
 
-        {/* Debug button - only in development */}
         {__DEV__ && pathProgress && pathProgress.path.stops.length > 0 && (
           <button
             onClick={() => {
-              // Find first unvisited stop, or first stop if all visited
               const firstStop = pathProgress.path.stops.find((stop) => !stop.visited) 
                 || pathProgress.path.stops[0];
-              
+
               if (firstStop) {
                 const radius = firstStop.radius_meters || 50;
-                // Set location inside the radius (50% of radius to ensure we're well inside)
-                const latOffset = (radius * 0.5) / 111000; // 50% of radius in degrees
-                const lngOffset = (radius * 0.5) / (111000 * Math.cos(firstStop.map_marker.coordinates.latitude * Math.PI / 180));
-                
+                const latOffset = (radius * 0.5) / 111000;
+                const lngOffset =
+                  (radius * 0.5) /
+                  (111000 *
+                    Math.cos(
+                      (firstStop.map_marker.coordinates.latitude *
+                        Math.PI) /
+                        180,
+                    ));
+
                 const newLocation = {
                   lat: firstStop.map_marker.coordinates.latitude + latOffset,
                   lng: firstStop.map_marker.coordinates.longitude + lngOffset,
                 };
-                
+
                 console.log("[DEBUG] Moving to stop:", firstStop.name);
                 console.log("[DEBUG] Stop location:", firstStop.map_marker.coordinates);
                 console.log("[DEBUG] New user location:", newLocation);
                 console.log("[DEBUG] Radius:", radius, "meters");
-                
+
                 setUserLocation(newLocation);
-                
-                // Also update map camera
+
                 if (mapInstanceRef.current) {
                   mapInstanceRef.current.easeTo({
                     center: [newLocation.lng, newLocation.lat],
@@ -1303,7 +1254,6 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
                   });
                 }
 
-                // Force immediate geofence check
                 setTimeout(() => {
                   const unvisitedStops = pathProgress.path.stops.filter((stop) => !stop.visited);
                   for (const stop of unvisitedStops) {
@@ -1321,16 +1271,15 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
                       console.log("[DEBUG] Stop has character:", stop.character ? "YES" : "NO");
                       setSelectedStop(stop);
                       setShowCharacterDialog(true);
-                      
-                      // Play audio if available
+
                       if (stop.audio_url && stop.audio_url !== currentlyPlayingAudioRef.current) {
                         playAudio(stop.audio_url);
                       }
-                      
+
                       break;
                     }
                   }
-                }, 600); // Wait for animation to complete
+                }, 600);
               }
             }}
             style={{
@@ -1353,7 +1302,6 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
         )}
       </div>
 
-      {/* Character Dialog - Bottom Right */}
       {showCharacterDialog && selectedStop && (
         <div
           style={{
@@ -1368,7 +1316,6 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
             zIndex: 1000,
           }}
         >
-          {/* Speech Bubble - Left side */}
           <div
             style={{
               flex: 1,
@@ -1420,8 +1367,7 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
               {markingVisited ? "Zapisywanie..." : "Oznacz jako odwiedzone"}
             </button>
           </div>
-          
-          {/* Character Avatar - Right side */}
+
           {selectedStop.character && selectedStop.character.avatarUrl ? (
             <div
               style={{
@@ -1466,7 +1412,6 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
         </div>
       )}
 
-      {/* Reward Notification Overlay */}
       {showRewardNotification && rewardData && (
         <div
           style={{
