@@ -14,14 +14,16 @@ import MapView, {
   PROVIDER_DEFAULT,
   Marker,
   Polyline,
+  Circle,
   Camera,
 } from "react-native-maps";
 import * as Location from "expo-location";
+import { Audio } from "expo-av";
 import { authClient } from "@/lib/auth-client";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getActivePathProgress, markPointVisited, type PathProgress } from "@/lib/api-client";
 import { getAPIBaseURL } from "@/lib/api-url";
-import { isWithinGeofence } from "@/lib/geofence-utils";
+import { isWithinGeofence, calculateDistance } from "@/lib/geofence-utils";
 import { Modal } from "react-native";
 
 const COLORS = {
@@ -84,9 +86,42 @@ export const Map: React.FC = () => {
   );
   const [pathProgress, setPathProgress] = useState<PathProgress | null>(null);
   const [selectedStop, setSelectedStop] = useState<PathProgress["path"]["stops"][0] | null>(null);
-  const [showStopDialog, setShowStopDialog] = useState(false);
+  const [showCharacterDialog, setShowCharacterDialog] = useState(false);
   const [markingVisited, setMarkingVisited] = useState(false);
-  const geofenceCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [showRewardNotification, setShowRewardNotification] = useState(false);
+  const [rewardData, setRewardData] = useState<{ label?: string; iconUrl?: string } | null>(null);
+  const geofenceCheckIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isMarkingVisitedRef = useRef(false);
+  const audioSoundRef = useRef<Audio.Sound | null>(null);
+  const currentlyPlayingAudioRef = useRef<string | null>(null);
+  const [audioPermissionsGranted, setAudioPermissionsGranted] = useState(false);
+  const recentlyVisitedStopIdRef = useRef<number | null>(null);
+
+  // Request audio permissions and set audio mode
+  useEffect(() => {
+    const setupAudio = async () => {
+      try {
+        // Request audio permissions
+        const { status } = await Audio.requestPermissionsAsync();
+        if (status === 'granted') {
+          setAudioPermissionsGranted(true);
+          // Set audio mode to allow playback
+          await Audio.setAudioModeAsync({
+            playsInSilentModeIOS: true,
+            staysActiveInBackground: false,
+            shouldDuckAndroid: true,
+          });
+          console.log("[Map] Audio permissions granted and mode set");
+        } else {
+          console.warn("[Map] Audio permissions denied");
+        }
+      } catch (error) {
+        console.error("[Map] Error setting up audio:", error);
+      }
+    };
+
+    setupAudio();
+  }, []);
 
   // Fetch active path progress
   useEffect(() => {
@@ -339,64 +374,261 @@ export const Map: React.FC = () => {
     };
   }, []);
 
-  const handleMarkVisited = useCallback(async (stop: PathProgress["path"]["stops"][0]) => {
-    if (!pathProgress || markingVisited) return;
+  // Audio playback function
+  const playAudio = useCallback(async (audioUrl: string) => {
+    try {
+      console.log("[Map] playAudio called with URL:", audioUrl);
+      
+      // Check if we have audio permissions
+      if (!audioPermissionsGranted) {
+        console.log("[Map] Audio permissions not granted, requesting...");
+        const { status } = await Audio.requestPermissionsAsync();
+        if (status !== 'granted') {
+          console.warn("[Map] Audio permissions denied, cannot play audio");
+          return;
+        }
+        setAudioPermissionsGranted(true);
+      }
 
+      // Always set audio mode before playing (important for iOS)
+      await Audio.setAudioModeAsync({
+        playsInSilentModeIOS: true,
+        staysActiveInBackground: false,
+        shouldDuckAndroid: true,
+        allowsRecordingIOS: false,
+      });
+      console.log("[Map] Audio mode set");
+
+      // Stop any currently playing audio
+      if (audioSoundRef.current) {
+        console.log("[Map] Stopping current audio");
+        await audioSoundRef.current.unloadAsync();
+        audioSoundRef.current = null;
+      }
+
+      // Set the currently playing audio URL
+      currentlyPlayingAudioRef.current = audioUrl;
+
+      // Create and play new audio
+      const fullAudioUrl = `${getAPIBaseURL()}${audioUrl}`;
+      console.log("[Map] Playing audio from URL:", fullAudioUrl);
+      
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: fullAudioUrl },
+        { 
+          shouldPlay: true,
+          volume: 1.0,
+        }
+      );
+      
+      console.log("[Map] Audio sound created, setting up status listener");
+      audioSoundRef.current = sound;
+
+      // Set up playback status listener to track errors and completion
+      sound.setOnPlaybackStatusUpdate((status: any) => {
+        if (status.isLoaded) {
+          if (status.error) {
+            console.error("[Map] Audio playback error:", status.error);
+            currentlyPlayingAudioRef.current = null;
+            sound.unloadAsync();
+            audioSoundRef.current = null;
+          } else if (status.didJustFinish) {
+            console.log("[Map] Audio playback finished");
+            currentlyPlayingAudioRef.current = null;
+            sound.unloadAsync();
+            audioSoundRef.current = null;
+          } else {
+            // Log playback status for debugging
+            if (__DEV__) {
+              console.log("[Map] Audio status:", {
+                isPlaying: status.isPlaying,
+                positionMillis: status.positionMillis,
+                durationMillis: status.durationMillis,
+              });
+            }
+          }
+        } else {
+          console.warn("[Map] Audio status not loaded:", status);
+        }
+      });
+
+      // Wait a bit and check if audio actually started playing
+      setTimeout(async () => {
+        const status = await sound.getStatusAsync();
+        if (status.isLoaded && !status.isPlaying) {
+          console.warn("[Map] Audio created but not playing, attempting to play");
+          await sound.playAsync();
+        }
+      }, 100);
+    } catch (error) {
+      console.error("[Map] Error playing audio:", error);
+      currentlyPlayingAudioRef.current = null;
+    }
+  }, [audioPermissionsGranted]);
+
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      if (audioSoundRef.current) {
+        audioSoundRef.current.unloadAsync();
+        audioSoundRef.current = null;
+      }
+      currentlyPlayingAudioRef.current = null;
+    };
+  }, []);
+
+  const handleMarkVisited = useCallback(async (stop: PathProgress["path"]["stops"][0]) => {
+    // Prevent double clicks using both state and ref
+    if (!pathProgress || markingVisited || isMarkingVisitedRef.current) {
+      console.log("[Map] handleMarkVisited: Already processing, ignoring click");
+      return;
+    }
+
+    // Set both state and ref immediately to prevent double clicks
+    isMarkingVisitedRef.current = true;
     setMarkingVisited(true);
+    
+    // Keep dialog visible but button will be disabled via markingVisited state
+
     try {
       const result = await markPointVisited(stop.point_id, pathProgress.progress.id);
       if (result.success) {
-        // Reload progress to get updated state
-        const updatedProgress = await getActivePathProgress();
-        if (updatedProgress) {
-          setPathProgress(updatedProgress);
+        // Mark this stop as recently visited to prevent geofence re-triggering
+        recentlyVisitedStopIdRef.current = stop.point_id;
+        // Clear the recently visited flag after 5 seconds
+        setTimeout(() => {
+          recentlyVisitedStopIdRef.current = null;
+        }, 5000);
+        
+        // Hide dialog on success - do this immediately
+        setShowCharacterDialog(false);
+        setSelectedStop(null);
+        
+        // Show reward notification if there's a reward
+        if (stop.reward_label || stop.reward_icon_url) {
+          setRewardData({
+            label: stop.reward_label || undefined,
+            iconUrl: stop.reward_icon_url || undefined,
+          });
+          setShowRewardNotification(true);
+          // Auto-hide after 3 seconds
+          setTimeout(() => {
+            setShowRewardNotification(false);
+            setRewardData(null);
+          }, 3000);
         }
 
-        // If path completed, show completion message
+        // If path completed, clear progress and show completion message
         if (result.isCompleted) {
+          // Path is completed - clear progress to hide route UI
+          setPathProgress(null);
+          // Show completion notification
+          // setRewardData({
+          //   label: "Trasa ukończona! 🎉",
+          // });
+          // setShowRewardNotification(true);
+          // Auto-hide after 5 seconds
           setTimeout(() => {
-            setShowStopDialog(false);
-            // Could show completion modal here
-          }, 2000);
+            setShowRewardNotification(false);
+            setRewardData(null);
+          }, 5000);
+        } else {
+          // Path not completed yet - reload progress to get updated state
+          const updatedProgress = await getActivePathProgress();
+          if (updatedProgress) {
+            setPathProgress(updatedProgress);
+          } else {
+            // If no progress returned, it might have been completed or paused
+            // Clear the progress state
+            setPathProgress(null);
+          }
         }
+      } else {
+        // If failed, keep dialog visible and show error
+        console.error("[Map] Failed to mark point as visited:", result.error);
+        // Dialog is already visible, just reset the loading state
       }
     } catch (error) {
       console.error("[Map] Error marking point as visited:", error);
+      // Dialog is already visible, just reset the loading state
     } finally {
       setMarkingVisited(false);
+      isMarkingVisitedRef.current = false;
     }
   }, [pathProgress, markingVisited]);
 
   // Geofence detection - check if user enters any unvisited stop
   useEffect(() => {
-    if (!userLocation || !pathProgress || showStopDialog) return;
+    if (!userLocation || !pathProgress || showCharacterDialog) return;
 
     const checkGeofences = () => {
       if (!pathProgress) return;
 
       const unvisitedStops = pathProgress.path.stops.filter((stop) => !stop.visited);
       
+      if (__DEV__ && unvisitedStops.length > 0) {
+        console.log(`[Geofence] Checking ${unvisitedStops.length} unvisited stops`);
+        unvisitedStops.forEach((stop, idx) => {
+          console.log(`[Geofence] Stop ${idx + 1}: ${stop.name}, audio_url: ${stop.audio_url || 'MISSING'}`);
+        });
+      }
+      
       for (const stop of unvisitedStops) {
+        // Skip if this stop was recently visited (prevents re-triggering)
+        if (recentlyVisitedStopIdRef.current === stop.point_id) {
+          continue;
+        }
+        
         const radius = stop.radius_meters || 50; // Default 50m if not set
-        if (
-          isWithinGeofence(
-            userLocation.lat,
-            userLocation.lng,
-            stop.map_marker.coordinates.latitude,
-            stop.map_marker.coordinates.longitude,
-            radius
-          )
-        ) {
-          // User entered geofence - show dialog and mark as visited
+        const distance = calculateDistance(
+          userLocation.lat,
+          userLocation.lng,
+          stop.map_marker.coordinates.latitude,
+          stop.map_marker.coordinates.longitude
+        );
+        
+        if (__DEV__) {
+          console.log(`[Geofence] Stop: ${stop.name}, Distance: ${distance.toFixed(2)}m, Radius: ${radius}m, Within: ${distance <= radius}`);
+        }
+        
+        if (distance <= radius) {
+          // User entered geofence - show character dialog
+          console.log(`[Geofence] ✅ TRIGGERED for stop: ${stop.name}`);
+          console.log(`[Geofence] Stop data:`, JSON.stringify({
+            name: stop.name,
+            point_id: stop.point_id,
+            audio_url: stop.audio_url,
+            has_character: !!stop.character,
+          }, null, 2));
+          console.log(`[Geofence] Setting selectedStop and showCharacterDialog to true`);
           setSelectedStop(stop);
-          setShowStopDialog(true);
-          handleMarkVisited(stop);
+          setShowCharacterDialog(true);
+          console.log(`[Geofence] State updated - dialog should appear now`);
+          
+          // Play audio if available
+          console.log(`[Geofence] Checking audio - audio_url:`, stop.audio_url);
+          console.log(`[Geofence] Currently playing:`, currentlyPlayingAudioRef.current);
+          if (stop.audio_url) {
+            console.log(`[Geofence] ✅ Stop has audio_url: ${stop.audio_url}`);
+            if (stop.audio_url !== currentlyPlayingAudioRef.current) {
+              console.log(`[Geofence] 🎵 Triggering audio playback for: ${stop.audio_url}`);
+              playAudio(stop.audio_url);
+            } else {
+              console.log(`[Geofence] ⏸️ Audio already playing, skipping`);
+            }
+          } else {
+            console.log(`[Geofence] ❌ Stop has no audio_url property`);
+          }
+          
           break; // Only handle one stop at a time
         }
       }
     };
 
-    // Check every 2 seconds
+    // Check immediately when location changes
+    checkGeofences();
+
+    // Also check every 2 seconds for continuous monitoring
     geofenceCheckIntervalRef.current = setInterval(checkGeofences, 2000);
 
     return () => {
@@ -404,7 +636,7 @@ export const Map: React.FC = () => {
         clearInterval(geofenceCheckIntervalRef.current);
       }
     };
-  }, [userLocation, pathProgress, showStopDialog, handleMarkVisited]);
+  }, [userLocation, pathProgress, showCharacterDialog]);
 
   const clampZoom = (z: number) => {
     if (!Number.isFinite(z)) return 16;
@@ -550,6 +782,27 @@ export const Map: React.FC = () => {
           />
         )}
 
+        {/* Radius circles for stops */}
+        {pathProgress && pathProgress.path.stops.map((stop) => {
+          const radius = stop.radius_meters || 50;
+          const isVisited = stop.visited;
+          const isNext = !isVisited && pathProgress.path.stops.findIndex((s) => !s.visited) === pathProgress.path.stops.indexOf(stop);
+          
+          return (
+            <Circle
+              key={`radius-${stop.point_id}`}
+              center={{
+                latitude: stop.map_marker.coordinates.latitude,
+                longitude: stop.map_marker.coordinates.longitude,
+              }}
+              radius={radius}
+              fillColor={isVisited ? "rgba(156, 163, 175, 0.2)" : isNext ? "rgba(237, 28, 36, 0.15)" : "rgba(255, 222, 0, 0.15)"}
+              strokeColor={isVisited ? "#9CA3AF" : isNext ? COLORS.red : COLORS.yellow}
+              strokeWidth={2}
+            />
+          );
+        })}
+
         {/* marker użytkownika */}
         <Marker
           coordinate={{
@@ -683,46 +936,165 @@ export const Map: React.FC = () => {
         >
           <Text style={styles.controlIcon}>⌖</Text>
         </TouchableOpacity>
+
+        {/* Debug button - only in development */}
+        {__DEV__ && pathProgress && pathProgress.path.stops.length > 0 && (
+          <TouchableOpacity
+            style={[styles.controlButton, styles.debugButton]}
+            onPress={() => {
+              // Find first unvisited stop, or first stop if all visited
+              const firstStop = pathProgress.path.stops.find((stop) => !stop.visited) 
+                || pathProgress.path.stops[0];
+              
+              if (firstStop) {
+                const radius = firstStop.radius_meters || 50;
+                // Set location inside the radius (50% of radius to ensure we're well inside)
+                // Use a more accurate conversion: 1 degree latitude ≈ 111,000 meters
+                // For longitude, we need to account for latitude (cos(lat) factor)
+                const latOffset = (radius * 0.5) / 111000; // 50% of radius in degrees
+                const lngOffset = (radius * 0.5) / (111000 * Math.cos(firstStop.map_marker.coordinates.latitude * Math.PI / 180));
+                
+                const newLocation = {
+                  lat: firstStop.map_marker.coordinates.latitude + latOffset,
+                  lng: firstStop.map_marker.coordinates.longitude + lngOffset,
+                };
+                
+                console.log("[DEBUG] Moving to stop:", firstStop.name);
+                console.log("[DEBUG] Stop location:", firstStop.map_marker.coordinates);
+                console.log("[DEBUG] New user location:", newLocation);
+                console.log("[DEBUG] Radius:", radius, "meters");
+                console.log("[DEBUG] Distance from stop:", 
+                  isWithinGeofence(
+                    newLocation.lat,
+                    newLocation.lng,
+                    firstStop.map_marker.coordinates.latitude,
+                    firstStop.map_marker.coordinates.longitude,
+                    radius
+                  ) ? "INSIDE" : "OUTSIDE"
+                );
+                
+                setUserLocation(newLocation);
+                
+                // Also update map camera
+                if (mapRef.current) {
+                  mapRef.current.animateToRegion({
+                    latitude: newLocation.lat,
+                    longitude: newLocation.lng,
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01,
+                  }, 500);
+                }
+
+                // Force immediate geofence check
+                setTimeout(() => {
+                  const unvisitedStops = pathProgress.path.stops.filter((stop) => !stop.visited);
+                  for (const stop of unvisitedStops) {
+                    const stopRadius = stop.radius_meters || 50;
+                    if (
+                      isWithinGeofence(
+                        newLocation.lat,
+                        newLocation.lng,
+                        stop.map_marker.coordinates.latitude,
+                        stop.map_marker.coordinates.longitude,
+                        stopRadius
+                      )
+                    ) {
+                      console.log("[DEBUG] Geofence triggered for:", stop.name);
+                      console.log("[DEBUG] Stop audio_url:", stop.audio_url);
+                      setSelectedStop(stop);
+                      setShowCharacterDialog(true);
+                      // Also trigger audio if available
+                      if (stop.audio_url && stop.audio_url !== currentlyPlayingAudioRef.current) {
+                        console.log("[DEBUG] Triggering audio playback");
+                        playAudio(stop.audio_url);
+                      }
+                      break;
+                    }
+                  }
+                }, 600); // Wait for animation to complete
+              }
+            }}
+          >
+            <Text style={styles.controlIcon}>🐛</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
-      {/* Stop Dialog Modal */}
-      <Modal
-        visible={showStopDialog}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowStopDialog(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            {selectedStop && (
+      {/* Character Dialog - Bottom Right */}
+      {(() => {
+        if (__DEV__) {
+          console.log(`[Render] showCharacterDialog: ${showCharacterDialog}, selectedStop: ${selectedStop ? selectedStop.name : 'null'}`);
+        }
+        return null;
+      })()}
+      {showCharacterDialog && selectedStop && (
+        <View style={styles.characterContainer}>
+          {/* Speech Bubble - Left side */}
+          <View style={styles.speechBubble}>
+            {selectedStop.character ? (
               <>
-                {selectedStop.reward_icon_url && (
-                  <Image
-                    source={{ uri: `${getAPIBaseURL()}${selectedStop.reward_icon_url}` }}
-                    style={styles.modalImage}
-                    resizeMode="cover"
-                  />
-                )}
-                <Text style={styles.modalTitle}>{selectedStop.name}</Text>
-                <Text style={styles.modalDescription}>
-                  {selectedStop.place_description}
-                </Text>
-                {selectedStop.reward_label && (
-                  <View style={styles.rewardBadge}>
-                    <Text style={styles.rewardText}>
-                      🎁 {selectedStop.reward_label}
-                    </Text>
-                  </View>
-                )}
-                <TouchableOpacity
-                  style={styles.modalCloseButton}
-                  onPress={() => setShowStopDialog(false)}>
-                  <Text style={styles.modalCloseText}>Zamknij</Text>
-                </TouchableOpacity>
+                <Text style={styles.characterName}>{selectedStop.character.name}</Text>
+                <Text style={styles.characterDescription}>{selectedStop.character.description}</Text>
               </>
+            ) : (
+              <Text style={styles.characterName}>{selectedStop.name}</Text>
             )}
+            <Text style={styles.stopDescription}>{selectedStop.place_description}</Text>
+            <TouchableOpacity
+              style={styles.completeButton}
+              onPress={() => handleMarkVisited(selectedStop)}
+              disabled={markingVisited}>
+              <Text style={styles.completeButtonText}>
+                {markingVisited ? "Zapisywanie..." : "Oznacz jako odwiedzone"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          
+          {/* Character Avatar - Right side */}
+          {selectedStop.character && selectedStop.character.avatarUrl ? (
+            <View style={styles.characterAvatarContainer}>
+              <Image
+                source={{ uri: `${getAPIBaseURL()}${selectedStop.character.avatarUrl}` }}
+                style={styles.characterAvatar}
+                resizeMode="cover"
+                onError={(e) => {
+                  console.error("[Map] Error loading character avatar:", e.nativeEvent.error);
+                }}
+              />
+            </View>
+          ) : (
+            <View style={styles.characterAvatarContainer}>
+              <View style={[styles.characterAvatar, { backgroundColor: COLORS.blue, justifyContent: 'center', alignItems: 'center' }]}>
+                <Text style={{ color: '#FFFFFF', fontSize: 24, fontWeight: '700' }}>📍</Text>
+              </View>
+            </View>
+          )}
+        </View>
+      )}
+
+      {/* Reward Notification Overlay */}
+      {showRewardNotification && rewardData && (
+        <View style={styles.rewardNotification}>
+          <View style={styles.rewardNotificationContent}>
+            {rewardData.iconUrl ? (
+              <Image
+                source={{ uri: `${getAPIBaseURL()}${rewardData.iconUrl}` }}
+                style={styles.rewardNotificationIcon}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={styles.rewardNotificationIconPlaceholder}>
+                <Text style={{ fontSize: 24 }}>🎁</Text>
+              </View>
+            )}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.rewardNotificationText}>
+                Otrzymałeś nagrodę{rewardData.label ? `: ${rewardData.label}` : "!"}
+              </Text>
+            </View>
           </View>
         </View>
-      </Modal>
+      )}
     </View>
   );
 };
@@ -928,6 +1300,10 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: COLORS.red,
   },
+  debugButton: {
+    backgroundColor: COLORS.yellow,
+    borderColor: COLORS.yellow,
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -989,6 +1365,117 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "600",
+  },
+  characterContainer: {
+    position: "absolute",
+    bottom: 120,
+    right: 16,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 12,
+    maxWidth: "85%",
+  },
+  speechBubble: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+    marginBottom: 8,
+  },
+  characterName: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: COLORS.default,
+    marginBottom: 4,
+  },
+  characterDescription: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: COLORS.blue,
+    marginBottom: 8,
+  },
+  stopDescription: {
+    fontSize: 14,
+    color: "#6B7280",
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  completeButton: {
+    backgroundColor: COLORS.red,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  completeButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  characterAvatarContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 3,
+    borderColor: "#FFFFFF",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 6,
+    overflow: "hidden",
+  },
+  characterAvatar: {
+    width: "100%",
+    height: "100%",
+  },
+  rewardNotification: {
+    position: "absolute",
+    top: 60,
+    left: 16,
+    right: 16,
+    backgroundColor: COLORS.yellow,
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  rewardNotificationContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  rewardNotificationIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+  },
+  rewardNotificationIconPlaceholder: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+  },
+  rewardNotificationText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: COLORS.default,
+    marginLeft: 12,
+    flex: 1,
   },
 });
 

@@ -22,25 +22,25 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { 
-    label: "Map", 
+    label: "Mapa", 
     route: "/map", 
     iconName: "map-outline",
     iconNameActive: "map"
   },
   { 
-    label: "Explore", 
+    label: "Włóczykij", 
     route: "/explore", 
     iconName: "compass-outline",
     iconNameActive: "compass"
   },
   { 
-    label: "Profile", 
+    label: "Profil", 
     route: "/profile", 
     iconName: "person-outline",
     iconNameActive: "person"
   },
   { 
-    label: "Collection", 
+    label: "Skarbnica", 
     route: "/collections", 
     iconName: "cube-outline",
     iconNameActive: "cube"

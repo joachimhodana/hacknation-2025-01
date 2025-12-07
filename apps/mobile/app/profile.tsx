@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -14,6 +15,7 @@ import Navbar from "@/components/Navbar";
 import { PointsBadge } from "@/components/PointsBadge";
 import { authClient } from "@/lib/auth-client";
 import { fetchUserStats, fetchLeaderboard, type CollectedItem, type LeaderboardEntry } from "@/lib/api-client";
+import { getAPIBaseURL } from "@/lib/api-url";
 
 const COLORS = {
   red: "#ED1C24",
@@ -346,7 +348,15 @@ const ProfileScreen: React.FC = () => {
                 {previewItems.map((item) => (
                   <View key={item.id} style={styles.itemTilePreview}>
                     <View style={styles.itemTileInner}>
-                      <Text style={styles.itemTileEmoji}>{item.emoji}</Text>
+                      {item.rewardIconUrl ? (
+                        <Image
+                          source={{ uri: `${getAPIBaseURL()}${item.rewardIconUrl}` }}
+                          style={styles.itemTileImage}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <Text style={styles.itemTileEmoji}>{item.emoji}</Text>
+                      )}
                     </View>
                   </View>
                 ))}
@@ -595,6 +605,11 @@ const styles = StyleSheet.create({
   },
   itemTileEmoji: {
     fontSize: 28,
+  },
+  itemTileImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 16,
   },
 
   // Settings
