@@ -28,7 +28,7 @@ const CharactersListPagination = ({ currentPage, totalPages, onPageChange }: Cha
             variant={currentPage === page ? "default" : "outline"}
             size="sm"
             onClick={() => onPageChange(page)}
-            className={currentPage === page ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}
+            className={currentPage === page ? "bg-primary hover:bg-primary/90 text-primary-foreground" : ""}
           >
             {page}
           </Button>

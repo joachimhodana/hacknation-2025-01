@@ -67,8 +67,8 @@ const CharactersPage = () => {
     return (
       <div className="container mx-auto p-6 space-y-6">
         <CharactersListHeader viewMode={viewMode} onViewModeChange={setViewMode} />
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800">{error}</p>
+        <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4">
+          <p className="text-destructive">{error}</p>
         </div>
       </div>
     )

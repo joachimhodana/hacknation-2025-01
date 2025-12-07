@@ -137,7 +137,7 @@ const RoutesListPage = () => {
   const handleTogglePublish = async (route: RoutesObjectType) => {
     // Backend uses pathId (string), not numeric id
     const routeId = route.pathId
-    
+
     if (!routeId) {
       setError("Nie można znaleźć ID trasy")
       return

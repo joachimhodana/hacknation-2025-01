@@ -98,7 +98,7 @@ export default function MapComponent({ points, onMapClick }: MapComponentProps) 
   return (
     <div
       ref={mapRef}
-      className="relative w-full h-full bg-gradient-to-br from-blue-100 via-green-100 to-blue-200 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 overflow-hidden cursor-crosshair select-none"
+      className="relative w-full h-full bg-muted overflow-hidden cursor-crosshair select-none"
       onClick={handleMapClick}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -136,18 +136,21 @@ export default function MapComponent({ points, onMapClick }: MapComponentProps) 
             }}
           >
             <div className="relative">
-              <Icon icon="solar:map-point-bold-duotone" className="h-8 w-8 text-blue-600 dark:text-blue-400 drop-shadow-lg group-hover:text-blue-800 dark:group-hover:text-blue-300 transition-colors" />
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full bg-blue-600 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center -mt-1 shadow-md">
+              <Icon
+                icon="solar:map-point-bold-duotone"
+                className="h-8 w-8 text-primary drop-shadow-lg group-hover:text-primary/80 transition-colors"
+              />
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full bg-primary text-primary-foreground text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center -mt-1 shadow-md">
                 {point.order}
               </div>
-              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-sm z-30 border border-gray-200 dark:border-gray-700">
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-popover text-foreground px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-sm z-30 border border-border">
                 <div className="font-semibold">{point.name}</div>
                 {point.description && (
-                  <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                  <div className="text-xs text-muted-foreground mt-1">
                     {point.description}
                   </div>
                 )}
-                <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                <div className="text-xs text-muted-foreground mt-1">
                   {point.lat.toFixed(4)}, {point.lng.toFixed(4)}
                 </div>
               </div>
@@ -157,17 +160,17 @@ export default function MapComponent({ points, onMapClick }: MapComponentProps) 
       })}
 
       {/* Kontrolki zoomu */}
-      <div className="absolute bottom-4 right-4 flex flex-col gap-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 border border-gray-200 dark:border-gray-700 z-30">
+      <div className="absolute bottom-4 right-4 flex flex-col gap-2 bg-background rounded-lg shadow-lg p-2 border border-border z-30">
         <button
           onClick={(e) => {
             e.stopPropagation()
             setZoom((prev) => Math.min(3, prev * 1.2))
           }}
-          className="px-3 py-1 text-sm font-semibold hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+          className="px-3 py-1 text-sm font-semibold hover:bg-accent rounded transition-colors"
         >
           +
         </button>
-        <div className="text-xs text-center text-gray-600 dark:text-gray-400 font-medium">
+        <div className="text-xs text-center text-muted-foreground font-medium">
           {Math.round(zoom * 100)}%
         </div>
         <button
@@ -175,7 +178,7 @@ export default function MapComponent({ points, onMapClick }: MapComponentProps) 
             e.stopPropagation()
             setZoom((prev) => Math.max(0.5, prev * 0.8))
           }}
-          className="px-3 py-1 text-sm font-semibold hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+          className="px-3 py-1 text-sm font-semibold hover:bg-accent rounded transition-colors"
         >
           −
         </button>
@@ -185,22 +188,22 @@ export default function MapComponent({ points, onMapClick }: MapComponentProps) 
             setOffset({ x: 0, y: 0 })
             setZoom(1)
           }}
-          className="px-3 py-1 text-xs hover:bg-gray-100 dark:hover:bg-gray-700 rounded mt-1 transition-colors"
+          className="px-3 py-1 text-xs hover:bg-accent rounded mt-1 transition-colors"
         >
           Reset
         </button>
       </div>
 
       {/* Instrukcja */}
-      <div className="absolute top-4 left-4 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg p-3 shadow-lg border border-gray-200 dark:border-gray-700 z-30">
-        <p className="text-xs text-gray-600 dark:text-gray-400">
-          <strong className="text-gray-900 dark:text-gray-100">Kliknij</strong> na mapie, aby dodać punkt
+      <div className="absolute top-4 left-4 bg-popover/90 backdrop-blur-sm rounded-lg p-3 shadow-lg border border-border z-30">
+        <p className="text-xs text-muted-foreground">
+          <strong className="text-foreground">Kliknij</strong> na mapie, aby dodać punkt
         </p>
-        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-          <strong className="text-gray-900 dark:text-gray-100">Przeciągnij</strong> mapę, aby przesunąć
+        <p className="text-xs text-muted-foreground mt-1">
+          <strong className="text-foreground">Przeciągnij</strong> mapę, aby przesunąć
         </p>
-        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-          <strong className="text-gray-900 dark:text-gray-100">Kółko myszy</strong> do przybliżania
+        <p className="text-xs text-muted-foreground mt-1">
+          <strong className="text-foreground">Kółko myszy</strong> do przybliżania
         </p>
       </div>
     </div>

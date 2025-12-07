@@ -29,16 +29,17 @@ export function ContactSubmissions() {
     const stored = localStorage.getItem("contactSubmissions")
     if (stored) {
       const parsed = JSON.parse(stored)
-      setSubmissions(parsed.sort((a: ContactSubmission, b: ContactSubmission) => 
-        new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
-      ))
+      setSubmissions(
+        parsed.sort(
+          (a: ContactSubmission, b: ContactSubmission) =>
+            new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
+        )
+      )
     }
   }
 
   const updateSubmissionStatus = (id: string, status: ContactSubmission["status"]) => {
-    const updated = submissions.map((s) =>
-      s.id === id ? { ...s, status } : s
-    )
+    const updated = submissions.map((s) => (s.id === id ? { ...s, status } : s))
     setSubmissions(updated)
     localStorage.setItem("contactSubmissions", JSON.stringify(updated))
     if (selectedSubmission?.id === id) {
@@ -71,17 +72,17 @@ export function ContactSubmissions() {
         </p>
       </div>
 
-      {/* Niebieska wstawka */}
-      <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+      {/* Niebieska wstawka -> na tokeny */}
+      <div className="bg-primary/5 dark:bg-primary/10 border border-primary/20 dark:border-primary/30 rounded-lg p-4">
         <div className="flex items-start gap-3">
-          <div className="bg-blue-100 dark:bg-blue-900/40 rounded-full p-2">
-            <Mail className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          <div className="bg-primary/10 dark:bg-primary/20 rounded-full p-2">
+            <Mail className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
+            <h3 className="font-semibold text-foreground mb-1">
               Zgłoszenia z formularza kontaktowego
             </h3>
-            <p className="text-sm text-blue-800 dark:text-blue-200">
+            <p className="text-sm text-muted-foreground">
               Tutaj znajdziesz wszystkie wiadomości przesłane przez użytkowników z sekcji kontaktowej
               strony landing. Nowe zgłoszenia są automatycznie odświeżane.
             </p>
@@ -94,28 +95,28 @@ export function ContactSubmissions() {
         <Button
           variant={filter === "all" ? "default" : "outline"}
           onClick={() => setFilter("all")}
-          className={filter === "all" ? "bg-blue-600 hover:bg-blue-700" : ""}
+          className={filter === "all" ? "bg-primary hover:bg-primary/90 text-primary-foreground" : ""}
         >
           Wszystkie ({submissions.length})
         </Button>
         <Button
           variant={filter === "new" ? "default" : "outline"}
           onClick={() => setFilter("new")}
-          className={filter === "new" ? "bg-blue-600 hover:bg-blue-700" : ""}
+          className={filter === "new" ? "bg-primary hover:bg-primary/90 text-primary-foreground" : ""}
         >
           Nowe ({newCount})
         </Button>
         <Button
           variant={filter === "read" ? "default" : "outline"}
           onClick={() => setFilter("read")}
-          className={filter === "read" ? "bg-blue-600 hover:bg-blue-700" : ""}
+          className={filter === "read" ? "bg-primary hover:bg-primary/90 text-primary-foreground" : ""}
         >
           Przeczytane ({submissions.filter((s) => s.status === "read").length})
         </Button>
         <Button
           variant={filter === "archived" ? "default" : "outline"}
           onClick={() => setFilter("archived")}
-          className={filter === "archived" ? "bg-blue-600 hover:bg-blue-700" : ""}
+          className={filter === "archived" ? "bg-primary hover:bg-primary/90 text-primary-foreground" : ""}
         >
           Zarchiwizowane ({submissions.filter((s) => s.status === "archived").length})
         </Button>
@@ -138,11 +139,11 @@ export function ContactSubmissions() {
                 key={submission.id}
                 className={`cursor-pointer transition-all ${
                   selectedSubmission?.id === submission.id
-                    ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30 shadow-md"
-                    : "hover:border-blue-300"
+                    ? "border-primary bg-primary/5 dark:bg-primary/10 shadow-md"
+                    : "hover:border-primary/40"
                 } ${
                   submission.status === "new"
-                    ? "border-l-4 border-l-blue-600"
+                    ? "border-l-4 border-l-primary"
                     : ""
                 }`}
                 onClick={() => setSelectedSubmission(submission)}
@@ -153,7 +154,7 @@ export function ContactSubmissions() {
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-semibold truncate">{submission.subject}</h3>
                         {submission.status === "new" && (
-                          <span className="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full">
+                          <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
                             Nowe
                           </span>
                         )}
@@ -167,13 +168,13 @@ export function ContactSubmissions() {
                     </div>
                     <div className="flex items-center gap-1">
                       {submission.status === "new" && (
-                        <Clock className="h-4 w-4 text-blue-600" />
+                        <Clock className="h-4 w-4 text-primary" />
                       )}
                       {submission.status === "read" && (
-                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                        <CheckCircle2 className="h-4 w-4 text-primary" />
                       )}
                       {submission.status === "archived" && (
-                        <XCircle className="h-4 w-4 text-gray-600" />
+                        <XCircle className="h-4 w-4 text-muted-foreground" />
                       )}
                     </div>
                   </div>
@@ -186,12 +187,12 @@ export function ContactSubmissions() {
         {/* Szczegóły zgłoszenia */}
         {selectedSubmission && (
           <div className="md:col-span-2 lg:col-span-2">
-            <Card className="border-blue-200 dark:border-blue-800">
+            <Card className="border-primary/20 dark:border-primary/30">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div>
                     <CardTitle className="flex items-center gap-2">
-                      <Mail className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      <Mail className="h-5 w-5 text-primary" />
                       {selectedSubmission.subject}
                     </CardTitle>
                     <CardDescription className="mt-2">
@@ -206,7 +207,7 @@ export function ContactSubmissions() {
                       <Button
                         size="sm"
                         onClick={() => updateSubmissionStatus(selectedSubmission.id, "read")}
-                        className="bg-green-600 hover:bg-green-700"
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground"
                       >
                         <CheckCircle2 className="h-4 w-4 mr-2" />
                         Oznacz jako przeczytane
@@ -245,7 +246,10 @@ export function ContactSubmissions() {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <Button variant="outline" className="bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/20 dark:hover:bg-blue-950/40 border-blue-200 dark:border-blue-800">
+                    <Button
+                      variant="outline"
+                      className="bg-primary/5 hover:bg-primary/10 border-primary/20"
+                    >
                       <Mail className="h-4 w-4 mr-2" />
                       Odpowiedz
                     </Button>
@@ -259,4 +263,3 @@ export function ContactSubmissions() {
     </div>
   )
 }
-

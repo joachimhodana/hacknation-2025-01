@@ -109,7 +109,9 @@ function AudioFileInput({
         onDragOver={handleDragOver}
         className={cn(
           "border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors",
-          file ? "border-blue-500 bg-blue-50/50" : "border-gray-300 hover:border-blue-400 hover:bg-blue-50/30"
+          file
+            ? "border-primary bg-primary/5"
+            : "border-border hover:border-primary hover:bg-primary/5"
         )}
         onClick={() => fileInputRef.current?.click()}
       >
@@ -124,10 +126,10 @@ function AudioFileInput({
         {file ? (
           <div className="relative">
             <div className="flex items-center justify-center gap-3">
-              <Icon icon="solar:music-note-bold-duotone" className="h-12 w-12 text-blue-600" />
+              <Icon icon="solar:music-note-bold-duotone" className="h-12 w-12 text-primary" />
               <div className="text-left">
-                <p className="text-sm font-medium text-gray-900">{file.name}</p>
-                <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+                <p className="text-sm font-medium text-foreground">{file.name}</p>
+                <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
               </div>
             </div>
             <button
@@ -136,15 +138,15 @@ function AudioFileInput({
                 e.stopPropagation()
                 handleRemove()
               }}
-              className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+              className="absolute top-0 right-0 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90"
             >
               <Icon icon="solar:close-circle-bold-duotone" className="h-4 w-4" />
             </button>
           </div>
         ) : (
           <div>
-            <Icon icon="solar:upload-bold-duotone" className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-            <p className="text-sm text-gray-600">
+            <Icon icon="solar:upload-bold-duotone" className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">
               Kliknij lub przeciągnij plik audio tutaj
             </p>
           </div>
@@ -183,10 +185,10 @@ const RouteCreatorPage = () => {
         try {
           setIsLoading(true)
           const response = await getPath(editPathId)
-          
+
           if (response.success && response.data) {
             const route = response.data
-            
+
             // Konwertuj points z API na RoutePoint format
             // Backend zwraca points jako tablicę z { point: {...}, orderIndex: number }
             if (route.points && Array.isArray(route.points)) {
@@ -194,12 +196,12 @@ const RouteCreatorPage = () => {
                 const convertedPoints: RoutePoint[] = route.points.map((pointData: any, index: number) => {
                   // Backend zwraca { point: {...}, orderIndex: number }
                   const point = pointData.point || pointData
-                  
+
                   if (!point || typeof point.latitude !== 'number' || typeof point.longitude !== 'number') {
                     console.warn('Invalid point data:', pointData)
                     return null
                   }
-                  
+
                   return {
                     id: point.id?.toString() || `point_${index}`,
                     name: point.locationLabel || `Punkt ${index + 1}`,
@@ -213,7 +215,7 @@ const RouteCreatorPage = () => {
                     dialog: point.narrationText || "",
                   }
                 }).filter((p): p is RoutePoint => p !== null)
-                
+
                 setPoints(convertedPoints)
               } else {
                 setPoints([])
@@ -221,11 +223,11 @@ const RouteCreatorPage = () => {
             } else {
               setPoints([])
             }
-            
+
             // Zapisz istniejące URL-e plików
             setExistingThumbnailUrl(route.thumbnailUrl || null)
             setExistingMarkerIconUrl(route.markerIconUrl || null)
-            
+
             // Ustaw markerIconUrl z pełnym URL z backendu, jeśli istnieje
             if (route.markerIconUrl) {
               const fullMarkerIconUrl = getBackendImageUrl(route.markerIconUrl)
@@ -233,7 +235,7 @@ const RouteCreatorPage = () => {
                 setMarkerIconUrl(fullMarkerIconUrl)
               }
             }
-            
+
             // Przygotuj wartości formularza z obiektu route
             const formValues = {
               title: route.title || "",
@@ -245,14 +247,14 @@ const RouteCreatorPage = () => {
               stylePreset: route.stylePreset || "",
               makerIconFile: null,
             }
-            
+
             // Ustaw initial values, które będą użyte przy tworzeniu formularza
             setInitialFormValues(formValues)
-            
+
             // Wypełnij formularz gdy będzie gotowy
             const maxAttempts = 50
             let attempts = 0
-            
+
             const loadData = () => {
               if (formRef.current) {
                 formRef.current.reset(formValues, { keepDefaultValues: false })
@@ -262,7 +264,7 @@ const RouteCreatorPage = () => {
                 formRef.current.setValue("category", formValues.category, { shouldValidate: false })
                 formRef.current.setValue("difficulty", formValues.difficulty, { shouldValidate: false })
                 formRef.current.setValue("stylePreset", formValues.stylePreset, { shouldValidate: false })
-                
+
                 setCurrentStep(1)
                 setIsLoading(false)
               } else if (attempts < maxAttempts) {
@@ -273,7 +275,7 @@ const RouteCreatorPage = () => {
                 setIsLoading(false)
               }
             }
-            
+
             loadData()
           } else {
             setValidationError(response.error || "Nie udało się załadować trasy")
@@ -289,6 +291,22 @@ const RouteCreatorPage = () => {
       loadRouteData()
     }
   }, [editPathId])
+
+  useEffect(() => {
+    const loadCharacters = async () => {
+      try {
+        setIsLoadingCharacters(true)
+        const charactersData = await getCharactersFromApi()
+        setCharacters(charactersData)
+      } catch (error) {
+        console.error("Failed to load characters:", error)
+      } finally {
+        setIsLoadingCharacters(false)
+      }
+    }
+
+    loadCharacters()
+  }, [])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -479,6 +497,7 @@ const RouteCreatorPage = () => {
     }
   }
 
+  // Walidacja punktów - sprawdza czy wszystkie wymagane pola są wypełnione
   const validatePoints = (): boolean => {
     setValidationError(null)
 
@@ -570,15 +589,15 @@ const RouteCreatorPage = () => {
         formData.append('difficulty', formValues.difficulty)
         formData.append('totalTimeMinutes', totalTimeMinutes.toString())
         formData.append('distanceMeters', distanceMeters.toString())
-        
+
         if (formValues.thumbnailFile instanceof File) {
           formData.append('thumbnailFile', formValues.thumbnailFile)
         }
-        
+
         if (formValues.makerIconFile instanceof File) {
           formData.append('markerIconFile', formValues.makerIconFile)
         }
-        
+
         if (formValues.stylePreset) {
           formData.append('stylePreset', formValues.stylePreset)
         }
@@ -594,7 +613,7 @@ const RouteCreatorPage = () => {
           characterId: point.characterId ? Number(point.characterId) : undefined,
           audioFile: point.hasCustomAudio && point.audioFile ? point.audioFile : undefined,
         }))
-        
+
         // Prepare points data (without File objects, they'll be added separately)
         const pointsDataWithoutFiles = pointsData.map((point) => ({
           latitude: point.latitude,
@@ -604,7 +623,7 @@ const RouteCreatorPage = () => {
           narrationText: point.narrationText,
           characterId: point.characterId,
         }))
-        
+
         // Always send points array, even if empty
         formData.append('points', JSON.stringify(pointsDataWithoutFiles))
 
@@ -654,28 +673,29 @@ const RouteCreatorPage = () => {
           audioFile: point.hasCustomAudio && point.audioFile ? point.audioFile : undefined,
         }))
 
-        const pathResponse = await createPath({
-          pathId,
-          title: formValues.title,
-          shortDescription: formValues.shortDescription,
-          longDescription: formValues.longDescription || undefined,
-          category: formValues.category,
-          difficulty: formValues.difficulty,
-          totalTimeMinutes,
-          distanceMeters,
-          thumbnailFile: formValues.thumbnailFile,
-          markerIconFile: formValues.makerIconFile instanceof File ? formValues.makerIconFile : undefined,
-          stylePreset: formValues.stylePreset || undefined,
-          points: pointsData,
-        })
+      // Create the path with all points in one request
+      const pathResponse = await createPath({
+        pathId,
+        title: formValues.title,
+        shortDescription: formValues.shortDescription,
+        longDescription: formValues.longDescription || undefined,
+        category: formValues.category,
+        difficulty: formValues.difficulty,
+        totalTimeMinutes,
+        distanceMeters,
+        thumbnailFile: formValues.thumbnailFile,
+        markerIconFile: formValues.makerIconFile instanceof File ? formValues.makerIconFile : undefined,
+        stylePreset: formValues.stylePreset || undefined,
+        points: pointsData,
+      })
 
-        if (!pathResponse.success || !pathResponse.data) {
-          setValidationError(pathResponse.error || "Nie udało się utworzyć trasy")
-          setIsSaving(false)
-          return
-        }
+      if (!pathResponse.success || !pathResponse.data) {
+        setValidationError(pathResponse.error || "Nie udało się utworzyć trasy")
+        setIsSaving(false)
+        return
+      }
 
-        navigate("/routes")
+      navigate("/routes")
       }
 
     } catch (error: any) {
@@ -699,31 +719,38 @@ const RouteCreatorPage = () => {
 
   return (
     <div className="flex h-[calc(100vh-64px)]">
-      <div className="flex-1 relative">
+      {/*Lewa strona - Mapa*/}
+      <div className="flex-1 relative overflow-hidden isolate">
         {mounted ? (
           <>
-            <MapComponent
-              points={points}
-              onMapClick={handleMapClick}
-              markerIconUrl={markerIconUrl}
-              onRouteDistanceChange={setRouteDistance}
-              onMarkerMove={handleMarkerMove}
-              onMarkerDelete={handleDeletePoint}
-              selectedPointId={selectedPoint?.id || null}
-            />
-            {currentStep === 1 && (
-              <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-40">
-                <div className="bg-white rounded-lg p-6 max-w-md mx-4 shadow-lg border border-gray-200">
-                  <div className="flex items-center gap-3 mb-3">
-                    <Icon icon="solar:map-point-bold-duotone" className="h-6 w-6 text-blue-600" />
-                    <h3 className="text-lg font-semibold text-gray-900">Mapa niedostępna</h3>
+            <div className="w-full h-full relative">
+              <MapComponent
+                points={points}
+                onMapClick={handleMapClick}
+                markerIconUrl={markerIconUrl}
+                onRouteDistanceChange={setRouteDistance}
+                onMarkerMove={handleMarkerMove}
+                onMarkerDelete={handleDeletePoint}
+                selectedPointId={selectedPoint?.id || null}
+              />
+              {/* Overlay na mapie gdy jesteśmy w kroku 1 */}
+              {currentStep === 1 && (
+                <>
+                  {/* Warstwa blur tylko na mapie */}
+                  <div className="absolute inset-0 bg-background/60 z-[50] pointer-events-none" style={{ backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }} />
+                  {/* Komunikat */}
+                  <div className="absolute inset-0 z-[51] flex items-center justify-center pointer-events-none">
+                    <div className="bg-background/95 backdrop-blur-md rounded-lg p-6 shadow-lg border border-border max-w-md mx-4 text-center">
+                      <Icon icon="solar:map-point-bold-duotone" className="h-12 w-12 mx-auto mb-4 text-primary" />
+                      <h3 className="text-lg font-semibold mb-2">Przejdź do kroku 2</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Aby dodać punkty na mapie, najpierw wypełnij podstawowe informacje o trasie i przejdź do kroku 2.
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-gray-600">
-                    W kroku 1 nie możesz korzystać z mapy. Przejdź do kroku 2, aby dodać punkty trasy.
-                  </p>
-                </div>
-              </div>
-            )}
+                </>
+              )}
+            </div>
           </>
         ) : (
           <div className="flex items-center justify-center h-full bg-muted">
@@ -734,38 +761,46 @@ const RouteCreatorPage = () => {
           </div>
         )}
 
-        {points.length >= 2 && (
-          <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-sm rounded-lg p-4 shadow-sm border border-neutral-200 z-1000">
+        {/* Route statistics overlay */}
+        {points.length >= 2 && currentStep === 2 && (
+          <div className="absolute bottom-4 right-4 bg-background/95 backdrop-blur-sm rounded-lg p-4 shadow-sm border border-border z-1000">
             <div className="space-y-4">
+
+              {/* Distance */}
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <Icon icon="solar:route-bold-duotone" className="h-4 w-4 text-neutral-700" />
-                  <span className="text-sm font-medium text-neutral-900">Długość trasy</span>
+                  <Icon icon="solar:route-bold-duotone" className="h-4 w-4 text-foreground" />
+                  <span className="text-sm font-medium text-foreground">Długość trasy</span>
                 </div>
                 <div className="text-lg font-semibold text-neutral-900 tracking-tight">
                   {routeDistance.toFixed(2)} km
                 </div>
               </div>
+
+              {/* Time */}
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <Icon icon="solar:clock-circle-bold-duotone" className="h-4 w-4 text-neutral-700" />
-                  <span className="text-sm font-medium text-neutral-900">Szacowany czas</span>
+                  <Icon icon="solar:clock-circle-bold-duotone" className="h-4 w-4 text-foreground" />
+                  <span className="text-sm font-medium text-foreground">Szacowany czas</span>
                 </div>
                 <div className="text-lg font-semibold text-neutral-900 tracking-tight">
                   {formattedTime}
                 </div>
               </div>
-              <div className="text-xs text-neutral-500 pt-2 border-t border-neutral-200">
+              <div className="text-xs text-muted-foreground pt-2 border-t border-border">
                 (przy prędkości 3 km/h)
               </div>
             </div>
+
           </div>
         )}
       </div>
 
 
-      <div className="w-1/3 border-r overflow-y-auto">
+      {/* Prawa strona - Panel kroków */}
+      <div className="w-1/3 border-r overflow-y-auto relative z-[100] bg-background">
         <div className="p-4 space-y-4">
+          {/* Header z krokami */}
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-xl font-bold">
@@ -787,7 +822,9 @@ const RouteCreatorPage = () => {
             </div>
           </div>
 
+          {/* Keep form mounted to preserve state */}
           <div className={currentStep === 1 ? "space-y-4" : "hidden"}>
+            {/* Krok 1 - Ustawienia ogólne */}
             <InformationCard
               title="Krok 1: Ustawienia ogólne"
               description="Wypełnij podstawowe informacje o trasie. Po ukończeniu przejdź do kroku 2, aby dodać punkty."
@@ -852,6 +889,7 @@ const RouteCreatorPage = () => {
             )}
           </div>
 
+          {/* Krok 2 - Punkty trasy */}
           {currentStep === 2 && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-4">
@@ -879,7 +917,7 @@ const RouteCreatorPage = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        const centerLat = 53.1235
+                        const centerLat = 53.1235 // Bydgoszcz
                         const centerLng = 18.0084
                         handleMapClick(centerLat, centerLng)
                       }}
@@ -970,6 +1008,7 @@ const RouteCreatorPage = () => {
                 </CardContent>
               </Card>
 
+              {/* Panel edycji punktu */}
               {selectedPoint && isEditing && (
                 <Card className="border-blue-200 bg-blue-50/30">
                   <CardHeader>

@@ -10,7 +10,7 @@ const CharactersListEmpty = () => {
         <User className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
         <p className="text-muted-foreground">Brak postaci. Stwórz pierwszą postać!</p>
         <Link to="/characters/create">
-          <Button className="mt-4 bg-blue-600 hover:bg-blue-700 text-white">
+          <Button className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground">
             Stwórz postać
           </Button>
         </Link>

@@ -111,13 +111,34 @@ export const createCharacter = async (data: CharacterCreateData): Promise<Charac
 }
 
 // Update character
-export const updateCharacter = async (id: number, data: CharacterUpdateData): Promise<CharacterType> => {
+export const updateCharacter = async (id: number, data: CharacterUpdateData & { avatarFile?: File }): Promise<CharacterType> => {
   try {
+    // If avatarFile is present, use FormData, otherwise use JSON
+    let body: FormData | string
+    let headers: HeadersInit
+
+    if (data.avatarFile) {
+      const formData = new FormData()
+      if (data.name) formData.append('name', data.name)
+      if (data.description) formData.append('description', data.description)
+      if (data.voicePreset) formData.append('voicePreset', data.voicePreset)
+      formData.append('avatarFile', data.avatarFile)
+      
+      body = formData
+      headers = {
+        'Accept': 'application/json',
+        // Don't set Content-Type - browser will set it with boundary for FormData
+      }
+    } else {
+      body = JSON.stringify(data)
+      headers = getAuthHeaders()
+    }
+
     const response = await fetch(`${ADMIN_CHARACTERS_ENDPOINT}/${id}`, {
-      method: "PUT",
-      headers: getAuthHeaders(),
+      method: "PATCH",
+      headers,
       credentials: "include",
-      body: JSON.stringify(data),
+      body,
     })
 
     if (!response.ok) {

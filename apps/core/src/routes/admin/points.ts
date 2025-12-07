@@ -37,6 +37,7 @@ export const adminPointsRoutes = new Elysia({ prefix: "/points" })
       };
     },
     {
+      auth: true,
       body: t.Object({
         orderIndex: t.Number(),
       }),
@@ -83,9 +84,9 @@ export const adminPointsRoutes = new Elysia({ prefix: "/points" })
     "/:id",
     async (context: any) => {
       const { params, body, user } = context;
-      // User is guaranteed to be defined by adminMiddleware.onBeforeHandle
-      
-      // Handle file uploads
+      if (!user) {
+        return { success: false, error: "Unauthorized" };
+      }
       const { audioFile, rewardIconFile, ...restBody } = body;
       let audioUrl: string | undefined;
       let rewardIconUrl: string | undefined;
@@ -158,6 +159,7 @@ export const adminPointsRoutes = new Elysia({ prefix: "/points" })
       };
     },
     {
+      auth: true,
       body: t.Object({
         // Accept strings for numbers since multipart/form-data sends everything as strings
         latitude: t.Optional(t.Union([t.Number(), t.String()])),

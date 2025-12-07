@@ -7,7 +7,7 @@ const Header = () => (
             <div className="flex h-16 items-center justify-between gap-4">
                 <Link to="/" className="flex items-center gap-1 hover:opacity-80 transition-opacity">
                     <img src="/logo.png" alt="BydGO Logo" className="h-6 w-6" />
-                    <span className="text-xl font-bold text-blue-500">BydGO Admin Panel</span>
+                    <span className="text-xl font-bold text-primary">BydGO Admin Panel</span>
                 </Link>
                 <Navigation/>
             </div>

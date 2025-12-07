@@ -5,7 +5,7 @@ type RouteStatisticsInfoCustomCardProps = {
     route: RoutesObjectType,
 }
 
-const DashboardCustomStatsCard = ({route}:RouteStatisticsInfoCustomCardProps) => {
+const RouteStatisticsInfoCustomCard = ({route}:RouteStatisticsInfoCustomCardProps) => {
 
     const description = route.shortDescription.length > 70 ? route.shortDescription.slice(0,70)+"..." : route.shortDescription
 
@@ -28,9 +28,9 @@ const DashboardCustomStatsCard = ({route}:RouteStatisticsInfoCustomCardProps) =>
                     </div>
                     <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Ilość przystanków:</span>
-                        <span className="font-medium text-green-600 ">
-                      {route.pointsCount ?? route.stops.length}
-                    </span>
+                        <span className="font-medium text-foreground">
+                            {route.stops.length}
+                        </span>
                     </div>
                     <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Trudność:</span>
@@ -44,4 +44,4 @@ const DashboardCustomStatsCard = ({route}:RouteStatisticsInfoCustomCardProps) =>
     )
 }
 
-export default DashboardCustomStatsCard
+export default RouteStatisticsInfoCustomCard
