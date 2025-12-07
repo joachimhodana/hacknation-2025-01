@@ -51,48 +51,40 @@ export const adminMiddleware = new Elysia({ name: "better-auth" })
         headers: request.headers,
       });
 
+
       if (!session?.user) {
         return {
           isAdmin: false,
-          user: null,
-          error: "Unauthorized - Please log in",
+          user: null
         };
       }
 
-      // Check if user is admin
       const [userData] = await db
         .select()
         .from(user)
         .where(eq(user.id, session.user.id))
         .limit(1);
 
-      if (!userData || userData.role !== "admin") {
-        return {
-          isAdmin: false,
-          user: userData,
-          error: "Forbidden - Admin access required",
-        };
-      }
-
       return {
-        isAdmin: true,
-        user: userData,
-        error: null,
+        isAdmin: userData?.role === "admin",
+        user: userData ?? null
       };
     } catch (error) {
       console.error("[adminMiddleware derive] Error getting session:", error);
       return {
         isAdmin: false,
-        user: null,
-        error: "Unauthorized - Invalid session",
+        user: null
       };
     }
   })
   .onBeforeHandle(({ isAdmin, error, request, user }) => {
     if (!isAdmin) {
-      return {
-        success: false,
-        error: error || "Forbidden - Admin access required",
-      };
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Forbidden - Admins only"
+        }),
+        { status: 403 }
+      );
     }
   });
