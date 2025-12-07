@@ -5,35 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1df88e0a-f3b6-4388-84f9-5fc94cf4eac0" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/components/FloatingProfileButton.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/components/FloatingProfileButton.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/components/ProfilePanel.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/components/ProfilePanel.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/components/ProtectedRoute.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/components/ProtectedRoute.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/components/shared/CustomCards/CustomInput/CustomFileInput.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/components/shared/CustomCards/CustomInput/CustomFileInput.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/components/shared/CustomCards/GeneralInfoCustomCard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/components/shared/CustomCards/GeneralInfoCustomCard.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/components/shared/CustomCards/InformationCard/InformationCard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/components/shared/CustomCards/InformationCard/InformationCard.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/components/shared/Header/Header.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/components/shared/Header/Header.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/components/shared/Header/Navigation.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/components/shared/Header/Navigation.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/components/shared/MapComponent/MapComponent.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/components/shared/MapComponent/MapComponent.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/components/ui/button.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/components/ui/button.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/CharacterCreator/CharacterCreatorPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/CharacterCreator/CharacterCreatorPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/CharactersList/CharactersListPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/CharactersList/CharactersListPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/CharactersPage/CharactersPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/CharactersPage/CharactersPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/CharactersPage/components/CharacterCard/CharacterCard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/CharactersPage/components/CharacterCard/CharacterCard.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/CharactersPage/components/CharactersListEmpty/CharactersListEmpty.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/CharactersPage/components/CharactersListEmpty/CharactersListEmpty.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/CharactersPage/components/CharactersListHeader/CharactersListHeader.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/CharactersPage/components/CharactersListHeader/CharactersListHeader.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/CharactersPage/components/CharactersListPagination/CharactersListPagination.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/CharactersPage/components/CharactersListPagination/CharactersListPagination.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/ContactSubmissions.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/ContactSubmissions.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/Dashboard/DashboardPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/Dashboard/DashboardPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/Dashboard/components/DashboardCustomStatsCard/DashboardCustomStatsCard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/Dashboard/components/DashboardCustomStatsCard/DashboardCustomStatsCard.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/Dashboard/components/DashboardRoutes/DashboardRoutes.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/Dashboard/components/DashboardRoutes/DashboardRoutes.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/Dashboard/components/DashboardStats/DashboardStats.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/Dashboard/components/DashboardStats/DashboardStats.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/Documentation.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/Documentation.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/Login/Login.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/Login/Login.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/MapComponent.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/MapComponent.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/RouteCreator/RouteCreatorPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/RouteCreator/RouteCreatorPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/RoutesList/RoutesListPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/RoutesList/RoutesListPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/core/src/routes/admin/paths.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/core/src/routes/admin/paths.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/core/src/routes/admin/points.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/core/src/routes/admin/points.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

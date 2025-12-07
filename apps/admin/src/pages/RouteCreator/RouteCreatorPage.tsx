@@ -579,17 +579,24 @@ const RouteCreatorPage = () => {
       const API_BASE_URL = import.meta.env.VITE_BETTER_AUTH_URL || "http://localhost:8080"
 
       if (editPathId) {
+        // Najpierw zapisz path bez punktów
         const formData = new FormData()
-        formData.append('title', formValues.title)
-        formData.append('shortDescription', formValues.shortDescription)
-        if (formValues.longDescription) {
-          formData.append('longDescription', formValues.longDescription)
-        }
-        formData.append('category', formValues.category)
-        formData.append('difficulty', formValues.difficulty)
+        
+        // Zawsze wysyłaj wszystkie pola, nawet jeśli są puste
+        formData.append('title', formValues.title || '')
+        formData.append('shortDescription', formValues.shortDescription || '')
+        formData.append('longDescription', formValues.longDescription || '')
+        formData.append('category', formValues.category || '')
+        formData.append('difficulty', formValues.difficulty || '')
         formData.append('totalTimeMinutes', totalTimeMinutes.toString())
         formData.append('distanceMeters', distanceMeters.toString())
 
+        // Wysyłaj stylePreset zawsze, nawet jeśli jest pusty
+        if (formValues.stylePreset !== undefined) {
+          formData.append('stylePreset', formValues.stylePreset || '')
+        }
+
+        // Pliki wysyłaj tylko jeśli są nowe (instanceof File)
         if (formValues.thumbnailFile instanceof File) {
           formData.append('thumbnailFile', formValues.thumbnailFile)
         }
@@ -598,43 +605,21 @@ const RouteCreatorPage = () => {
           formData.append('markerIconFile', formValues.makerIconFile)
         }
 
-        if (formValues.stylePreset) {
-          formData.append('stylePreset', formValues.stylePreset)
-        }
-
-        // Add points data for editing - always send points, even if empty array
-        const sortedPoints = [...points].sort((a, b) => a.order - b.order)
-        const pointsData = sortedPoints.map((point) => ({
-          latitude: point.lat,
-          longitude: point.lng,
-          radiusMeters: 50,
-          locationLabel: point.name,
-          narrationText: point.dialog || point.description || "",
-          characterId: point.characterId ? Number(point.characterId) : undefined,
-          audioFile: point.hasCustomAudio && point.audioFile ? point.audioFile : undefined,
-        }))
-
-        // Prepare points data (without File objects, they'll be added separately)
-        const pointsDataWithoutFiles = pointsData.map((point) => ({
-          latitude: point.latitude,
-          longitude: point.longitude,
-          radiusMeters: point.radiusMeters,
-          locationLabel: point.locationLabel,
-          narrationText: point.narrationText,
-          characterId: point.characterId,
-        }))
-
-        // Always send points array, even if empty
-        formData.append('points', JSON.stringify(pointsDataWithoutFiles))
-
-        // Add audio files with indices (audioFile_0, audioFile_1, etc.)
-        pointsData.forEach((point, index) => {
-          if (point.audioFile) {
-            formData.append(`audioFile_${index}`, point.audioFile)
-          }
+        // Wyślij pustą tablicę punktów, aby usunąć wszystkie istniejące powiązania
+        formData.append('points', JSON.stringify([]))
+        
+        console.log('Updating route with data:', {
+          title: formValues.title,
+          shortDescription: formValues.shortDescription,
+          longDescription: formValues.longDescription,
+          category: formValues.category,
+          difficulty: formValues.difficulty,
+          stylePreset: formValues.stylePreset,
+          hasThumbnailFile: formValues.thumbnailFile instanceof File,
+          hasMakerIconFile: formValues.makerIconFile instanceof File,
         })
 
-        const response = await fetch(`${API_BASE_URL}/admin/paths/${editPathId}`, {
+        const pathResponse = await fetch(`${API_BASE_URL}/admin/paths/${editPathId}`, {
           method: 'PATCH',
           headers: {
             'Accept': 'application/json',
@@ -643,12 +628,148 @@ const RouteCreatorPage = () => {
           body: formData,
         })
 
-        const result = await response.json()
+        const pathResult = await pathResponse.json()
 
-        if (!result.success || !result.data) {
-          setValidationError(result.error || "Nie udało się zaktualizować trasy")
+        if (!pathResult.success || !pathResult.data) {
+          setValidationError(pathResult.error || "Nie udało się zaktualizować trasy")
           setIsSaving(false)
           return
+        }
+
+        // Pobierz numeric ID path (nie pathId)
+        const pathNumericId = pathResult.data.id
+
+        // Teraz zapisz każdy punkt osobno przez pętlę i PATCH
+        const sortedPoints = [...points].sort((a, b) => a.order - b.order)
+        
+        for (let index = 0; index < sortedPoints.length; index++) {
+          const point = sortedPoints[index]
+          const isExistingPoint = point.id && !isNaN(Number(point.id))
+          const pointId = isExistingPoint ? Number(point.id) : null
+
+          // Przygotuj dane punktu
+          const pointFormData = new FormData()
+          pointFormData.append('latitude', point.lat.toString())
+          pointFormData.append('longitude', point.lng.toString())
+          pointFormData.append('radiusMeters', '50')
+          pointFormData.append('locationLabel', point.name)
+          pointFormData.append('narrationText', point.dialog || point.description || "")
+          
+          if (point.characterId) {
+            pointFormData.append('characterId', point.characterId.toString())
+          }
+
+          if (point.hasCustomAudio && point.audioFile) {
+            pointFormData.append('audioFile', point.audioFile)
+          }
+
+          let savedPointId: number
+
+          if (isExistingPoint && pointId) {
+            // Aktualizuj istniejący punkt przez PATCH
+            const patchResponse = await fetch(`${API_BASE_URL}/admin/points/${pointId}`, {
+              method: 'PATCH',
+              headers: {
+                'Accept': 'application/json',
+              },
+              credentials: 'include',
+              body: pointFormData,
+            })
+
+            const patchResult = await patchResponse.json()
+            if (!patchResult.success || !patchResult.data) {
+              throw new Error(patchResult.error || `Nie udało się zaktualizować punktu ${index + 1}`)
+            }
+            savedPointId = patchResult.data.id
+          } else {
+            // Dla nowych punktów - utwórz przez PATCH path z jednym punktem
+            const newPointFormData = new FormData()
+            newPointFormData.append('points', JSON.stringify([{
+              latitude: point.lat,
+              longitude: point.lng,
+              radiusMeters: 50,
+              locationLabel: point.name,
+              narrationText: point.dialog || point.description || "",
+              characterId: point.characterId ? Number(point.characterId) : null,
+            }]))
+            
+            if (point.hasCustomAudio && point.audioFile) {
+              newPointFormData.append('audioFile_0', point.audioFile)
+            }
+
+            const createPointResponse = await fetch(`${API_BASE_URL}/admin/paths/${editPathId}`, {
+              method: 'PATCH',
+              headers: {
+                'Accept': 'application/json',
+              },
+              credentials: 'include',
+              body: newPointFormData,
+            })
+
+            const createPointResult = await createPointResponse.json()
+            if (!createPointResult.success) {
+              throw new Error(createPointResult.error || `Nie udało się utworzyć punktu ${index + 1}`)
+            }
+
+            // Pobierz ID nowo utworzonego punktu - musimy pobrać path z punktami
+            const getPathResponse = await fetch(`${API_BASE_URL}/admin/paths/${editPathId}`, {
+              method: 'GET',
+              headers: {
+                'Accept': 'application/json',
+              },
+              credentials: 'include',
+            })
+
+            const getPathResult = await getPathResponse.json()
+            if (!getPathResult.success || !getPathResult.data?.points) {
+              throw new Error("Nie udało się pobrać ID nowego punktu")
+            }
+
+            // Znajdź ostatni punkt (ten który właśnie utworzyliśmy)
+            const pathPoints = getPathResult.data.points
+            const newPoint = pathPoints[pathPoints.length - 1]
+            savedPointId = newPoint.point?.id || newPoint.id
+
+            // Teraz zaktualizuj punkt przez PATCH z pełnymi danymi
+            const updateNewPointResponse = await fetch(`${API_BASE_URL}/admin/points/${savedPointId}`, {
+              method: 'PATCH',
+              headers: {
+                'Accept': 'application/json',
+              },
+              credentials: 'include',
+              body: pointFormData,
+            })
+
+            const updateNewPointResult = await updateNewPointResponse.json()
+            if (!updateNewPointResult.success || !updateNewPointResult.data) {
+              throw new Error(updateNewPointResult.error || `Nie udało się zaktualizować nowego punktu ${index + 1}`)
+            }
+          }
+
+          // Usuń punkt z path (jeśli był już dodany)
+          await fetch(`${API_BASE_URL}/admin/points/${savedPointId}/remove-from-path/${pathNumericId}`, {
+            method: 'DELETE',
+            headers: {
+              'Accept': 'application/json',
+            },
+            credentials: 'include',
+          })
+
+          // Dodaj punkt do path z odpowiednim orderIndex
+          const addToPathResponse = await fetch(`${API_BASE_URL}/admin/points/${savedPointId}/add-to-path/${pathNumericId}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({ orderIndex: index }),
+          })
+
+          const addToPathResult = await addToPathResponse.json()
+          if (!addToPathResult.success) {
+            throw new Error(addToPathResult.error || `Nie udało się dodać punktu ${index + 1} do trasy`)
+          }
         }
 
         navigate("/routes")

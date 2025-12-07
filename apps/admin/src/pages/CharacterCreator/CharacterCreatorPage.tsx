@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { useSearchParams, useNavigate } from "react-router-dom"
 import { yupResolver } from "@hookform/resolvers/yup"
@@ -13,8 +13,7 @@ import InformationCard from "@/components/shared/CustomCards/InformationCard/Inf
 import { Form } from "@/components/ui/form.tsx"
 import CustomUsualInput from "@/components/shared/CustomCards/CustomInput/CustomUsualInput.tsx"
 import CustomFileInput from "@/components/shared/CustomCards/CustomInput/CustomFileInput.tsx"
-import type { CharacterType } from "@/types/CharactersType.tsx"
-import { useNavigate } from "react-router-dom"
+import { getCharacterById, createCharacter, updateCharacter } from "@/services/charactersApi.ts"
 
 interface DefaultPosition {
   latitude: number
@@ -22,55 +21,11 @@ interface DefaultPosition {
   description: string
 }
 
-type CharacterFormData = {
-  name: string
-  avatarFile: File | null
-}
-
-// Mock data - w prawdziwej aplikacji dane będą z API
-// Używamy tego samego mock data co w CharactersListPage
-const getMockCharacters = (): CharacterType[] => [
-  {
-    id: "1",
-    name: "Historyk",
-    avatar: null as any,
-    createdBy: "admin",
-    createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-    lastModifiedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-    deafultPosition: {
-      latitude: 52.2297,
-      longitude: 21.0122,
-      description: "Muzeum Historii"
-    }
-  },
-  {
-    id: "2",
-    name: "Przewodnik",
-    avatar: null as any,
-    createdBy: "admin",
-    createdAt: new Date(Date.now() - 86400000 * 10).toISOString(),
-    lastModifiedAt: new Date(Date.now() - 86400000 * 1).toISOString(),
-    deafultPosition: {
-      latitude: 52.2300,
-      longitude: 21.0130,
-      description: "Centrum miasta"
-    }
-  },
-  {
-    id: "3",
-    name: "Mieszkaniec",
-    avatar: null as any,
-    createdBy: "admin",
-    createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-    lastModifiedAt: new Date(Date.now() - 3600000).toISOString(),
-    deafultPosition: null as any,
-  },
-]
-
 // Typ dla formularza
 interface CharacterFormData {
   name: string
   avatarFile: File | null
+  description?: string
 }
 
 // Schemat walidacji Yup - avatar jest opcjonalny (może być null przy edycji)
@@ -121,6 +76,8 @@ const CharacterCreatorPage = () => {
 
   // Ładowanie danych postaci do edycji
   useEffect(() => {
+    let isMounted = true
+
     const loadCharacter = async () => {
       if (editCharacterId) {
         try {
@@ -129,11 +86,15 @@ const CharacterCreatorPage = () => {
 
           if (isNaN(characterId)) {
             console.error("Invalid character ID:", editCharacterId)
-            setValidationError("Nieprawidłowe ID postaci")
+            if (isMounted) {
+              setValidationError("Nieprawidłowe ID postaci")
+            }
             return
           }
 
           const character = await getCharacterById(characterId)
+
+          if (!isMounted) return
 
           // Wypełnij formularz
           form.reset({
@@ -142,28 +103,6 @@ const CharacterCreatorPage = () => {
             description: character.description || "",
           })
 
-          // Ustaw pozycję domyślną jeśli istnieje
-          if (character.deafultPosition) {
-            setDefaultPosition({
-              latitude: character.deafultPosition.latitude,
-              longitude: character.deafultPosition.longitude,
-              description: character.deafultPosition.description || "",
-            })
-            // Przejdź do kroku 2 jeśli jest pozycja
-            setCurrentStep(2)
-          } else {
-            setDefaultPosition(null)
-          }
-        }, 100)
-      }
-    } else {
-      // Reset formularza jeśli nie edytujemy
-      form.reset({
-        name: "",
-        avatarFile: null,
-      })
-      setDefaultPosition(null)
-      setCurrentStep(1)
           // TODO: Jeśli API zwraca pozycję domyślną, ustaw ją tutaj
           // Na razie ustawiamy null, ponieważ CharacterType nie ma tego pola
           setDefaultPosition(null)
@@ -173,15 +112,20 @@ const CharacterCreatorPage = () => {
           form.clearErrors()
         } catch (error) {
           console.error("Error loading character:", error)
-          setValidationError("Nie udało się załadować danych postaci")
+          if (isMounted) {
+            setValidationError("Nie udało się załadować danych postaci")
+          }
         } finally {
-          setIsLoadingCharacter(false)
+          if (isMounted) {
+            setIsLoadingCharacter(false)
+          }
         }
       } else {
         // Reset formularza jeśli nie edytujemy
         form.reset({
           name: "",
           avatarFile: null,
+          description: "",
         })
         setDefaultPosition(null)
         setCurrentStep(1)
@@ -189,7 +133,12 @@ const CharacterCreatorPage = () => {
     }
 
     loadCharacter()
-  }, [editCharacterId, form])
+
+    return () => {
+      isMounted = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editCharacterId])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -233,15 +182,19 @@ const CharacterCreatorPage = () => {
 
   const handleSaveCharacter = async () => {
     setValidationError(null)
+    setIsSaving(true)
 
-    const isValid = await form.trigger()
-    if (!isValid) {
-      setValidationError("Proszę wypełnić wszystkie wymagane pola w ustawieniach ogólnych. Sprawdź komunikaty błędów pod polami.")
-      setCurrentStep(1)
-      return
-    }
+    try {
+      const isValid = await form.trigger()
+      if (!isValid) {
+        setValidationError("Proszę wypełnić wszystkie wymagane pola w ustawieniach ogólnych. Sprawdź komunikaty błędów pod polami.")
+        setCurrentStep(1)
+        return
+      }
 
+      // Pobierz aktualne wartości z formularza - używamy getValues() zamiast watch() dla aktualnych wartości
       const formValues = form.getValues()
+      console.log('Form values before save:', formValues)
 
       // Sprawdź czy avatar jest wymagany (tylko dla nowych postaci)
       if (!editCharacterId && !formValues.avatarFile) {
@@ -258,12 +211,23 @@ const CharacterCreatorPage = () => {
           return
         }
 
-        await updateCharacter(characterId, {
+        // Przygotuj dane do aktualizacji - zawsze wysyłaj name
+        const updateData: { name: string; description?: string; avatarFile?: File } = {
           name: formValues.name,
-          avatarFile: formValues.avatarFile || undefined,
-          // TODO: defaultPosition nie jest obecnie obsługiwane w API
-          // Można dodać to później gdy API będzie wspierać pozycję domyślną
-        })
+        }
+        
+        // Dodaj description tylko jeśli nie jest pusty
+        if (formValues.description && formValues.description.trim()) {
+          updateData.description = formValues.description
+        }
+        
+        // Dodaj avatarFile tylko jeśli został zmieniony (jest nowy plik)
+        if (formValues.avatarFile instanceof File) {
+          updateData.avatarFile = formValues.avatarFile
+        }
+
+        console.log('Updating character with data:', updateData)
+        await updateCharacter(characterId, updateData)
 
         // Przekieruj do listy postaci po udanej aktualizacji
         navigate("/characters")
@@ -271,6 +235,7 @@ const CharacterCreatorPage = () => {
         // Tworzenie nowej postaci
         await createCharacter({
           name: formValues.name,
+          description: formValues.description || '',
           avatarFile: formValues.avatarFile || undefined,
           // TODO: defaultPosition nie jest obecnie obsługiwane w API
           // Można dodać to później gdy API będzie wspierać pozycję domyślną
@@ -279,9 +244,10 @@ const CharacterCreatorPage = () => {
         // Przekieruj do listy postaci po udanym utworzeniu
         navigate("/characters")
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error saving character:", error)
-      setValidationError(error?.message || "Nie udało się zapisać postaci. Spróbuj ponownie.")
+      const errorMessage = error instanceof Error ? error.message : "Nie udało się zapisać postaci. Spróbuj ponownie."
+      setValidationError(errorMessage)
     } finally {
       setIsSaving(false)
     }
@@ -323,6 +289,10 @@ const CharacterCreatorPage = () => {
                           lat: defaultPosition.latitude,
                           lng: defaultPosition.longitude,
                           order: 1,
+                          hasCustomAudio: false,
+                          audioFile: null,
+                          characterId: null,
+                          dialog: "",
                         },
                       ]
                     : []
