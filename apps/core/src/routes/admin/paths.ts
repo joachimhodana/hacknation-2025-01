@@ -38,13 +38,13 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         const mimeType = body.thumbnailFile.type;
         const extension = mimeType === "image/jpeg" ? ".jpg" : ".png";
         const fileName = `${thumbnailUUID}${extension}`;
-        const filePath = join(process.cwd(), "resources", "thumbnails", fileName);
+        const filePath = join(process.cwd(), "public", "resources", "thumbnails", fileName);
         
         // Ensure directory exists
-        await mkdir(join(process.cwd(), "resources", "thumbnails"), { recursive: true });
+        await mkdir(join(process.cwd(),"public", "resources", "thumbnails"), { recursive: true });
         
         await Bun.write(filePath, thumbnailBuffer);
-        thumbnailUrl = `/resources/thumbnails/${fileName}`;
+        thumbnailUrl = `public/resources/thumbnails/${fileName}`;
       }
 
       // Step 2: Save marker icon file (if provided)
@@ -56,13 +56,13 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         const mimeType = body.markerIconFile.type;
         const extension = mimeType === "image/jpeg" ? ".jpg" : ".png";
         const fileName = `${markerIconUUID}${extension}`;
-        const filePath = join(process.cwd(), "resources", "marker_icons", fileName);
+        const filePath = join(process.cwd(), "public", "resources", "marker_icons", fileName);
         
         // Ensure directory exists
-        await mkdir(join(process.cwd(), "resources", "marker_icons"), { recursive: true });
+        await mkdir(join(process.cwd(), "public", "resources", "marker_icons"), { recursive: true });
         
         await Bun.write(filePath, markerIconBuffer);
-        markerIconUrl = `/resources/marker_icons/${fileName}`;
+        markerIconUrl = `public/resources/marker_icons/${fileName}`;
       }
 
       // Step 3: Create path with basic info
@@ -173,9 +173,9 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
           const fileName = `${audioUUID}${extension}`;
           const filePath = join(process.cwd(), "resources", "audio", fileName);
           
-          await mkdir(join(process.cwd(), "resources", "audio"), { recursive: true });
+          await mkdir(join(process.cwd(),"public", "resources", "audio"), { recursive: true });
           await Bun.write(filePath, audioBuffer);
-          audioUrl = `/resources/audio/${fileName}`;
+          audioUrl = `public/resources/audio/${fileName}`;
         }
 
         // Create point
@@ -279,7 +279,7 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
     const [path] = await db
       .select()
       .from(paths)
-      .where(eq(paths.id, Number(params.id)))
+      .where(eq(paths.pathId, params.id))
       .limit(1);
 
     if (!path) {
@@ -297,7 +297,7 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
       })
       .from(pathPoints)
       .innerJoin(points, eq(pathPoints.pointId, points.id))
-      .where(eq(pathPoints.pathId, Number(params.id)))
+      .where(eq(pathPoints.pathId, path.id))
       .orderBy(pathPoints.orderIndex);
 
     return {
@@ -325,9 +325,9 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         const extension = mimeType === "image/jpeg" ? ".jpg" : ".png";
         const fileName = `${thumbnailUUID}${extension}`;
         const filePath = join(process.cwd(), "resources", "thumbnails", fileName);
-        await mkdir(join(process.cwd(), "resources", "thumbnails"), { recursive: true });
+        await mkdir(join(process.cwd(),"public", "resources", "thumbnails"), { recursive: true });
         await Bun.write(filePath, thumbnailBuffer);
-        thumbnailUrl = `/resources/thumbnails/${fileName}`;
+        thumbnailUrl = `public/resources/thumbnails/${fileName}`;
       }
 
       // Handle marker icon file update
@@ -339,9 +339,9 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         const extension = mimeType === "image/jpeg" ? ".jpg" : ".png";
         const fileName = `${markerIconUUID}${extension}`;
         const filePath = join(process.cwd(), "resources", "marker_icons", fileName);
-        await mkdir(join(process.cwd(), "resources", "marker_icons"), { recursive: true });
+        await mkdir(join(process.cwd(), "public","resources", "marker_icons"), { recursive: true });
         await Bun.write(filePath, markerIconBuffer);
-        markerIconUrl = `/resources/marker_icons/${fileName}`;
+        markerIconUrl = `public/resources/marker_icons/${fileName}`;
       }
 
       // Prepare update object, removing files and handling numeric fields
@@ -378,7 +378,7 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
       const [updatedPath] = await db
         .update(paths)
         .set(updateData)
-        .where(and(eq(paths.id, Number(params.id)), eq(paths.createdBy, user.id)))
+        .where(and(eq(paths.pathId, params.id), eq(paths.createdBy, user.id)))
         .returning();
 
       if (!updatedPath) {
@@ -425,7 +425,7 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
     const [deletedPath] = await db
       .delete(paths)
       .where(
-        and(eq(paths.id, Number(params.id)), eq(paths.createdBy, user.id))
+        and(eq(paths.pathId, params.id), eq(paths.createdBy, user.id))
       )
       .returning();
 
@@ -452,7 +452,7 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
       .from(paths)
       .where(
         and(
-          eq(paths.id, Number(params.id)),
+          eq(paths.pathId, params.id),
           eq(paths.createdBy, user.id)
         )
       )
@@ -472,7 +472,7 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
       })
       .where(
         and(
-          eq(paths.id, Number(params.id)),
+          eq(paths.pathId, params.id),
           eq(paths.createdBy, user.id)
         )
       )
