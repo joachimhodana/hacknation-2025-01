@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useDeviceDetection } from "@/hooks/use-device-detection";
+import { authClient } from "@/lib/auth-client";
 
 export type MapProps = {
   lat?: number;
@@ -9,14 +10,29 @@ export type MapProps = {
 
 export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
   const { isMobile } = useDeviceDetection();
+  const { data: session } = authClient.useSession();
   // Adjust default zoom based on device type
   const defaultZoom = useMemo(() => zoom ?? (isMobile ? 15 : 13), [zoom, isMobile]);
   const mapRef = useRef<HTMLDivElement>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const mapInstanceRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
+  const watchIdRef = useRef<number | null>(null);
+  
+  // Get user info for avatar
+  const user = session?.user;
+  const userName = user?.name as string | undefined;
+  const userInitials = userName
+    ? userName
+        .split(" ")
+        .map((n: string) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    : "U";
 
-  // Get user location
+  // Watch user location in real-time
   useEffect(() => {
     if (typeof window === "undefined" || !navigator.geolocation) {
       // Fallback to provided coordinates or default
@@ -29,6 +45,7 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
       return;
     }
 
+    // Get initial position
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setUserLocation({
@@ -47,6 +64,32 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
+
+    // Watch position changes in real-time
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (position) => {
+        const newLocation = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+        setUserLocation(newLocation);
+      },
+      (error) => {
+        console.error("Error watching location:", error);
+      },
+      { 
+        enableHighAccuracy: true, 
+        timeout: 5000, 
+        maximumAge: 1000 
+      }
+    );
+
+    // Cleanup watch on unmount
+    return () => {
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+      }
+    };
   }, [lat, lng]);
 
   useEffect(() => {
@@ -123,10 +166,27 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
           map.setPaintProperty("osm-layer", "raster-saturation", 0.1); // Very subtle saturation increase
         }
 
-        // Add subtle marker for user location
-        new maplibregl.Marker({
-          color: "#9BCF7F",
-          scale: 1.0,
+        // Create custom marker with user avatar
+        const markerElement = document.createElement("div");
+        markerElement.style.width = "48px";
+        markerElement.style.height = "48px";
+        markerElement.style.borderRadius = "50%";
+        markerElement.style.backgroundColor = "#9BCF7F";
+        markerElement.style.border = "3px solid white";
+        markerElement.style.boxShadow = "0 2px 8px rgba(0,0,0,0.3)";
+        markerElement.style.display = "flex";
+        markerElement.style.alignItems = "center";
+        markerElement.style.justifyContent = "center";
+        markerElement.style.fontSize = "18px";
+        markerElement.style.fontWeight = "bold";
+        markerElement.style.color = "white";
+        markerElement.style.cursor = "pointer";
+        markerElement.textContent = userInitials;
+        
+        // Add subtle marker for user location with avatar
+        markerRef.current = new maplibregl.Marker({
+          element: markerElement,
+          anchor: "center",
         })
           .setLngLat([userLocation.lng, userLocation.lat])
           .addTo(map);
@@ -151,14 +211,20 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
     });
   }, [userLocation, defaultZoom]);
 
-  // Update map when location changes
+  // Update map and marker when location changes
   useEffect(() => {
     if (mapInstanceRef.current && isLoaded && userLocation) {
-      mapInstanceRef.current.flyTo({
+      // Update marker position
+      if (markerRef.current) {
+        markerRef.current.setLngLat([userLocation.lng, userLocation.lat]);
+      }
+      
+      // Smoothly center map on user location
+      mapInstanceRef.current.easeTo({
         center: [userLocation.lng, userLocation.lat],
         zoom: defaultZoom,
         pitch: 45, // Maintain 3D view
-        duration: 1000,
+        duration: 500, // Faster update for real-time tracking
       });
     }
   }, [userLocation, defaultZoom, isLoaded]);
