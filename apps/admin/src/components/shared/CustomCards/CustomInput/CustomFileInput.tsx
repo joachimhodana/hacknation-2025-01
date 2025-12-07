@@ -110,7 +110,17 @@ const CustomFileInput = ({name, label, description="", accept="image/*", existin
                                                 alt="Existing" 
                                                 className="max-w-full h-32 object-contain mx-auto rounded-md"
                                                 onError={(e) => {
-                                                    (e.target as HTMLImageElement).style.display = 'none';
+                                                    console.error('Failed to load image from URL:', existingImageUrl, 'Original URL:', existingUrl);
+                                                    // Show error message instead of hiding
+                                                    const img = e.target as HTMLImageElement;
+                                                    img.style.display = 'none';
+                                                    const parent = img.parentElement;
+                                                    if (parent) {
+                                                        const errorDiv = document.createElement('div');
+                                                        errorDiv.className = 'text-xs text-red-500 text-center p-2';
+                                                        errorDiv.textContent = 'Nie można załadować obrazu';
+                                                        parent.appendChild(errorDiv);
+                                                    }
                                                 }}
                                             />
                                         </div>
