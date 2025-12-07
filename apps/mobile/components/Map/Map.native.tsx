@@ -6,7 +6,6 @@ import {
   View,
   TouchableOpacity,
   Text,
-  Appearance,
   Image,
   Linking,
 } from "react-native";
@@ -65,8 +64,6 @@ type OsrmStep = {
 };
 
 export const Map: React.FC = () => {
-  const colorScheme = Appearance.getColorScheme();
-  const isDark = colorScheme === "dark";
   const { data: session } = authClient.useSession();
   const insets = useSafeAreaInsets();
 
@@ -311,8 +308,8 @@ export const Map: React.FC = () => {
           },
           (location) => {
             const updated = {
-              lat: location.coords.latitude,
-              lng: location.coords.longitude,
+          lat: location.coords.latitude,
+          lng: location.coords.longitude,
             };
             setUserLocation(updated);
           },
@@ -398,10 +395,10 @@ export const Map: React.FC = () => {
       const newCam: Camera = hasZoom
         ? {
             ...cam,
-            center: {
-              latitude: userLocation.lat,
-              longitude: userLocation.lng,
-            },
+          center: {
+            latitude: userLocation.lat,
+            longitude: userLocation.lng,
+          },
             zoom: clampZoom((cam.zoom as number) || 16),
           }
         : {
@@ -419,12 +416,12 @@ export const Map: React.FC = () => {
     }
   };
 
-  const openInAppleMaps = () => {
+  const openInGoogleMaps = () => {
     if (!routePins.length) return;
     const dest = routePins[routePins.length - 1];
-    const url = `http://maps.apple.com/?daddr=${dest.lat},${dest.lng}&dirflg=w`;
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${dest.lat},${dest.lng}&travelmode=walking`;
     Linking.openURL(url).catch((err) =>
-      console.log("Error opening Apple Maps", err),
+      console.log("Error opening Google Maps", err),
     );
   };
 
@@ -440,13 +437,13 @@ export const Map: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        provider={Platform.OS === "android" ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
-        initialRegion={{
-          latitude: userLocation.lat,
-          longitude: userLocation.lng,
+    <MapView
+      ref={mapRef}
+      style={styles.map}
+      provider={Platform.OS === "android" ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
+      initialRegion={{
+        latitude: userLocation.lat,
+        longitude: userLocation.lng,
           latitudeDelta: 0.01,
           longitudeDelta: 0.0045,
         }}
@@ -461,13 +458,6 @@ export const Map: React.FC = () => {
         rotateEnabled={false}
         pitchEnabled={false}
         mapType="standard"
-        customMapStyle={
-          Platform.OS === "android"
-            ? isDark
-              ? darkStyle
-              : subtleStyle
-            : undefined
-        }
       >
         {/* OSRM Polyline pomiędzy pinami */}
         {routeCoordinates.length >= 2 && (
@@ -579,13 +569,13 @@ export const Map: React.FC = () => {
             </View>
           </View>
 
-          {/* Apple Maps CTA */}
+          {/* Google Maps CTA */}
           <View style={styles.appleRow}>
             <TouchableOpacity
               style={styles.appleButton}
-              onPress={openInAppleMaps}
+              onPress={openInGoogleMaps}
             >
-              <Text style={styles.appleButtonText}>Otwórz w Apple Maps</Text>
+              <Text style={styles.appleButtonText}>Otwórz w Google Maps</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -820,15 +810,5 @@ const styles = StyleSheet.create({
     color: COLORS.red,
   },
 });
-
-// Android styles
-const darkStyle = [
-  { elementType: "geometry", stylers: [{ color: "#1E1E1E" }] },
-  { featureType: "poi", stylers: [{ visibility: "off" }] },
-];
-
-const subtleStyle = [
-  { featureType: "poi", stylers: [{ visibility: "off" }] },
-];
 
 export default Map;

@@ -10,6 +10,8 @@ import {
   Animated,
   Easing,
   ActivityIndicator,
+  Image,
+  ImageSourcePropType,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -17,6 +19,47 @@ import { fetchUserStats, type CollectedItem } from "@/lib/api-client";
 import Navbar from "@/components/Navbar";
 import { PointsBadge } from "@/components/PointsBadge";
 import { authClient } from "@/lib/auth-client";
+
+type Reward = {
+  id: string;
+  title: string;
+  description: string;
+  imageSource?: ImageSourcePropType; // Lokalny obraz dla odkrytych nagród
+  discovered: boolean;
+};
+
+// 24 nagrody - 3 odkryte, 21 zakrytych
+const ALL_REWARDS: Reward[] = [
+  // 3 odkryte nagrody (z obrazkami)
+  {
+    id: "reward-1",
+    title: "Marian Rejewski",
+    description: "Kryptolog i matematyk",
+    imageSource: require("@/assets/images/rewards/rejewski.png"),
+    discovered: true,
+  },
+  {
+    id: "reward-2",
+    title: "Święcicki",
+    description: "Historyczna postać",
+    imageSource: require("@/assets/images/rewards/swiecicki.png"),
+    discovered: true,
+  },
+  {
+    id: "reward-3",
+    title: "Przechodzący przez rzekę",
+    description: "Historyczna scena",
+    imageSource: require("@/assets/images/rewards/przechodzacy_przez_rzeke.png"),
+    discovered: true,
+  },
+  // 21 zakrytych nagród
+  ...Array.from({ length: 21 }, (_, i) => ({
+    id: `reward-${i + 4}`,
+    title: `Nagroda ${i + 4}`,
+    description: "Odkryj, aby zobaczyć szczegóły",
+    discovered: false,
+  })),
+];
 
 const COLORS = {
   red: "#ED1C24",
@@ -34,9 +77,11 @@ const CollectionsScreen: React.FC = () => {
   const { data: session, isPending } = authClient.useSession();
   const [allItems, setAllItems] = useState<CollectedItem[]>([]);
   const [itemsLoading, setItemsLoading] = useState(true);
+  const [rewards] = useState<Reward[]>(ALL_REWARDS);
 
   // Modal state - must be declared before any conditional returns
   const [selectedItem, setSelectedItem] = useState<CollectedItem | null>(null);
+  const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
@@ -140,6 +185,13 @@ const CollectionsScreen: React.FC = () => {
     setIsOpen(true);
   };
 
+  const openRewardModal = (reward: Reward) => {
+    if (!reward.discovered) return; // Nie otwieraj zakrytych nagród
+    setSelectedReward(reward);
+    setIsMounted(true);
+    setIsOpen(true);
+  };
+
   const closeModal = () => {
     setIsOpen(false);
   };
@@ -192,53 +244,43 @@ const CollectionsScreen: React.FC = () => {
           )}
         </View>
 
-        {/* Grid: 3 in a row, includes collected + missing */}
-        {allItems.length > 0 ? (
-          <View style={styles.itemsGrid}>
-            {allItems.map((item) => {
-              const isCollected = item.collected;
-              const isActive = selectedItem?.id === item.id && isOpen;
+        {/* Grid nagród: 3 w rzędzie, 24 nagrody */}
+        <View style={styles.rewardsGrid}>
+          {rewards.map((reward) => {
+            const isDiscovered = reward.discovered;
+            const isActive = selectedReward?.id === reward.id && isOpen;
 
             return (
               <TouchableOpacity
-                key={item.id}
-                style={styles.itemTile}
-                onPress={() => openModal(item)}
+                key={reward.id}
+                style={styles.rewardTile}
+                onPress={() => openRewardModal(reward)}
+                disabled={!isDiscovered}
+                activeOpacity={isDiscovered ? 0.7 : 1}
               >
                 <View
                   style={[
-                    styles.itemTileInner,
-                    !isCollected && styles.itemTileInnerMissing,
-                    isCollected && isActive && styles.itemTileInnerActiveCollected,
+                    styles.rewardTileInner,
+                    !isDiscovered && styles.rewardTileInnerLocked,
+                    isDiscovered && isActive && styles.rewardTileInnerActive,
                   ]}
                 >
-                  <Text
-                    style={[
-                      styles.itemTileEmoji,
-                      !isCollected && styles.itemTileEmojiMissing,
-                    ]}
-                  >
-                    {item.emoji}
-                  </Text>
+                  {isDiscovered && reward.imageSource ? (
+                    <Image
+                      source={reward.imageSource}
+                      style={styles.rewardImage}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={styles.lockedContainer}>
+                      <Text style={styles.lockedIcon}>🔒</Text>
+                    </View>
+                  )}
                 </View>
               </TouchableOpacity>
             );
           })}
-
-          {/* phantom tiles to align grid */}
-          {allItems.length % 3 !== 0 &&
-            Array.from({ length: 3 - (allItems.length % 3) }).map((_, idx) => (
-              <View key={`phantom-${idx}`} style={styles.itemTilePhantom} />
-            ))}
-          </View>
-        ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateEmoji}>📦</Text>
-            <Text style={styles.emptyStateText}>
-              Zacznij odkrywać miasto, aby zbierać przedmioty!
-            </Text>
-          </View>
-        )}
+        </View>
 
         <View style={{ height: 32 }} />
       </ScrollView>
@@ -326,6 +368,59 @@ const CollectionsScreen: React.FC = () => {
                         </Text>
                       </View>
                     </View>
+
+                    <TouchableOpacity
+                      style={styles.modalCloseButton}
+                      onPress={closeModal}
+                    >
+                      <Text style={styles.modalCloseText}>Zamknij</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+              {selectedReward && (
+                <>
+                  {/* Accent strip */}
+                  <View style={styles.modalAccentStrip}>
+                    <View
+                      style={[
+                        styles.modalAccentSegment,
+                        { backgroundColor: COLORS.red },
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.modalAccentSegment,
+                        { backgroundColor: COLORS.yellow },
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.modalAccentSegment,
+                        { backgroundColor: COLORS.blue },
+                      ]}
+                    />
+                  </View>
+
+                  <View style={styles.modalContent}>
+                    {selectedReward.imageSource && (
+                      <Image
+                        source={selectedReward.imageSource}
+                        style={styles.modalRewardImage}
+                        resizeMode="cover"
+                      />
+                    )}
+                    <View style={styles.modalHeaderRow}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.modalTitle}>
+                          {selectedReward.title}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <Text style={styles.modalDescription}>
+                      {selectedReward.description}
+                    </Text>
 
                     <TouchableOpacity
                       style={styles.modalCloseButton}
@@ -475,6 +570,63 @@ const styles = StyleSheet.create({
     color: "#9CA3AF",
   },
 
+  // Grid nagród: 3 w rzędzie
+  rewardsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginBottom: 16,
+  },
+  rewardTile: {
+    width: "30%",
+    aspectRatio: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rewardTileInner: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 18,
+    backgroundColor: COLORS.cardBg,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  rewardTileInnerLocked: {
+    backgroundColor: "#E5E7EB",
+    borderColor: "#D1D5DB",
+    opacity: 0.7,
+  },
+  rewardTileInnerActive: {
+    borderColor: COLORS.red,
+    borderWidth: 3,
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  rewardImage: {
+    width: "100%",
+    height: "100%",
+  },
+  lockedContainer: {
+    width: "100%",
+    height: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F3F4F6",
+  },
+  lockedIcon: {
+    fontSize: 32,
+    opacity: 0.5,
+  },
+
   // Modal
   modalBackdrop: {
     flex: 1,
@@ -566,6 +718,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#FFFFFF",
     fontWeight: "600",
+  },
+  modalRewardImage: {
+    width: "100%",
+    height: 200,
+    borderRadius: 12,
+    marginBottom: 12,
   },
   loadingContainer: {
     flex: 1,
