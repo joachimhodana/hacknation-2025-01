@@ -9,7 +9,6 @@ const RouteStatisticsOverlay = ({ routeDistance, formattedTime }: RouteStatistic
   return (
     <div className="absolute bottom-4 right-4 bg-background/95 backdrop-blur-sm rounded-lg p-4 shadow-sm border border-border z-[1000]">
       <div className="space-y-4">
-        {/* Distance */}
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Icon icon="solar:route-bold-duotone" className="h-4 w-4 text-foreground" />
@@ -20,7 +19,6 @@ const RouteStatisticsOverlay = ({ routeDistance, formattedTime }: RouteStatistic
           </div>
         </div>
 
-        {/* Time */}
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Icon icon="solar:clock-circle-bold-duotone" className="h-4 w-4 text-foreground" />

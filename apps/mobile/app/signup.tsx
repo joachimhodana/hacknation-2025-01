@@ -1,4 +1,3 @@
-// screens/SignupScreen.tsx
 import React, { useState } from "react";
 import {
   View,
@@ -33,7 +32,6 @@ export default function SignupScreen() {
 
   const handleSignup = async () => {
     if (!name.trim() || !email.trim() || !password.trim()) {
-      // TODO: Show validation error
       return;
     }
 
@@ -47,7 +45,6 @@ export default function SignupScreen() {
       router.replace("/map");
     } catch (error) {
       console.error("Signup error:", error);
-      // TODO: Show error message to user
     } finally {
       setIsLoading(false);
     }
@@ -59,7 +56,6 @@ export default function SignupScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Decorative background shapes */}
       <View style={[styles.blob, styles.blobRed]} />
       <View style={[styles.blob, styles.blobBlue]} />
       <View style={[styles.blob, styles.blobYellow]} />
@@ -69,11 +65,9 @@ export default function SignupScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <View style={styles.container}>
-          {/* Top section */}
           <View style={styles.header}>
           </View>
 
-          {/* Card */}
           <View style={styles.cardOuter}>
             <View style={styles.accentStrip}>
               <View
@@ -159,7 +153,6 @@ export default function SignupScreen() {
               </TouchableOpacity>
             </View>
           </View>
-          {/* Footer hint */}
           <View style={styles.footer}>
             <View style={styles.footerPath}>
               <View
@@ -196,7 +189,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
 
-  // decorative soft blobs
   blob: {
     position: "absolute",
     opacity: 0.32,

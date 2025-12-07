@@ -117,7 +117,6 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Decorative background shapes */}
       <View style={[styles.blob, styles.blobRed]} />
       <View style={[styles.blob, styles.blobBlue]} />
       <View style={[styles.blob, styles.blobYellow]} />
@@ -127,11 +126,9 @@ export default function LoginScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <View style={styles.container}>
-          {/* Top section */}
           <View style={styles.header}>
           </View>
 
-          {/* Card */}
           <View style={styles.cardOuter}>
             <View style={styles.accentStrip}>
               <View
@@ -226,7 +223,6 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
           </View>
-          {/* Footer hint */}
           <View style={styles.footer}>
             <View style={styles.footerPath}>
               <View

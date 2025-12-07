@@ -49,11 +49,9 @@ export function ProfilePanel({ isOpen, onClose }: ProfilePanelProps) {
   const handleLogout = async () => {
     try {
       await authClient.signOut()
-      // Force navigation - ProtectedRoute will show Login component
       window.location.href = "/"
     } catch (error) {
       console.error("Logout error:", error)
-      // Still redirect even if signOut fails
       window.location.href = "/"
     }
   }
@@ -73,14 +71,12 @@ export function ProfilePanel({ isOpen, onClose }: ProfilePanelProps) {
 
   return (
     <>
-      {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 opacity-100"
         style={{ zIndex: 9999 }}
         onClick={onClose}
       />
 
-      {/* Profile Panel */}
       <div
         ref={panelRef}
         className={`fixed top-0 right-0 h-full w-full max-w-md bg-white dark:bg-gray-900 shadow-2xl z-[10000] transform transition-transform duration-300 ease-out ${
@@ -89,7 +85,6 @@ export function ProfilePanel({ isOpen, onClose }: ProfilePanelProps) {
         style={{ zIndex: 10000 }}
       >
         <div className="flex flex-col h-full">
-          {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-800">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Profil</h2>
             <button
@@ -100,9 +95,7 @@ export function ProfilePanel({ isOpen, onClose }: ProfilePanelProps) {
             </button>
           </div>
 
-          {/* Content */}
           <div className="flex-1 overflow-y-auto p-6">
-            {/* Profile Card */}
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 rounded-2xl p-6 mb-6">
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-2xl font-bold shadow-lg">
@@ -124,7 +117,6 @@ export function ProfilePanel({ isOpen, onClose }: ProfilePanelProps) {
               </div>
             </div>
 
-            {/* Stats */}
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 text-center">
                 <div className="text-2xl font-bold text-gray-900 dark:text-white mb-1">0</div>
@@ -140,7 +132,6 @@ export function ProfilePanel({ isOpen, onClose }: ProfilePanelProps) {
               </div>
             </div>
 
-            {/* Menu Items */}
             <div className="space-y-2">
               <button
                 onClick={() => {
@@ -188,7 +179,6 @@ export function ProfilePanel({ isOpen, onClose }: ProfilePanelProps) {
             </div>
           </div>
 
-          {/* Footer */}
           <div className="p-6 border-t border-gray-200 dark:border-gray-800">
             <Button
               onClick={handleLogout}

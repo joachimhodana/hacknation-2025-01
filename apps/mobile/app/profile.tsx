@@ -1,4 +1,3 @@
-// app/profile.tsx
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -29,7 +28,6 @@ const COLORS = {
   softBg: "#F3F4F6",
 };
 
-// Export CollectedItem type for collections.tsx
 export type { CollectedItem } from "@/lib/api-client";
 
 const ProfileScreen: React.FC = () => {
@@ -52,15 +50,12 @@ const ProfileScreen: React.FC = () => {
     }
   }, [session, isPending, router]);
 
-  // Block back navigation to splash/index
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      // Prevent going back to splash/index
       return true;
     });
 
     const unsubscribe = navigation.addListener('beforeRemove', (e: any) => {
-      // Prevent navigation to splash or index
       const targetRoute = e.data?.action?.payload?.name;
       if (targetRoute === 'splash' || targetRoute === 'index') {
         e.preventDefault();
@@ -73,7 +68,6 @@ const ProfileScreen: React.FC = () => {
     };
   }, [navigation]);
 
-  // Fetch user stats when session is available
   useEffect(() => {
     if (session && !isPending) {
       loadStats();
@@ -107,7 +101,6 @@ const ProfileScreen: React.FC = () => {
       if (leaderboardData && leaderboardData.leaderboard) {
         setLeaderboard(leaderboardData.leaderboard);
       } else {
-        // Fallback to empty array if fetch fails
         setLeaderboard([]);
       }
     } catch (error) {
@@ -136,7 +129,7 @@ const ProfileScreen: React.FC = () => {
   }
 
   if (!session) {
-    return null; // Will redirect
+    return null; 
   }
 
   const user = session.user;
@@ -163,13 +156,11 @@ const ProfileScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Background blobs */}
       <View style={[styles.blob, styles.blobRed]} />
       <View style={[styles.blob, styles.blobBlue]} />
       <View style={[styles.blob, styles.blobYellow]} />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header / Profile text */}
         <View style={styles.header}>
           <Text style={styles.pageTitle}>Profil gracza</Text>
           <Text style={styles.pageSubtitle}>
@@ -177,7 +168,6 @@ const ProfileScreen: React.FC = () => {
           </Text>
         </View>
 
-        {/* Anonymous user warning banner */}
         {isAnonymous && (
           <View style={styles.anonymousBanner}>
             <View style={styles.anonymousBannerContent}>
@@ -203,7 +193,6 @@ const ProfileScreen: React.FC = () => {
           </View>
         )}
 
-        {/* Profile card */}
         <View style={styles.profileCardOuter}>
           <View style={styles.accentStrip}>
             <View style={[styles.accentSegment, { backgroundColor: COLORS.red }]} />
@@ -215,7 +204,6 @@ const ProfileScreen: React.FC = () => {
 
           <View style={styles.profileCard}>
             <View style={styles.profileRow}>
-              {/* Avatar */}
               <View style={[styles.avatar, isAnonymous && styles.avatarAnonymous]}>
                 <Text style={styles.avatarInitials}>{userInitials}</Text>
               </View>
@@ -269,7 +257,6 @@ const ProfileScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Leader Board */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>🏆 Ranking</Text>
           <Text style={styles.sectionSubtitle}>
@@ -335,7 +322,6 @@ const ProfileScreen: React.FC = () => {
           )}
         </View>
 
-        {/* Collections / items – 3 in a row preview */}
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>Zebrane przedmioty</Text>
@@ -392,7 +378,6 @@ const ProfileScreen: React.FC = () => {
           )}
         </View>
 
-        {/* Settings */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Ustawienia</Text>
 
@@ -422,10 +407,9 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: 100, // Extra padding for absolute navbar
+    paddingBottom: 100,
   },
 
-  // blobs
   blob: {
     position: "absolute",
     opacity: 0.28,
@@ -601,7 +585,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
-  // Preview grid: 3 in a row
   itemsGridPreview: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -635,7 +618,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
 
-  // Settings
   settingsCard: {
     marginTop: 6,
     backgroundColor: COLORS.cardBg,
@@ -777,7 +759,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
-  // Empty state
   emptyStateCard: {
     backgroundColor: COLORS.cardBg,
     borderRadius: 16,

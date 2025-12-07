@@ -17,12 +17,10 @@ export function FloatingProfileButton() {
         .slice(0, 2)
     : "U"
 
-  // Debug - sprawdź czy komponent się renderuje
   console.log("FloatingProfileButton render", { hasSession: !!session, initials })
 
   return (
     <>
-      {/* Floating Profile Button */}
       <button
         onClick={(e) => {
           e.preventDefault()
@@ -47,7 +45,6 @@ export function FloatingProfileButton() {
         <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white dark:border-gray-900 shadow-lg"></div>
       </button>
 
-      {/* Profile Panel */}
       <ProfilePanel isOpen={isProfileOpen} onClose={() => {
         console.log("Closing profile panel")
         setIsProfileOpen(false)

@@ -22,11 +22,9 @@ export function Navigation() {
   const handleLogout = async () => {
     try {
       await authClient.signOut()
-      // Force navigation - ProtectedRoute will show Login component
       window.location.href = "/"
     } catch (error) {
       console.error("Logout error:", error)
-      // Still redirect even if signOut fails
       window.location.href = "/"
     }
   }

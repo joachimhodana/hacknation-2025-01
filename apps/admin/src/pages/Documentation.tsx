@@ -25,7 +25,6 @@ export function Documentation() {
         <p className="text-muted-foreground">Kompletny przewodnik po panelu administracyjnym</p>
       </div>
 
-      {/* Niebieska wstawka */}
       <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
         <div className="flex items-start gap-3">
           <div className="bg-primary/10 rounded-full p-2">
@@ -43,7 +42,6 @@ export function Documentation() {
         </div>
       </div>
 
-      {/* Dashboard */}
       <Card className="border-border">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -58,7 +56,6 @@ export function Documentation() {
             w tym liczbę tras, status publikacji, łączną długość tras oraz średni czas trwania.
           </p>
           
-          {/* Statystyki ogólne */}
           <div>
             <h4 className="font-semibold mb-3">Statystyki ogólne</h4>
             <div className="grid md:grid-cols-2 gap-3 text-sm text-muted-foreground">
@@ -81,7 +78,6 @@ export function Documentation() {
             </div>
           </div>
 
-          {/* Projekty tras */}
           <div>
             <h4 className="font-semibold mb-3">Projekty tras</h4>
             <p className="text-sm text-muted-foreground mb-3">
@@ -107,7 +103,6 @@ export function Documentation() {
             </ul>
           </div>
 
-          {/* Funkcjonalności */}
           <div>
             <h4 className="font-semibold mb-2">Dostępne funkcje:</h4>
             <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
@@ -121,7 +116,6 @@ export function Documentation() {
         </CardContent>
       </Card>
 
-      {/* Lista tras */}
       <Card className="border-border">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -216,7 +210,6 @@ export function Documentation() {
         </CardContent>
       </Card>
 
-      {/* Lista postaci */}
       <Card className="border-border">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -255,7 +248,6 @@ export function Documentation() {
         </CardContent>
       </Card>
 
-      {/* Kreator tras */}
       <Card className="border-border">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -265,7 +257,6 @@ export function Documentation() {
           <CardDescription>Szczegółowa instrukcja tworzenia i edycji tras</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Sekcja 1: Wprowadzenie */}
           <div className="bg-primary/5 rounded-lg p-4 border border-primary/20">
             <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-primary" />
@@ -281,7 +272,6 @@ export function Documentation() {
             </ul>
           </div>
 
-          {/* Sekcja 2: Krok 1 - Ustawienia ogólne */}
           <div>
             <h3 className="font-semibold mb-3 flex items-center gap-2">
               <Settings className="h-4 w-4 text-primary" />
@@ -333,7 +323,6 @@ export function Documentation() {
             </div>
           </div>
 
-          {/* Sekcja 3: Krok 2 - Punkty trasy */}
           <div>
             <h3 className="font-semibold mb-3 flex items-center gap-2">
               <MapPin className="h-4 w-4 text-primary" />
@@ -399,7 +388,6 @@ export function Documentation() {
             </div>
           </div>
 
-          {/* Sekcja 4: Edycja punktów */}
           <div>
             <h3 className="font-semibold mb-3 flex items-center gap-2">
               <Edit2 className="h-4 w-4 text-primary" />
@@ -444,7 +432,6 @@ export function Documentation() {
             </div>
           </div>
 
-          {/* Sekcja 5: Edycja istniejącej trasy */}
           <div>
             <h3 className="font-semibold mb-3 flex items-center gap-2">
               <Edit2 className="h-4 w-4 text-primary" />
@@ -517,7 +504,6 @@ export function Documentation() {
             </div>
           </div>
 
-          {/* Sekcja 6: Zmiana kolejności */}
           <div>
             <h3 className="font-semibold mb-3 flex items-center gap-2">
               <GripVertical className="h-4 w-4 text-primary" />
@@ -545,7 +531,6 @@ export function Documentation() {
             </div>
           </div>
 
-          {/* Sekcja 7: Usuwanie punktów */}
           <div>
             <h3 className="font-semibold mb-3 flex items-center gap-2">
               <Trash2 className="h-4 w-4 text-destructive" />
@@ -568,7 +553,6 @@ export function Documentation() {
             </div>
           </div>
 
-          {/* Sekcja 8: Zapisywanie trasy */}
           <div>
             <h3 className="font-semibold mb-3 flex items-center gap-2">
               <Save className="h-4 w-4 text-primary" />
@@ -647,7 +631,6 @@ export function Documentation() {
             </div>
           </div>
 
-          {/* Sekcja 9: Funkcjonalności dla admina */}
           <div>
             <h3 className="font-semibold mb-3">9. Funkcjonalności administracyjne</h3>
             <div className="space-y-3 text-sm text-muted-foreground">
@@ -682,7 +665,6 @@ export function Documentation() {
             </div>
           </div>
 
-          {/* Sekcja 10: Wskazówki */}
           <div className="bg-primary/5 rounded-lg p-4 border border-primary/20">
             <h3 className="font-semibold text-foreground mb-2">
               💡 Przydatne wskazówki
@@ -701,7 +683,6 @@ export function Documentation() {
         </CardContent>
       </Card>
 
-      {/* Kreator postaci */}
       <Card className="border-border">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -711,7 +692,6 @@ export function Documentation() {
           <CardDescription>Tworzenie i edycja postaci</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Sekcja 1: Wprowadzenie */}
           <div className="bg-primary/5 rounded-lg p-4 border border-primary/20">
             <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-primary" />
@@ -723,7 +703,6 @@ export function Documentation() {
             </p>
           </div>
 
-          {/* Sekcja 2: Krok 1 - Ustawienia ogólne */}
           <div>
             <h3 className="font-semibold mb-3 flex items-center gap-2">
               <Settings className="h-4 w-4 text-primary" />
@@ -748,7 +727,6 @@ export function Documentation() {
             </div>
           </div>
 
-          {/* Sekcja 3: Krok 2 - Pozycja domyślna */}
           <div>
             <h3 className="font-semibold mb-3 flex items-center gap-2">
               <MapPin className="h-4 w-4 text-primary" />
@@ -780,7 +758,6 @@ export function Documentation() {
             </div>
           </div>
 
-          {/* Sekcja 4: Edycja postaci */}
           <div>
             <h3 className="font-semibold mb-3 flex items-center gap-2">
               <Edit2 className="h-4 w-4 text-primary" />
@@ -842,7 +819,6 @@ export function Documentation() {
         </CardContent>
       </Card>
 
-      {/* Funkcje techniczne */}
       <Card className="border-border">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -852,7 +828,6 @@ export function Documentation() {
           <CardDescription>Szczegóły techniczne i funkcje systemu</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* API i komunikacja */}
           <div>
             <h3 className="font-semibold mb-3">Komunikacja z API</h3>
             <div className="space-y-3 text-sm text-muted-foreground">
@@ -879,7 +854,6 @@ export function Documentation() {
             </div>
           </div>
 
-          {/* Walidacja */}
           <div>
             <h3 className="font-semibold mb-3">Walidacja formularzy</h3>
             <div className="space-y-3 text-sm text-muted-foreground">
@@ -903,7 +877,6 @@ export function Documentation() {
             </div>
           </div>
 
-          {/* Formatowanie danych */}
           <div>
             <h3 className="font-semibold mb-3">Formatowanie danych</h3>
             <div className="space-y-3 text-sm text-muted-foreground">
@@ -930,7 +903,6 @@ export function Documentation() {
             </div>
           </div>
 
-          {/* Mapa */}
           <div>
             <h3 className="font-semibold mb-3">Funkcje mapy</h3>
             <div className="space-y-3 text-sm text-muted-foreground">
@@ -965,7 +937,6 @@ export function Documentation() {
         </CardContent>
       </Card>
 
-      {/* Szybka referencja */}
       <Card className="border-border">
         <CardHeader>
           <CardTitle>Szybka referencja</CardTitle>
