@@ -57,21 +57,21 @@ const DashboardStats = () => {
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <GeneralInfoCustomCard
         title="Wszystkie trasy"
-        icon={<Route className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
+        icon={<Route className="h-4 w-4 text-primary" />}
         statsData={stats.totalRoutes}
         description="Wszystkie utworzone trasy"
       />
 
       <GeneralInfoCustomCard
         title="Opublikowane"
-        icon={<CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
+        icon={<CheckCircle className="h-4 w-4 text-primary" />}
         statsData={stats.publishedRoutes}
         description="Trasy dostępne publicznie"
       />
 
       <GeneralInfoCustomCard
         title="Łączna długość"
-        icon={<TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
+        icon={<TrendingUp className="h-4 w-4 text-primary" />}
         statsData={stats.totalDistance}
         description="Suma długości wszystkich tras"
         suffix=" km"
@@ -79,7 +79,7 @@ const DashboardStats = () => {
 
       <GeneralInfoCustomCard
         title="Średni czas"
-        icon={<Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
+        icon={<Users className="h-4 w-4 text-primary" />}
         statsData={stats.averageTime}
         description="Średni czas trasy"
         suffix=" min"

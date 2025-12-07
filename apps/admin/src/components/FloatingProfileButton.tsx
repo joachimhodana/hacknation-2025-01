@@ -30,7 +30,7 @@ export function FloatingProfileButton() {
           console.log("Profile button clicked!", { isProfileOpen })
           setIsProfileOpen(true)
         }}
-        className="fixed bottom-6 right-6 w-16 h-16 rounded-full bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white shadow-2xl hover:shadow-3xl transition-all duration-300 flex items-center justify-center z-[9998] group hover:scale-110 cursor-pointer border-4 border-white dark:border-gray-800"
+        className="fixed bottom-6 right-6 w-16 h-16 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-2xl hover:shadow-3xl transition-all duration-300 flex items-center justify-center z-[9998] group hover:scale-110 cursor-pointer border-4 border-background"
         style={{ 
           zIndex: 9998,
           position: 'fixed',

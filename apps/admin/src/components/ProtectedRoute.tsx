@@ -42,7 +42,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
               await authClient.signOut();
               navigate("/login");
             }}
-            className="text-blue-600 hover:underline"
+            className="text-primary hover:underline"
           >
             Sign out and try a different account
           </button>
