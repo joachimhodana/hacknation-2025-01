@@ -59,6 +59,8 @@ export const adminPointsRoutes = new Elysia({ prefix: "/points" })
       success: true,
       message: "Point removed from path successfully",
     };
+  }, {
+    auth: true
   })
   // Generic :id routes come after specific routes
   .get("/:id", async ({ params }) => {
@@ -210,5 +212,7 @@ export const adminPointsRoutes = new Elysia({ prefix: "/points" })
       success: true,
       message: "Point deleted successfully",
     };
+  }, {
+    auth: true
   });
 

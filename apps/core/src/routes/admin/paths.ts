@@ -530,7 +530,8 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
       success: true,
       message: "Path deleted successfully",
     };
-  }).patch("/:id/toggle", async (context: any) => {
+  }, {auth: true})
+  .patch("/:id/toggle", async (context: any) => {
     const { params, user } = context;
     if (!user) {
       return { success: false, error: "Unauthorized" };
