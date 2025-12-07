@@ -1,29 +1,19 @@
 [
   {
-    "pathId": "route_010",
+    "pathId": "route_001",
     "pointOrder": [
       {
-        "locationLabel": "Dawna Kawiarnia Bristol",
+        "locationLabel": "Pomnik Mariana Rejewskiego",
         "orderIndex": 0
       },
       {
-        "locationLabel": "Hala Targowa",
+        "locationLabel": "I Liceum Ogólnokształcące (Alma Mater)",
         "orderIndex": 1
-      }
-    ]
-  },
-  {
-    "pathId": "route_011",
-    "pointOrder": [
-      {
-        "locationLabel": "Copernicanum (UKW)",
-        "orderIndex": 0
       },
       {
-        "locationLabel": "Park Jana Kochanowskiego",
-        "orderIndex": 1
+        "locationLabel": "Makieta Dawnej Bydgoszczy / Spichrze",
+        "orderIndex": 2
       }
     ]
   }
 ]
-

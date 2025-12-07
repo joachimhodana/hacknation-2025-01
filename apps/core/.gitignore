@@ -50,3 +50,5 @@ core
 resources/*
 !resources/characters/
 !resources/characters/*.png
+!resources/rewards/
+!resources/rewards/*.png

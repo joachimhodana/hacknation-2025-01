@@ -1,31 +1,16 @@
 [
   {
-    "pathId": "route_010",
-    "title": "Gdzie się jadało, gdzie się pijało",
-    "shortDescription": "Podróż sentymentalna po miejscach, których już nie ma. Poczuj smak dawnej Bydgoszczy.",
-    "longDescription": "Zapraszamy na sentymentalną podróż po miejscach, które kiedyś tętniły życiem, a dziś istnieją tylko we wspomnieniach. Odkryj historię dawnych kawiarni, restauracji i miejsc spotkań bydgoszczan.",
-    "category": "Lifestyle / Nostalgia",
-    "difficulty": "Łatwy (Spacerowy)",
-    "totalTimeMinutes": 40,
-    "distanceMeters": 1200,
-    "thumbnailUrl": "/resources/thumbnails/27e02f69-ca37-4372-affa-a5b8f767716e.png",
-    "isPublished": true,
-    "stylePreset": "historic",
-    "markerIconUrl": null
-  },
-  {
-    "pathId": "route_011",
-    "title": "Gaudeamus po Bydgosku – Od Kolosa do Browara",
-    "shortDescription": "Szlak 'Wiecznego Studenta'. Odkryj historię nauki, miejsca kultowe dla bohemy i najlepsze miejscówki na reset.",
-    "longDescription": "Przemierz szlak studenta - od monumentalnych budynków uniwersyteckich, przez miejsca kultowe dla bohemy, aż po najlepsze miejscówki na relaks po sesji. Poznaj Bydgoszcz z perspektywy wiecznego studenta.",
-    "category": "Lifestyle / Edukacja",
-    "difficulty": "Łatwy",
-    "totalTimeMinutes": 50,
-    "distanceMeters": 1500,
-    "thumbnailUrl": "/resources/thumbnails/5602d0ce-253a-441e-826f-e4d023683263.png",
+    "pathId": "route_001",
+    "title": "Kod Bydgoszczy – Śladami Rejewskiego",
+    "shortDescription": "Śladami Rejewskiego – Matematyczny geniusz kontra machina wojenna",
+    "longDescription": "Śladami Rejewskiego – Matematyczny geniusz kontra machina wojenna. Odkryj historię bydgoszczanina, który pomógł złamać kod Enigmy i zmienić losy II wojny światowej.",
+    "category": "Gra Miejska / Zagadki",
+    "difficulty": "Trudny",
+    "totalTimeMinutes": 60,
+    "distanceMeters": null,
+    "thumbnailUrl": null,
     "isPublished": true,
     "stylePreset": "historic",
     "markerIconUrl": null
   }
 ]
-
