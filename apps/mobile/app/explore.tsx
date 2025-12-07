@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState, useCallback } from 'react';
 import { RouteCard } from '@/components/route-card';
 import Navbar from '@/components/Navbar';
+import { PointsBadge } from '@/components/PointsBadge';
 import { authClient } from '@/lib/auth-client';
 import { fetchPaths, type Path } from '@/lib/api-client';
 import { Route } from '@/data/routes';
@@ -131,6 +132,7 @@ export default function ExploreScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <PointsBadge />
       {/* Decorative background blobs - jak w start.tsx */}
       <View style={[styles.blob, styles.blobRed]} />
       <View style={[styles.blob, styles.blobBlue]} />

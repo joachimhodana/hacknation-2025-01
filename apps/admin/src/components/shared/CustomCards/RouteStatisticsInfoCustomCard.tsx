@@ -5,7 +5,7 @@ type RouteStatisticsInfoCustomCardProps = {
     route: RoutesObjectType,
 }
 
-const DashboardCustomStatsCard = ({route}:RouteStatisticsInfoCustomCardProps) => {
+const RouteStatisticsInfoCustomCard = ({route}:RouteStatisticsInfoCustomCardProps) => {
 
     const description = route.shortDescription.length > 70 ? route.shortDescription.slice(0,70)+"..." : route.shortDescription
 
@@ -44,4 +44,4 @@ const DashboardCustomStatsCard = ({route}:RouteStatisticsInfoCustomCardProps) =>
     )
 }
 
-export default DashboardCustomStatsCard
+export default RouteStatisticsInfoCustomCard

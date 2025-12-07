@@ -3,6 +3,7 @@ import { View, StyleSheet, Platform, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import Map from "@/components/Map/Map";
 import Navbar from "@/components/Navbar";
+import { PointsBadge } from "@/components/PointsBadge";
 import { authClient } from "@/lib/auth-client";
 
 export default function MapScreen() {
@@ -35,6 +36,7 @@ export default function MapScreen() {
   return (
     <View style={styles.container}>
       <Map />
+      <PointsBadge />
       <Navbar />
     </View>
   );

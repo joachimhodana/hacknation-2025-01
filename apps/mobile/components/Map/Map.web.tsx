@@ -8,18 +8,39 @@ export type MapProps = {
   zoom?: number;
 };
 
+type ActiveRoute = {
+  title: string;
+  totalStops: number;
+  completedStops: number;
+} | null;
+
+const COLORS = {
+  red: "#ED1C24",
+  yellow: "#FFDE00",
+  blue: "#0095DA",
+};
+
 export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
   const { isMobile } = useDeviceDetection();
   const { data: session } = authClient.useSession();
+
   // Adjust default zoom based on device type
-  const defaultZoom = useMemo(() => zoom ?? (isMobile ? 15 : 13), [zoom, isMobile]);
+  const defaultZoom = useMemo(
+    () => zoom ?? (isMobile ? 15 : 13),
+    [zoom, isMobile],
+  );
+
+  const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<HTMLDivElement>(null);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [userLocation, setUserLocation] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const mapInstanceRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
   const watchIdRef = useRef<number | null>(null);
-  
+
   // Get user info for avatar
   const user = session?.user;
   const userName = user?.name as string | undefined;
@@ -31,6 +52,27 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
         .toUpperCase()
         .slice(0, 2)
     : "U";
+
+  // 🔹 Mock aktywnej trasy – podmień na realne dane (API / store)
+  const activeRoute: ActiveRoute = {
+    title: "Szlak Mariana Rejewskiego",
+    totalStops: 8,
+    completedStops: 3,
+  };
+
+  const hasRoute = !!activeRoute;
+  const routeTitle = activeRoute?.title ?? "";
+  const totalStops = activeRoute?.totalStops ?? 0;
+  const completedStops = Math.min(
+    activeRoute?.completedStops ?? 0,
+    totalStops,
+  );
+  const progressRatio =
+    totalStops > 0 ? completedStops / totalStops : 0;
+  const progressText =
+    totalStops > 0
+      ? `${completedStops} / ${totalStops} przystanków`
+      : "Brak przystanków na trasie";
 
   // Watch user location in real-time
   useEffect(() => {
@@ -62,7 +104,7 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
           setUserLocation({ lat: 53.1235, lng: 18.0084 });
         }
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
     );
 
     // Watch position changes in real-time
@@ -77,11 +119,11 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
       (error) => {
         console.error("Error watching location:", error);
       },
-      { 
-        enableHighAccuracy: true, 
-        timeout: 5000, 
-        maximumAge: 1000 
-      }
+      {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 1000,
+      },
     );
 
     // Cleanup watch on unmount
@@ -94,9 +136,9 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
 
   useEffect(() => {
     // Only run on client and when we have location
-    if (typeof window === "undefined" || !mapRef.current || !userLocation) return;
+    if (typeof window === "undefined" || !mapRef.current || !userLocation)
+      return;
 
-    // Load MapLibre GL JS for true 3D support
     const loadMapLibre = () => {
       return new Promise<void>((resolve) => {
         // Check if already loaded
@@ -108,7 +150,8 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
         // Load CSS
         const link = document.createElement("link");
         link.rel = "stylesheet";
-        link.href = "https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css";
+        link.href =
+          "https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css";
         document.head.appendChild(link);
 
         // Load JS
@@ -127,12 +170,13 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
       const subtleStyle = {
         version: 8,
         sources: {
-          "osm": {
+          osm: {
             type: "raster",
             tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
             tileSize: 256,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          }
+            attribution:
+              '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          },
         },
         layers: [
           {
@@ -140,10 +184,11 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
             type: "raster",
             source: "osm",
             minzoom: 0,
-            maxzoom: 22
-          }
+            maxzoom: 22,
+          },
         ],
-        glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf"
+        glyphs:
+          "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
       };
 
       // Initialize map with 3D support
@@ -156,17 +201,16 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
         bearing: 0,
       });
 
-      // Subtle color enhancements (not too vibrant)
       map.on("load", () => {
-        // Natural, subtle color adjustments
+        // Slight raster tuning
         if (map.getLayer("osm-layer")) {
           map.setPaintProperty("osm-layer", "raster-opacity", 1.0);
           map.setPaintProperty("osm-layer", "raster-brightness-min", 0.0);
           map.setPaintProperty("osm-layer", "raster-brightness-max", 1.0);
-          map.setPaintProperty("osm-layer", "raster-saturation", 0.1); // Very subtle saturation increase
+          map.setPaintProperty("osm-layer", "raster-saturation", 0.1);
         }
 
-        // Create custom marker with user avatar
+        // Custom marker with user avatar
         const markerElement = document.createElement("div");
         markerElement.style.width = "48px";
         markerElement.style.height = "48px";
@@ -182,8 +226,7 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
         markerElement.style.color = "white";
         markerElement.style.cursor = "pointer";
         markerElement.textContent = userInitials;
-        
-        // Add subtle marker for user location with avatar
+
         markerRef.current = new maplibregl.Marker({
           element: markerElement,
           anchor: "center",
@@ -192,24 +235,23 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
           .addTo(map);
       });
 
-      // Very subtle color filter (natural look)
-      const mapContainer = mapRef.current;
-      if (mapContainer) {
-        // Subtle enhancement - not too vibrant
-        mapContainer.style.filter = "saturate(1.1) contrast(1.05) brightness(1.02)";
+      // Very subtle color filter
+      if (mapRef.current) {
+        mapRef.current.style.filter =
+          "saturate(1.1) contrast(1.05) brightness(1.02)";
       }
 
       mapInstanceRef.current = map;
       setIsLoaded(true);
 
-      // Cleanup
+      // Cleanup map instance on unmount
       return () => {
         if (mapInstanceRef.current) {
           mapInstanceRef.current.remove();
         }
       };
     });
-  }, [userLocation, defaultZoom]);
+  }, [userLocation, defaultZoom, userInitials]);
 
   // Update map and marker when location changes
   useEffect(() => {
@@ -218,13 +260,13 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
       if (markerRef.current) {
         markerRef.current.setLngLat([userLocation.lng, userLocation.lat]);
       }
-      
+
       // Smoothly center map on user location
       mapInstanceRef.current.easeTo({
         center: [userLocation.lng, userLocation.lat],
         zoom: defaultZoom,
-        pitch: 45, // Maintain 3D view
-        duration: 500, // Faster update for real-time tracking
+        pitch: 45,
+        duration: 500,
       });
     }
   }, [userLocation, defaultZoom, isLoaded]);
@@ -249,8 +291,9 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
 
   return (
     <div
-      ref={mapRef}
+      ref={containerRef}
       style={{
+        position: "relative",
         width: "100%",
         height: "100%",
         minHeight: isLoaded ? "100%" : "400px",
@@ -258,19 +301,138 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
         overflow: "hidden",
       }}
     >
-      {!isLoaded && (
+      {/* Kontener mapy */}
+      <div
+        ref={mapRef}
+        style={{
+          position: "absolute",
+          inset: 0,
+        }}
+      >
+        {!isLoaded && (
+          <div
+            style={{
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "#E8F0E8",
+              color: "#4A4A4A",
+            }}
+          >
+            <div>Loading map...</div>
+          </div>
+        )}
+      </div>
+
+      {/* 🏝️ Pływająca wyspa z info o trasie – ten sam motyw co w appce */}
+      {hasRoute && (
         <div
           style={{
-            width: "100%",
-            height: "100%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: "#E8F0E8",
-            color: "#4A4A4A",
+            position: "absolute",
+            top: 16,
+            left: 16,
+            right: 16,
+            borderRadius: 18,
+            backgroundColor: "rgba(255,255,255,0.96)",
+            padding: "10px 14px 12px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            zIndex: 10,
+            backdropFilter: "blur(8px)",
           }}
         >
-          <div>Loading map...</div>
+          {/* Pasek akcentu */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              height: 3,
+              borderRadius: 999,
+              overflow: "hidden",
+              marginBottom: 8,
+            }}
+          >
+            <div
+              style={{ flex: 1, backgroundColor: COLORS.red }}
+            />
+            <div
+              style={{ flex: 1, backgroundColor: COLORS.yellow }}
+            />
+            <div
+              style={{ flex: 1, backgroundColor: COLORS.blue }}
+            />
+          </div>
+
+          {/* Treść */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              marginBottom: 6,
+              gap: 12,
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: 16,
+                  fontWeight: 700,
+                  color: "#111827",
+                  whiteSpace: "nowrap",
+                  textOverflow: "ellipsis",
+                  overflow: "hidden",
+                }}
+              >
+                {routeTitle}
+              </div>
+              <div
+                style={{
+                  marginTop: 2,
+                  fontSize: 12,
+                  color: "#6B7280",
+                }}
+              >
+                {progressText}
+              </div>
+            </div>
+
+            <div
+              style={{
+                padding: "4px 10px",
+                borderRadius: 999,
+                backgroundColor: COLORS.red,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#FFFFFF",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {Math.round(progressRatio * 100)}%
+            </div>
+          </div>
+
+          {/* Pasek postępu */}
+          <div
+            style={{
+              height: 5,
+              borderRadius: 999,
+              backgroundColor: "#E5E7EB",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                height: "100%",
+                width: `${progressRatio * 100}%`,
+                backgroundColor: COLORS.blue,
+                transition: "width 200ms ease-out",
+              }}
+            />
+          </div>
         </div>
       )}
     </div>

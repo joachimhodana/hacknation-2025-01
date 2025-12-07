@@ -1,5 +1,4 @@
 import { StyleSheet, TouchableOpacity, View, Text, ImageBackground } from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Route } from '@/data/routes';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { API_BASE_URL } from '@/lib/api-client';
@@ -145,8 +144,8 @@ export function RouteCard({ route, onPress }: RouteCardProps) {
     }
     return {
       label: difficulty,
-      color: '#ffffff',
-      bgColor: 'rgba(255, 255, 255, 0.2)',
+      color: '#6b7280',
+      bgColor: 'rgba(107, 114, 128, 0.3)',
     };
   };
 
@@ -164,7 +163,7 @@ export function RouteCard({ route, onPress }: RouteCardProps) {
       activeOpacity={0.9}
       onPress={onPress}
       style={styles.container}>
-      {/* Hero Image z gradientem */}
+      {/* Hero Image */}
       <ImageBackground
         source={{ uri: imageUrl }}
         style={styles.heroImage}
@@ -190,70 +189,25 @@ export function RouteCard({ route, onPress }: RouteCardProps) {
               {theme.hook}
             </Text>
 
-            {/* Info Row - tagi */}
+            {/* Info Row */}
             <View style={styles.infoRow}>
-              <View
-                style={[
-                  styles.infoBadge,
-                  { backgroundColor: 'rgba(255, 255, 255, 0.25)' },
-                ]}>
-                <MaterialIcons
-                  name="schedule"
-                  size={14}
-                  color="#ffffff"
-                />
-                <Text style={styles.infoValue}>
+              <View style={styles.infoLeft}>
+                <Text style={styles.infoText}>
                   {formatTime(route.total_time_minutes)}
                 </Text>
-              </View>
-              <View
-                style={[
-                  styles.infoBadge,
-                  { backgroundColor: 'rgba(255, 255, 255, 0.25)' },
-                ]}>
-                <MaterialIcons
-                  name="place"
-                  size={14}
-                  color="#ffffff"
-                />
-                <Text style={styles.infoValue}>
-                  {route.stops.length}
+                <Text style={styles.infoSeparator}>•</Text>
+                <Text style={styles.infoText}>
+                  {route.stops.length} miejsc
                 </Text>
               </View>
+              {/* Difficulty badge with color */}
               <View
                 style={[
                   styles.difficultyBadge,
-                  {
-                    backgroundColor: difficultyInfo.bgColor,
-                  },
+                  { backgroundColor: difficultyInfo.bgColor },
                 ]}>
-                <Text
-                  style={[
-                    styles.difficultyText,
-                    { color: '#ffffff' },
-                  ]}>
+                <Text style={styles.difficultyText}>
                   {difficultyInfo.label}
-                </Text>
-              </View>
-            </View>
-
-            {/* Category */}
-            <View style={styles.categoryRow}>
-              <View style={styles.categoryBadge}>
-                <View style={styles.categoryDots}>
-                  {theme.accentColors.slice(0, 3).map((color, index) => (
-                    <View
-                      key={index}
-                      style={[styles.categoryDot, { backgroundColor: color }]}
-                    />
-                  ))}
-                </View>
-                <Text
-                  style={[
-                    styles.categoryText,
-                    { color: theme.textColor + 'AA' },
-                  ]}>
-                  {route.category}
                 </Text>
               </View>
             </View>
@@ -267,13 +221,13 @@ export function RouteCard({ route, onPress }: RouteCardProps) {
 const styles = StyleSheet.create({
   container: {
     marginBottom: 24,
-    borderRadius: 16,
+    borderRadius: 20,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 5,
+    shadowOpacity: 0.2,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 8,
   },
   heroImage: {
     width: '100%',
@@ -281,7 +235,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   heroImageStyle: {
-    borderRadius: 16,
+    borderRadius: 20,
   },
   darkOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -294,7 +248,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 24,
   },
   header: {
     marginBottom: 8,
@@ -304,6 +258,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     lineHeight: 32,
     letterSpacing: -0.5,
+    color: '#ffffff',
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
@@ -313,6 +268,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     fontWeight: '500',
     marginBottom: 16,
+    color: 'rgba(255, 255, 255, 0.95)',
     textShadowColor: 'rgba(0, 0, 0, 0.4)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
@@ -320,58 +276,37 @@ const styles = StyleSheet.create({
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 16,
-    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginTop: 12,
   },
-  infoBadge: {
+  infoLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
-  infoValue: {
+  infoText: {
     fontSize: 13,
-    fontWeight: '700',
-    color: '#ffffff',
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.9)',
+  },
+  infoSeparator: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.5)',
   },
   difficultyBadge: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 24,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   difficultyText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-  categoryRow: {
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.15)',
-  },
-  categoryBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-  },
-  categoryDots: {
-    flexDirection: 'row',
-    gap: 4,
-    marginRight: 8,
-  },
-  categoryDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 999,
-  },
-  categoryText: {
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.3,
+    color: '#ffffff',
+    letterSpacing: 0.5,
   },
 });

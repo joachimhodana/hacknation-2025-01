@@ -67,7 +67,9 @@ const CustomFileInput = ({name, label, description="", accept="image/*"}:CustomF
                                     onDragOver={handleDragOver}
                                     className={cn(
                                         "border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors",
-                                        preview ? "border-blue-500 bg-blue-50/50" : "border-gray-300 hover:border-blue-400 hover:bg-blue-50/30"
+                                        preview
+                                            ? "border-primary bg-primary/5"
+                                            : "border-input hover:border-primary hover:bg-primary/5"
                                     )}
                                     onClick={() => fileInputRef.current?.click()}
                                 >
@@ -80,9 +82,9 @@ const CustomFileInput = ({name, label, description="", accept="image/*"}:CustomF
                                     />
                                     {preview ? (
                                         <div className="relative">
-                                            <img 
-                                                src={preview} 
-                                                alt="Preview" 
+                                            <img
+                                                src={preview}
+                                                alt="Preview"
                                                 className="max-w-full h-32 object-contain mx-auto rounded-md"
                                             />
                                             <button
@@ -91,15 +93,15 @@ const CustomFileInput = ({name, label, description="", accept="image/*"}:CustomF
                                                     e.stopPropagation();
                                                     handleRemove();
                                                 }}
-                                                className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                                                className="absolute top-0 right-0 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90"
                                             >
                                                 <Icon icon="solar:close-circle-bold-duotone" className="h-4 w-4" />
                                             </button>
                                         </div>
                                     ) : (
                                         <div>
-                                            <Icon icon="solar:upload-bold-duotone" className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                                            <p className="text-sm text-gray-600">
+                                            <Icon icon="solar:upload-bold-duotone" className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                                            <p className="text-sm text-muted-foreground">
                                                 Kliknij lub przeciągnij plik tutaj
                                             </p>
                                         </div>

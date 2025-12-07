@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useForm } from "react-hook-form"
-import { useSearchParams, useNavigate } from "react-router-dom"
+import { useSearchParams } from "react-router-dom"
 import { yupResolver } from "@hookform/resolvers/yup"
 import * as yup from "yup"
 import { Button } from "@/components/ui/button.tsx"
@@ -8,18 +8,63 @@ import { Input } from "@/components/ui/input.tsx"
 import { Label } from "@/components/ui/label.tsx"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx"
 import { Save, MapPin, Settings, ArrowLeft, ArrowRight, CheckCircle2, X } from "lucide-react"
-import MapComponent from "@/components/shared/MapComponent/MapComponent.tsx"
+import MapComponent from "../MapComponent.tsx"
 import InformationCard from "@/components/shared/CustomCards/InformationCard/InformationCard.tsx"
-import { Form } from "@/components/ui/form.tsx"
+import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from "@/components/ui/form.tsx"
 import CustomUsualInput from "@/components/shared/CustomCards/CustomInput/CustomUsualInput.tsx"
 import CustomFileInput from "@/components/shared/CustomCards/CustomInput/CustomFileInput.tsx"
-import { getCharacterById, createCharacter, updateCharacter } from "@/services/charactersApi.ts"
+import type { CharacterType } from "@/types/CharactersType.tsx"
 
 interface DefaultPosition {
   latitude: number
   longitude: number
   description: string
 }
+
+type CharacterFormData = {
+  name: string
+  avatarFile: File | null
+}
+
+// Mock data - w prawdziwej aplikacji dane będą z API
+// Używamy tego samego mock data co w CharactersListPage
+const getMockCharacters = (): CharacterType[] => [
+  {
+    id: "1",
+    name: "Historyk",
+    avatar: null as any,
+    createdBy: "admin",
+    createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
+    lastModifiedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+    deafultPosition: {
+      latitude: 52.2297,
+      longitude: 21.0122,
+      description: "Muzeum Historii"
+    }
+  },
+  {
+    id: "2",
+    name: "Przewodnik",
+    avatar: null as any,
+    createdBy: "admin",
+    createdAt: new Date(Date.now() - 86400000 * 10).toISOString(),
+    lastModifiedAt: new Date(Date.now() - 86400000 * 1).toISOString(),
+    deafultPosition: {
+      latitude: 52.2300,
+      longitude: 21.0130,
+      description: "Centrum miasta"
+    }
+  },
+  {
+    id: "3",
+    name: "Mieszkaniec",
+    avatar: null as any,
+    createdBy: "admin",
+    createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
+    lastModifiedAt: new Date(Date.now() - 3600000).toISOString(),
+    deafultPosition: null as any,
+  },
+]
 
 // Schemat walidacji Yup
 const characterFormSchema = yup.object({
@@ -31,24 +76,19 @@ const characterFormSchema = yup.object({
   avatarFile: yup
     .mixed<File>()
     .nullable()
+    .required("Avatar jest wymagany")
     .test("fileType", "Plik musi być obrazem", (value) => {
-      if (!value) return true // Avatar jest opcjonalny
+      if (!value) return false
       return value instanceof File && value.type.startsWith("image/")
     })
     .test("fileSize", "Plik nie może być większy niż 5MB", (value) => {
-      if (!value) return true
+      if (!value) return false
       return value instanceof File && value.size <= 5 * 1024 * 1024
     }),
-  description: yup
-    .string()
-    .max(500, "Opis może mieć maksymalnie 500 znaków"),
 })
-
-type CharacterFormData = yup.InferType<typeof characterFormSchema>
 
 const CharacterCreatorPage = () => {
   const [searchParams] = useSearchParams()
-  const navigate = useNavigate()
   const editCharacterId = searchParams.get("edit")
 
   const [currentStep, setCurrentStep] = useState<1 | 2>(1)
@@ -57,8 +97,6 @@ const CharacterCreatorPage = () => {
   const [isFormValid, setIsFormValid] = useState(false)
   const [defaultPosition, setDefaultPosition] = useState<DefaultPosition | null>(null)
   const [isSelectingPosition, setIsSelectingPosition] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
 
   const form = useForm<CharacterFormData>({
     resolver: yupResolver(characterFormSchema),
@@ -66,7 +104,6 @@ const CharacterCreatorPage = () => {
     defaultValues: {
       name: "",
       avatarFile: null,
-      description: "",
     },
   })
 
@@ -74,41 +111,41 @@ const CharacterCreatorPage = () => {
 
   // Ładowanie danych postaci do edycji
   useEffect(() => {
-    const loadCharacter = async () => {
-      if (editCharacterId) {
-        try {
-          setIsLoading(true)
-          const character = await getCharacterById(Number(editCharacterId))
+    if (editCharacterId) {
+      const mockCharacters = getMockCharacters()
+      const character = mockCharacters.find((c) => c.id === editCharacterId)
 
-          // Wypełnij formularz
+      if (character) {
+        // Wypełnij formularz
+        setTimeout(() => {
           form.reset({
             name: character.name,
             avatarFile: null, // Pliki trzeba będzie załadować osobno z URL
-            description: character.description || "",
           })
 
-          // Note: defaultPosition nie jest częścią API response, więc pomijamy to
-          setDefaultPosition(null)
-          setCurrentStep(1)
-        } catch (error) {
-          console.error("Failed to load character:", error)
-          setValidationError("Nie udało się załadować postaci do edycji")
-        } finally {
-          setIsLoading(false)
-        }
-      } else {
-        // Reset formularza jeśli nie edytujemy
-        form.reset({
-          name: "",
-          avatarFile: null,
-          description: "",
-        })
-        setDefaultPosition(null)
-        setCurrentStep(1)
+          // Ustaw pozycję domyślną jeśli istnieje
+          if (character.deafultPosition) {
+            setDefaultPosition({
+              latitude: character.deafultPosition.latitude,
+              longitude: character.deafultPosition.longitude,
+              description: character.deafultPosition.description || "",
+            })
+            // Przejdź do kroku 2 jeśli jest pozycja
+            setCurrentStep(2)
+          } else {
+            setDefaultPosition(null)
+          }
+        }, 100)
       }
+    } else {
+      // Reset formularza jeśli nie edytujemy
+      form.reset({
+        name: "",
+        avatarFile: null,
+      })
+      setDefaultPosition(null)
+      setCurrentStep(1)
     }
-
-    loadCharacter()
   }, [editCharacterId, form])
 
   useEffect(() => {
@@ -124,11 +161,7 @@ const CharacterCreatorPage = () => {
   }, [formState.isValid])
 
   const handleMapClick = (lat: number, lng: number) => {
-    // W kroku 1 nie pozwalamy na kliknięcie
-    if (currentStep === 1) return
-    
-    // W kroku 2 kliknięcie działa tylko gdy użytkownik kliknął "Wybierz pozycję"
-    if (currentStep === 2 && !isSelectingPosition) return
+    if (currentStep === 1 || !isSelectingPosition) return
 
     setDefaultPosition({
       latitude: lat,
@@ -161,41 +194,15 @@ const CharacterCreatorPage = () => {
       return
     }
 
-    try {
-      setIsSaving(true)
-      const formValues = form.getValues()
-
-      const characterData = {
-        name: formValues.name,
-        avatarFile: formValues.avatarFile || undefined,
-        description: formValues.description || undefined,
-      }
-
-      if (editCharacterId) {
-        // Update existing character
-        // Note: PUT endpoint doesn't support file upload, only avatarUrl
-        await updateCharacter(Number(editCharacterId), {
-          name: characterData.name,
-          description: characterData.description,
-          // avatarUrl is not updated here as PUT endpoint doesn't support file upload
-        })
-      } else {
-        // Create new character with file upload
-        await createCharacter(characterData)
-      }
-
-      // Redirect to characters list after successful save
-      navigate("/characters")
-    } catch (error) {
-      console.error("Failed to save character:", error)
-      setValidationError(
-        error instanceof Error 
-          ? error.message 
-          : "Nie udało się zapisać postaci. Spróbuj ponownie."
-      )
-    } finally {
-      setIsSaving(false)
+    const formValues = form.getValues()
+    const characterData = {
+      name: formValues.name,
+      avatarFile: formValues.avatarFile,
+      defaultPosition: defaultPosition,
     }
+
+    console.log(characterData)
+    // TODO: stworzyć fetch post
   }
 
   const handleRemovePosition = () => {
@@ -203,14 +210,12 @@ const CharacterCreatorPage = () => {
     setIsSelectingPosition(false)
   }
 
-  if (!mounted || isLoading) {
+  if (!mounted) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-64px)]">
         <div className="text-center">
           <MapPin className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
-          <p className="text-muted-foreground">
-            {isLoading ? "Ładowanie postaci..." : "Ładowanie kreatora..."}
-          </p>
+          <p className="text-muted-foreground">Ładowanie kreatora...</p>
         </div>
       </div>
     )
@@ -219,21 +224,23 @@ const CharacterCreatorPage = () => {
   return (
     <div className="flex h-[calc(100vh-64px)]">
       {/* Lewa strona - Mapa */}
-      <div className="flex-1 relative h-full">
+      <div className="flex-1 relative">
         {mounted ? (
           <MapComponent
-            points={defaultPosition ? [{
-              id: "default-position",
-              name: "Pozycja domyślna",
-              description: defaultPosition.description || "",
-              lat: defaultPosition.latitude,
-              lng: defaultPosition.longitude,
-              order: 1,
-              hasCustomAudio: false,
-              audioFile: null,
-              characterName: "",
-              dialog: "",
-            }] : []}
+            points={
+              defaultPosition
+                ? [
+                    {
+                      id: "default-position",
+                      name: "Pozycja domyślna",
+                      description: defaultPosition.description || "",
+                      lat: defaultPosition.latitude,
+                      lng: defaultPosition.longitude,
+                      order: 1,
+                    },
+                  ]
+                : []
+            }
             onMapClick={handleMapClick}
           />
         ) : (
@@ -261,15 +268,31 @@ const CharacterCreatorPage = () => {
             </div>
             <div className="flex items-center gap-2">
               <div
-                className={`flex items-center gap-1 px-2 py-1 rounded ${currentStep === 1 ? "bg-blue-100 text-blue-900" : "bg-gray-100 text-gray-600"}`}
+                className={`flex items-center gap-1 px-2 py-1 rounded ${
+                  currentStep === 1
+                    ? "bg-primary/10 text-primary"
+                    : "bg-muted text-muted-foreground"
+                }`}
               >
-                <CheckCircle2 className={`h-4 w-4 ${currentStep === 1 ? "text-blue-600" : "text-gray-400"}`} />
+                <CheckCircle2
+                  className={`h-4 w-4 ${
+                    currentStep === 1 ? "text-primary" : "text-muted-foreground"
+                  }`}
+                />
                 <span className="text-sm font-medium">Krok 1</span>
               </div>
               <div
-                className={`flex items-center gap-1 px-2 py-1 rounded ${currentStep === 2 ? "bg-blue-100 text-blue-900" : "bg-gray-100 text-gray-600"}`}
+                className={`flex items-center gap-1 px-2 py-1 rounded ${
+                  currentStep === 2
+                    ? "bg-primary/10 text-primary"
+                    : "bg-muted text-muted-foreground"
+                }`}
               >
-                <CheckCircle2 className={`h-4 w-4 ${currentStep === 2 ? "text-blue-600" : "text-gray-400"}`} />
+                <CheckCircle2
+                  className={`h-4 w-4 ${
+                    currentStep === 2 ? "text-primary" : "text-muted-foreground"
+                  }`}
+                />
                 <span className="text-sm font-medium">Krok 2</span>
               </div>
             </div>
@@ -281,11 +304,11 @@ const CharacterCreatorPage = () => {
               <InformationCard
                 title="Krok 1: Ustawienia ogólne"
                 description="Wypełnij podstawowe informacje o postaci. Po ukończeniu przejdź do kroku 2, aby opcjonalnie ustawić pozycję domyślną."
-                icon={<Settings className="h-5 w-5 text-blue-600" />}
+                icon={<Settings className="h-5 w-5 text-primary" />}
               />
               {validationError && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <p className="text-sm text-red-800">{validationError}</p>
+                <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3">
+                  <p className="text-sm text-destructive">{validationError}</p>
                 </div>
               )}
               <Card>
@@ -301,15 +324,9 @@ const CharacterCreatorPage = () => {
                         placeholder="Podaj nazwę postaci"
                       />
 
-                      <CustomUsualInput
-                        name="description"
-                        label="Opis postaci (opcjonalnie)"
-                        placeholder="Podaj opis postaci"
-                      />
-
                       <CustomFileInput
                         name="avatarFile"
-                        label="Avatar (opcjonalnie)"
+                        label="Avatar"
                         description="Przeciągnij i upuść plik obrazu lub kliknij, aby wybrać"
                         accept="image/*"
                       />
@@ -319,7 +336,7 @@ const CharacterCreatorPage = () => {
               </Card>
               <Button
                 onClick={handleNextStep}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                 size="lg"
                 disabled={!isFormValid}
               >
@@ -336,7 +353,12 @@ const CharacterCreatorPage = () => {
             /* Krok 2 - Pozycja domyślna */
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-4">
-                <Button variant="ghost" size="sm" onClick={() => setCurrentStep(1)} className="gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCurrentStep(1)}
+                  className="gap-2"
+                >
                   <ArrowLeft className="h-4 w-4" />
                   Powrót do kroku 1
                 </Button>
@@ -344,7 +366,7 @@ const CharacterCreatorPage = () => {
               <InformationCard
                 title="Krok 2: Pozycja domyślna (opcjonalnie)"
                 description="Możesz opcjonalnie ustawić pozycję domyślną postaci na mapie. Kliknij przycisk poniżej, a następnie kliknij na mapie, aby wybrać pozycję."
-                icon={<MapPin className="h-5 w-5 text-blue-600" />}
+                icon={<MapPin className="h-5 w-5 text-primary" />}
               />
 
               <Card>
@@ -354,29 +376,33 @@ const CharacterCreatorPage = () => {
                 <CardContent className="space-y-4">
                   {defaultPosition ? (
                     <div className="space-y-3">
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <div className="bg-primary/5 border border-primary/30 rounded-lg p-3">
                         <div className="flex items-center justify-between mb-2">
-                          <p className="font-semibold text-blue-900">Pozycja wybrana</p>
+                          <p className="font-semibold text-primary">Pozycja wybrana</p>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={handleRemovePosition}
-                            className="text-red-600 hover:text-red-700"
+                            className="text-destructive hover:text-destructive/90"
                           >
                             <X className="h-4 w-4" />
                           </Button>
                         </div>
-                        <div className="text-sm text-blue-800 space-y-1">
+                        <div className="text-sm text-primary space-y-1">
                           <p>
-                            <strong>Szerokość:</strong> {defaultPosition.latitude.toFixed(6)}
+                            <strong>Szerokość:</strong>{" "}
+                            {defaultPosition.latitude.toFixed(6)}
                           </p>
                           <p>
-                            <strong>Długość:</strong> {defaultPosition.longitude.toFixed(6)}
+                            <strong>Długość:</strong>{" "}
+                            {defaultPosition.longitude.toFixed(6)}
                           </p>
                         </div>
                       </div>
                       <div>
-                        <Label htmlFor="position-description">Opis pozycji (opcjonalnie)</Label>
+                        <Label htmlFor="position-description">
+                          Opis pozycji (opcjonalnie)
+                        </Label>
                         <Input
                           id="position-description"
                           value={defaultPosition.description}
@@ -394,11 +420,12 @@ const CharacterCreatorPage = () => {
                   ) : (
                     <div className="text-center py-4">
                       <p className="text-sm text-muted-foreground mb-4">
-                        Nie wybrano pozycji domyślnej. Kliknij przycisk poniżej, aby wybrać pozycję na mapie.
+                        Nie wybrano pozycji domyślnej. Kliknij przycisk poniżej, aby wybrać
+                        pozycję na mapie.
                       </p>
                       <Button
                         onClick={() => setIsSelectingPosition(true)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
                       >
                         <MapPin className="h-4 w-4" />
                         Wybierz pozycję na mapie
@@ -407,8 +434,8 @@ const CharacterCreatorPage = () => {
                   )}
 
                   {isSelectingPosition && !defaultPosition && (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                      <p className="text-sm text-yellow-800">
+                    <div className="bg-secondary/20 border border-secondary/40 rounded-lg p-3">
+                      <p className="text-sm text-secondary-foreground">
                         Kliknij na mapie po lewej stronie, aby wybrać pozycję domyślną.
                       </p>
                     </div>
@@ -418,12 +445,11 @@ const CharacterCreatorPage = () => {
 
               <Button
                 onClick={handleSaveCharacter}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                 size="lg"
-                disabled={isSaving}
               >
                 <Save className="h-4 w-4 mr-2" />
-                {isSaving ? "Zapisywanie..." : editCharacterId ? "Zaktualizuj postać" : "Zapisz postać"}
+                Zapisz postać
               </Button>
             </div>
           )}

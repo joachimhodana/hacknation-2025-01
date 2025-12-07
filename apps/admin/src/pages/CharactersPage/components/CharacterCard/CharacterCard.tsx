@@ -60,7 +60,7 @@ const CharacterCard = ({ character, viewMode, formatDate }: CharacterCardProps) 
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
+                className="w-full gap-2 border-primary/30 text-primary hover:bg-primary/5"
               >
                 <Edit className="h-4 w-4" />
                 Edytuj

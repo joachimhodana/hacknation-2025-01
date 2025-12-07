@@ -86,7 +86,7 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         difficulty,
         stylePreset,
       } = pathData;
-      
+
       const [newPath] = await db
         .insert(paths)
         .values({
@@ -316,6 +316,17 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         return { success: false, error: "Unauthorized" };
       }
 
+      // Helper to parse a number safely
+      const parseMaybeNumber = (value: any) => {
+        if (typeof value === "number") return value;
+        if (typeof value === "string" && value.trim() === "") return undefined;
+        if (typeof value === "string") {
+          const n = Number(value);
+          return isNaN(n) ? undefined : n;
+        }
+        return undefined;
+      };
+
       // Handle thumbnail file update
       let thumbnailUrl = undefined;
       if (body.thumbnailFile) {
@@ -324,7 +335,7 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         const mimeType = body.thumbnailFile.type;
         const extension = mimeType === "image/jpeg" ? ".jpg" : ".png";
         const fileName = `${thumbnailUUID}${extension}`;
-        const filePath = join(process.cwd(), "resources", "thumbnails", fileName);
+        const filePath = join(process.cwd(), "public", "resources", "thumbnails", fileName);
         await mkdir(join(process.cwd(),"public", "resources", "thumbnails"), { recursive: true });
         await Bun.write(filePath, thumbnailBuffer);
         thumbnailUrl = `public/resources/thumbnails/${fileName}`;
@@ -338,7 +349,7 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         const mimeType = body.markerIconFile.type;
         const extension = mimeType === "image/jpeg" ? ".jpg" : ".png";
         const fileName = `${markerIconUUID}${extension}`;
-        const filePath = join(process.cwd(), "resources", "marker_icons", fileName);
+        const filePath = join(process.cwd(), "public", "resources", "marker_icons", fileName);
         await mkdir(join(process.cwd(), "public","resources", "marker_icons"), { recursive: true });
         await Bun.write(filePath, markerIconBuffer);
         markerIconUrl = `public/resources/marker_icons/${fileName}`;
@@ -350,16 +361,13 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         markerIconFile,
         totalTimeMinutes,
         distanceMeters,
+        points: pointsData,
         ...updateData
       } = body;
 
-      // Convert string to number if needed
-      const totalTime = totalTimeMinutes !== undefined
-        ? (typeof totalTimeMinutes === 'string' ? Number(totalTimeMinutes) : totalTimeMinutes)
-        : undefined;
-      const distance = distanceMeters !== undefined
-        ? (typeof distanceMeters === 'string' ? Number(distanceMeters) : distanceMeters)
-        : undefined;
+      // Patch: Always parse to number for totalTimeMinutes and distanceMeters
+      const totalTime = parseMaybeNumber(totalTimeMinutes);
+      const distance = parseMaybeNumber(distanceMeters);
 
       if (thumbnailUrl !== undefined) updateData.thumbnailUrl = thumbnailUrl;
       if (markerIconUrl !== undefined) updateData.markerIconUrl = markerIconUrl;
@@ -375,6 +383,87 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
       }
       updateData.updatedAt = new Date();
 
+      // Get path by pathId and user first to get numeric id (for pathPoints)
+      const [existingPath] = await db
+        .select()
+        .from(paths)
+        .where(and(eq(paths.pathId, params.id), eq(paths.createdBy, user.id)))
+        .limit(1);
+
+      if (!existingPath) {
+        return {
+          success: false,
+          error: "Path not found or you don't have permission",
+        };
+      }
+      const pathNumericId = existingPath.id;
+
+      // If points are present in the payload, update the points for the path
+      if (pointsData !== undefined) {
+        if (!Array.isArray(pointsData)) {
+          return { success: false, error: "Points must be an array" };
+        }
+        // Validate each point minimally
+        for (const point of pointsData) {
+          if (
+            typeof point.latitude !== "number" ||
+            typeof point.longitude !== "number" ||
+            typeof point.narrationText !== "string"
+          ) {
+            return {
+              success: false,
+              error:
+                "Invalid point structure: latitude, longitude, and narrationText are required",
+            };
+          }
+        }
+
+        // Remove all existing pathPoints for this path
+        await db.delete(pathPoints).where(eq(pathPoints.pathId, pathNumericId));
+        // Add stricter validation error reporting for latitude
+        for (let idx = 0; idx < pointsData.length; idx++) {
+          if (typeof pointsData[idx].latitude !== "number") {
+            return {
+              success: false,
+              error: `Expected number for points[${idx}].latitude, got ${typeof pointsData[idx].latitude}`,
+              details: {
+                type: "validation",
+                on: "body",
+                property: `/points/${idx}/latitude`,
+                message: "Expected number",
+                summary: "Expected number",
+                found: pointsData[idx].latitude,
+              }
+            };
+          }
+        }
+
+        // Insert new points and connect them
+        for (let i = 0; i < pointsData.length; i++) {
+          const pt = pointsData[i];
+          const [insertedPoint] = await db
+            .insert(points)
+            .values({
+              latitude: pt.latitude,
+              longitude: pt.longitude,
+              radiusMeters: pt.radiusMeters ?? 10,
+              locationLabel: pt.locationLabel ?? null,
+              narrationText: pt.narrationText,
+              characterId: pt.characterId ?? null,
+              rewardLabel: pt.rewardLabel ?? null,
+              rewardIconUrl: pt.rewardIconUrl ?? null,
+              createdBy: user.id,
+            })
+            .returning();
+          await db.insert(pathPoints).values({
+            pathId: pathNumericId,
+            pointId: insertedPoint.id,
+            orderIndex: i,
+          });
+        }
+      }
+
+      // Update the path itself
       const [updatedPath] = await db
         .update(paths)
         .set(updateData)
@@ -395,19 +484,20 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
     },
     {
       auth: true,
+      // Accept string values as well as number for numeric fields for multipart compatibility
       body: t.Object({
         title: t.Optional(t.String()),
         shortDescription: t.Optional(t.String()),
         longDescription: t.Optional(t.String()),
         category: t.Optional(t.String()),
         difficulty: t.Optional(t.String()),
-        totalTimeMinutes: t.Optional(t.Number()),
-        distanceMeters: t.Optional(t.Number()),
+        totalTimeMinutes: t.Optional(t.Union([t.Number(), t.String()])),
+        distanceMeters: t.Optional(t.Union([t.Number(), t.String()])),
         thumbnailFile: t.Optional(t.File({
           maxFileSize: "20MB",
           allowedMimeTypes: ["image/jpeg", "image/png"],
         })),
-        isPublished: t.Optional(t.Boolean()),
+        isPublished: t.Optional(t.Union([t.Boolean(), t.String()])),
         stylePreset: t.Optional(t.String()),
         markerIconFile: t.Optional(t.File({
           maxFileSize: "10MB",

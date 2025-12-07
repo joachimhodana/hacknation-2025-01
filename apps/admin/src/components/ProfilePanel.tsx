@@ -98,7 +98,7 @@ export function ProfilePanel({ isOpen, onClose }: ProfilePanelProps) {
             {/* Profile Card */}
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 rounded-2xl p-6 mb-6">
               <div className="flex items-center gap-4 mb-4">
-                <div className="w-20 h-20 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-2xl font-bold shadow-lg">
                   {initials}
                 </div>
                 <div className="flex-1">
@@ -109,7 +109,7 @@ export function ProfilePanel({ isOpen, onClose }: ProfilePanelProps) {
                     {(user?.email as string | undefined) || "brak email"}
                   </p>
                   {user?.role && (
-                    <span className="inline-block mt-2 px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                    <span className="inline-block mt-2 px-3 py-1 text-xs font-semibold rounded-full bg-primary/10 text-primary">
                       {(user.role as string) === "admin" ? "Administrator" : (user.role as string)}
                     </span>
                   )}
@@ -142,7 +142,7 @@ export function ProfilePanel({ isOpen, onClose }: ProfilePanelProps) {
                 }}
                 className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
               >
-                <Icon icon="solar:home-bold-duotone" className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <Icon icon="solar:home-bold-duotone" className="h-5 w-5 text-primary" />
                 <span className="font-medium text-gray-900 dark:text-white">Dashboard</span>
               </button>
 
@@ -153,7 +153,7 @@ export function ProfilePanel({ isOpen, onClose }: ProfilePanelProps) {
                 }}
                 className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
               >
-                <Icon icon="solar:route-bold-duotone" className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <Icon icon="solar:route-bold-duotone" className="h-5 w-5 text-primary" />
                 <span className="font-medium text-gray-900 dark:text-white">Trasy</span>
               </button>
 
@@ -164,7 +164,7 @@ export function ProfilePanel({ isOpen, onClose }: ProfilePanelProps) {
                 }}
                 className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
               >
-                <Icon icon="solar:user-bold-duotone" className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <Icon icon="solar:user-bold-duotone" className="h-5 w-5 text-primary" />
                 <span className="font-medium text-gray-900 dark:text-white">Postacie</span>
               </button>
 
@@ -175,7 +175,7 @@ export function ProfilePanel({ isOpen, onClose }: ProfilePanelProps) {
                 }}
                 className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
               >
-                <Icon icon="solar:document-bold-duotone" className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <Icon icon="solar:document-bold-duotone" className="h-5 w-5 text-primary" />
                 <span className="font-medium text-gray-900 dark:text-white">Dokumentacja</span>
               </button>
             </div>
@@ -186,7 +186,7 @@ export function ProfilePanel({ isOpen, onClose }: ProfilePanelProps) {
             <Button
               onClick={handleLogout}
               variant="outline"
-              className="w-full gap-2 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20"
+              className="w-full gap-2 text-destructive border-destructive/30 hover:bg-destructive/10"
             >
               <Icon icon="solar:logout-bold-duotone" className="h-5 w-5" />
               Wyloguj się
