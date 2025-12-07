@@ -27,14 +27,40 @@ export default function RootLayout() {
         screenOptions={{
           headerShown: false,
         }}>
-        <Stack.Screen name="splash" />
+        <Stack.Screen 
+          name="splash" 
+          options={{
+            gestureEnabled: false,
+            animationEnabled: false,
+          }}
+        />
         <Stack.Screen name="index" />
         <Stack.Screen name="login" />
         <Stack.Screen name="signup" />
-        <Stack.Screen name="map" />
-        <Stack.Screen name="explore" />
-        <Stack.Screen name="profile" />
-        <Stack.Screen name="collections" />
+        <Stack.Screen 
+          name="map" 
+          options={{
+            gestureEnabled: false,
+          }}
+        />
+        <Stack.Screen 
+          name="explore" 
+          options={{
+            gestureEnabled: false,
+          }}
+        />
+        <Stack.Screen 
+          name="profile" 
+          options={{
+            gestureEnabled: false,
+          }}
+        />
+        <Stack.Screen 
+          name="collections" 
+          options={{
+            gestureEnabled: false,
+          }}
+        />
         <Stack.Screen name="route-details" />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>

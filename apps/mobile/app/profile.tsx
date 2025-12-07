@@ -7,9 +7,10 @@ import {
   ScrollView,
   ActivityIndicator,
   Image,
+  BackHandler,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useNavigation } from "expo-router";
 import Navbar from "@/components/Navbar";
 import { PointsBadge } from "@/components/PointsBadge";
 import { authClient } from "@/lib/auth-client";
@@ -31,6 +32,7 @@ export type { CollectedItem } from "@/lib/api-client";
 
 const ProfileScreen: React.FC = () => {
   const router = useRouter();
+  const navigation = useNavigation();
   const { data: session, isPending } = authClient.useSession();
   const [stats, setStats] = useState<{
     completionPercentage: number;
@@ -47,6 +49,24 @@ const ProfileScreen: React.FC = () => {
       router.replace("/");
     }
   }, [session, isPending, router]);
+
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      return true;
+    });
+
+    const unsubscribe = navigation.addListener('beforeRemove', (e: any) => {
+      const targetRoute = e.data?.action?.payload?.name;
+      if (targetRoute === 'splash' || targetRoute === 'index') {
+        e.preventDefault();
+      }
+    });
+
+    return () => {
+      backHandler.remove();
+      unsubscribe();
+    };
+  }, [navigation]);
 
   useEffect(() => {
     if (session && !isPending) {

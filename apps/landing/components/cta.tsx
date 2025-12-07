@@ -19,7 +19,6 @@ export default function DownloadCta() {
             </div>
           </div>
 
-          {/* PRAWA KOLUMNA – CONTENT */}
           <div className="w-full lg:w-2/3">
             <h2 className="font-semibold text-3xl md:text-4xl lg:text-5xl text-center lg:text-left tracking-tight text-foreground">
               Już teraz dostępne dla Ciebie
@@ -32,7 +31,6 @@ export default function DownloadCta() {
             </p>
 
             <div className="mt-10 flex flex-col items-center gap-6 md:flex-row md:justify-start">
-              {/* App Store button */}
               <button
                 type="button"
                 className="flex items-center justify-center w-48 mt-3 text-white bg-black rounded-lg h-14"

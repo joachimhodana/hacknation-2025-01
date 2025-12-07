@@ -25,7 +25,6 @@ export default function Footer() {
                 aria-label="Facebook"
                 className="inline-flex items-center justify-center rounded-full border border-border/70 p-2 hover:border-primary hover:text-primary transition-colors"
               >
-                {/* FB */}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="w-5 h-5"
@@ -42,7 +41,6 @@ export default function Footer() {
                 aria-label="Instagram"
                 className="inline-flex items-center justify-center rounded-full border border-border/70 p-2 hover:border-primary hover:text-primary transition-colors"
               >
-                {/* IG */}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="w-5 h-5"
@@ -63,7 +61,6 @@ export default function Footer() {
                 aria-label="X / Twitter"
                 className="inline-flex items-center justify-center rounded-full border border-border/70 p-2 hover:border-primary hover:text-primary transition-colors"
               >
-                {/* X */}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="w-5 h-5"
@@ -77,9 +74,7 @@ export default function Footer() {
           </ul>
         </div>
 
-        {/* PRAWA STRONA – LINKI */}
         <div className="min-[1200px]:col-span-2 grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* KOLUMNA 1 */}
           <div className="max-lg:min-w-[140px]">
             <h4 className="text-sm font-semibold text-foreground uppercase tracking-[0.16em]">
               Aplikacja
@@ -120,7 +115,6 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* KOLUMNA 2 */}
           <div className="max-lg:min-w-[140px]">
             <h4 className="text-sm font-semibold text-foreground uppercase tracking-[0.16em]">
               Dla miasta
@@ -145,7 +139,6 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* KOLUMNA 3 */}
           <div className="max-lg:min-w-[140px]">
             <h4 className="text-sm font-semibold text-foreground uppercase tracking-[0.16em]">
               Społeczność
@@ -170,7 +163,6 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* KOLUMNA 4 */}
           <div className="max-lg:min-w-[140px]">
             <h4 className="text-sm font-semibold text-foreground uppercase tracking-[0.16em]">
               Więcej

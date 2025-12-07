@@ -12,9 +12,10 @@ import {
   ActivityIndicator,
   Image,
   ImageSourcePropType,
+  BackHandler,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useNavigation } from "expo-router";
 import { fetchUserStats, type CollectedItem, type Reward } from "@/lib/api-client";
 import { getAPIBaseURL } from "@/lib/api-url";
 import Navbar from "@/components/Navbar";
@@ -42,6 +43,7 @@ const COLORS = {
 
 const CollectionsScreen: React.FC = () => {
   const router = useRouter();
+  const navigation = useNavigation();
   const { data: session, isPending } = authClient.useSession();
   const [allItems, setAllItems] = useState<CollectedItem[]>([]);
   const [itemsLoading, setItemsLoading] = useState(true);
@@ -62,6 +64,24 @@ const CollectionsScreen: React.FC = () => {
       router.replace("/");
     }
   }, [session, isPending, router]);
+
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      return true;
+    });
+
+    const unsubscribe = navigation.addListener('beforeRemove', (e: any) => {
+      const targetRoute = e.data?.action?.payload?.name;
+      if (targetRoute === 'splash' || targetRoute === 'index') {
+        e.preventDefault();
+      }
+    });
+
+    return () => {
+      backHandler.remove();
+      unsubscribe();
+    };
+  }, [navigation]);
 
   useEffect(() => {
     if (session && !isPending) {
@@ -305,78 +325,6 @@ const CollectionsScreen: React.FC = () => {
                 },
               ]}
             >
-              {selectedItem && (
-                <>
-                  <View style={styles.modalAccentStrip}>
-                    <View
-                      style={[
-                        styles.modalAccentSegment,
-                        { backgroundColor: COLORS.red },
-                      ]}
-                    />
-                    <View
-                      style={[
-                        styles.modalAccentSegment,
-                        { backgroundColor: COLORS.yellow },
-                      ]}
-                    />
-                    <View
-                      style={[
-                        styles.modalAccentSegment,
-                        { backgroundColor: COLORS.blue },
-                      ]}
-                    />
-                  </View>
-
-                  <View style={styles.modalContent}>
-                    <View style={styles.modalHeaderRow}>
-                      <View style={styles.modalEmojiWrapper}>
-                        <Text style={styles.modalEmoji}>{selectedItem.emoji}</Text>
-                      </View>
-
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.modalTitle}>
-                          {selectedItem.title}
-                        </Text>
-                        <Text style={styles.modalPlace}>
-                          {selectedItem.placeName ?? "Miejsce do uzupełnienia"}
-                        </Text>
-                      </View>
-                    </View>
-
-                    <Text style={styles.modalDescription}>
-                      {selectedItem.description}
-                    </Text>
-
-                    <View style={styles.modalMetaRow}>
-                      <View>
-                        <Text style={styles.modalMetaLabel}>Status:</Text>
-                        <Text style={styles.modalMetaValue}>
-                          {selectedItem.collected
-                            ? "Zebrano"
-                            : "Jeszcze nie zebrano"}
-                        </Text>
-                      </View>
-
-                      <View style={{ alignItems: "flex-end" }}>
-                        <Text style={styles.modalMetaLabel}>Data zebrania:</Text>
-                        <Text style={styles.modalMetaValue}>
-                          {selectedItem.collectedAt && selectedItem.collected
-                            ? selectedItem.collectedAt
-                            : "—"}
-                        </Text>
-                      </View>
-                    </View>
-
-                    <TouchableOpacity
-                      style={styles.modalCloseButton}
-                      onPress={closeModal}
-                    >
-                      <Text style={styles.modalCloseText}>Zamknij</Text>
-                    </TouchableOpacity>
-                  </View>
-                </>
-              )}
               {selectedReward && (
                 <>
                   <View style={styles.modalAccentStrip}>
@@ -406,7 +354,6 @@ const CollectionsScreen: React.FC = () => {
                         source={selectedReward.imageSource}
                         style={styles.modalRewardImage}
                         resizeMode="cover"
-                        defaultSource={require("@/assets/images/rewards/rejewski.png")}
                       />
                     )}
                     <View style={styles.modalHeaderRow}>

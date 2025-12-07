@@ -4,7 +4,6 @@ import { useInView } from "@/lib/hooks";
 
 
 const Illustrations = {
-  // 1. Zostawiamy (Trasa)
   Routes: () => (
     <div className="absolute inset-0 w-full h-full overflow-hidden">
       <svg
@@ -20,7 +19,6 @@ const Illustrations = {
           strokeLinecap="round"
         />
       </svg>
-      {/* Elementy 3D */}
       <div className="absolute top-[20%] right-[20%] p-3 bg-white rounded-2xl shadow-lg border border-blue-100 transform rotate-6 animate-pulse">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -49,10 +47,8 @@ const Illustrations = {
     </div>
   ),
 
-  // 2. Zostawiamy (Mapa)
   MapDiscovery: () => (
     <div className="absolute inset-0 w-full h-full overflow-hidden bg-blue-50/20">
-      {/* Abstrakcyjna siatka mapy pod kątem */}
       <div className="absolute -top-10 -left-10 w-[140%] h-[140%] grid grid-cols-6 gap-4 transform rotate-12 opacity-30">
         {[...Array(24)].map((_, i) => (
           <div key={i} className="bg-blue-100 rounded-lg h-24 w-full"></div>
@@ -82,7 +78,6 @@ const Illustrations = {
     </div>
   ),
 
-  // 3. Zostawiamy (Nagrody)
   Rewards: () => (
     <div className="absolute inset-0 w-full h-full overflow-hidden flex justify-center pt-10">
       <svg
@@ -110,10 +105,8 @@ const Illustrations = {
     </div>
   ),
 
-  // 4. NOWE: Realne odczucia (Puls miasta / Rytm)
   Feelings: () => (
     <div className="absolute inset-0 w-full h-full overflow-hidden bg-linear-to-br from-white to-blue-50/30">
-      {/* Linia pulsu/rytmu serca przechodząca w trasę */}
       <svg
         className="absolute w-full h-48 top-[10%]"
         preserveAspectRatio="none"
@@ -136,7 +129,6 @@ const Illustrations = {
         />
       </svg>
 
-      {/* Pływające dymki "nastroju" */}
       <div className="absolute top-[20%] left-[15%] opacity-90 animate-[bounce_3s_infinite]">
         <div className="bg-white px-3 py-1.5 rounded-l-xl rounded-tr-xl rounded-br-none shadow-md border border-blue-100">
           <span className="text-xl">😌</span>
@@ -150,14 +142,11 @@ const Illustrations = {
     </div>
   ),
 
-  // 5. NOWE: Dostępność (Fala dźwiękowa + Lupa)
   Accessible: () => (
     <div className="absolute inset-0 w-full h-full overflow-hidden">
-      {/* Koncentryczne kręgi (echo/dźwięk) */}
       <div className="absolute -right-10 -top-10 w-64 h-64 border-[20px] border-yellow-50 rounded-full opacity-50"></div>
       <div className="absolute -right-10 -top-10 w-48 h-48 border-[20px] border-blue-50 rounded-full opacity-50"></div>
 
-      {/* Centralny element: Głośnik / Oko */}
       <div className="absolute top-[25%] left-[10%]">
         <div className="flex gap-1 items-end h-16">
           <div className="w-2 bg-blue-500 rounded-full h-6 animate-[pulse_1s_ease-in-out_infinite]"></div>
@@ -167,7 +156,6 @@ const Illustrations = {
         </div>
       </div>
 
-      {/* Element powiększenia */}
       <div className="absolute top-[20%] right-[15%] w-20 h-20 bg-white/80 backdrop-blur-sm rounded-full border-2 border-gray-900 shadow-xl flex items-center justify-center transform rotate-12">
         <span className="text-3xl font-bold text-gray-900">Aa</span>
       </div>
@@ -257,7 +245,7 @@ const benefitsData = [
     description:
       "Aplikacja reaguje na Twoją pozycję i tempo zwiedzania, zmieniając narrację w czasie rzeczywistym.",
     illustration: Illustrations.Feelings,
-    colSpan: "md:col-span-2", // Szersza karta dla urozmaicenia siatki
+    colSpan: "md:col-span-2",
   },
   {
     title: "Dostępna dla każdego",
@@ -271,7 +259,7 @@ const benefitsData = [
     description:
       "Jedno narzędzie — pozwala turystom odkrywać, a mieszkańcom poznawać miasto na nowo.",
     illustration: Illustrations.ForEveryone,
-    colSpan: "md:col-span-3", // Pełna szerokość na dole
+    colSpan: "md:col-span-3",
   },
 ];
 
@@ -303,28 +291,22 @@ const FeaturesSection = () => {
           </p>
         </div>
 
-        {/* BENTO GRID */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[320px]">
-          {benefitsData.map((benefit, index) => {
+          {benefitsData.map((benefit) => {
             const Illustration = benefit.illustration;
             return (
               <Card
                 key={benefit.title}
-                // STYL KARTY: Relative dla pozycjonowania tła, overflow-hidden żeby nic nie wystawało
                 className={`relative overflow-hidden rounded-[2rem] border-0 bg-gray-50 group transition-all duration-500 ${
                   benefit.colSpan || ""
                 }`}
               >
-                {/* 1. TŁO - INFOGRAFIKA */}
                 <div className="absolute inset-0 z-0 transition-transform duration-700 group-hover:scale-105">
                   <Illustration />
                 </div>
 
-                {/* 2. FADE - GRADIENT DLA TEKSTU */}
-                {/* Zmieniłem na biały gradient, bo strona jest jasna. Daje to efekt "mgły" na dole karty */}
                 <div className="absolute inset-0 z-10 bg-gradient-to-t from-white via-white/90 to-transparent pointer-events-none" />
 
-                {/* 3. TEKST */}
                 <CardContent className="relative z-20 h-full flex flex-col justify-end p-8">
                   <div className="transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
                     <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">

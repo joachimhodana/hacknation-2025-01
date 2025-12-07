@@ -1,6 +1,6 @@
-import { StyleSheet, ScrollView, View, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { StyleSheet, ScrollView, View, Text, ActivityIndicator, TouchableOpacity, BackHandler } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
 import { useEffect, useState, useCallback } from 'react';
 import { RouteCard } from '@/components/route-card';
 import Navbar from '@/components/Navbar';
@@ -21,6 +21,7 @@ const COLORS = {
 
 export default function ExploreScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const { data: session, isPending } = authClient.useSession();
   const [paths, setPaths] = useState<Route[]>([]);
   const [pathsLoading, setPathsLoading] = useState(true);
@@ -41,6 +42,27 @@ export default function ExploreScreen() {
       router.replace("/");
     }
   }, [session, isPending, router]);
+
+  // Block back navigation to splash/index
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      // Prevent going back to splash/index
+      return true;
+    });
+
+    const unsubscribe = navigation.addListener('beforeRemove', (e: any) => {
+      // Prevent navigation to splash or index
+      const targetRoute = e.data?.action?.payload?.name;
+      if (targetRoute === 'splash' || targetRoute === 'index') {
+        e.preventDefault();
+      }
+    });
+
+    return () => {
+      backHandler.remove();
+      unsubscribe();
+    };
+  }, [navigation]);
 
   const loadPaths = useCallback(async () => {
     console.log("[Explore] ===== LOAD PATHS CALLED =====");

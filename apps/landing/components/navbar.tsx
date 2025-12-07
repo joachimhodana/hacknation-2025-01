@@ -62,7 +62,6 @@ export default function Navbar() {
           </a>
         </div>
 
-        {/* CTA */}
         <div>
           <Button
             className="rounded-full bg-[#0095DA] hover:bg-[#007ec0] text-white w-48 text-sm font-medium"

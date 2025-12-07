@@ -88,7 +88,6 @@ export default function ContactPage() {
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* NAME */}
               <FormField
                 control={form.control}
                 name="name"
@@ -113,7 +112,6 @@ export default function ContactPage() {
                 )}
               />
 
-              {/* EMAIL */}
               <FormField
                 control={form.control}
                 name="email"
@@ -158,7 +156,6 @@ export default function ContactPage() {
                 )}
               />
 
-              {/* CTA */}
               <Button
                 type="submit"
                 size="lg"
