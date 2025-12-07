@@ -1,7 +1,7 @@
 import { Elysia } from "elysia";
 import { db } from "@/db";
 import { paths, pathPoints, points, userPathProgress, userPointVisit, userItems, characters } from "@/db/schema";
-import { eq, and, asc, desc } from "drizzle-orm";
+import { eq, and, asc, desc, isNotNull } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 
 // User paths endpoint - requires authentication, returns only published paths
@@ -678,6 +678,70 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
       return {
         success: false,
         error: error.message || "Failed to mark point as visited",
+      };
+    }
+  })
+  .get("/points/public", async ({ request }) => {
+    try {
+      // Get session from Better Auth
+      const session = await auth.api.getSession({
+        headers: request.headers,
+      });
+
+      if (!session?.user) {
+        return {
+          success: false,
+          error: "Unauthorized",
+        };
+      }
+
+      // Fetch all public points with characters
+      const publicPointsData = await db
+        .select({
+          point: points,
+          character: characters,
+        })
+        .from(points)
+        .leftJoin(characters, eq(points.characterId, characters.id))
+        .where(
+          and(
+            eq(points.isPublic, true),
+            isNotNull(points.characterId)
+          )
+        );
+
+      // Transform to match PublicPoint interface
+      const publicPoints = publicPointsData.map((pp) => ({
+        point_id: pp.point.id,
+        name: pp.point.locationLabel || "Public Point",
+        map_marker: {
+          coordinates: {
+            latitude: pp.point.latitude,
+            longitude: pp.point.longitude,
+          },
+        },
+        place_description: pp.point.narrationText,
+        radius_meters: pp.point.radiusMeters,
+        reward_label: pp.point.rewardLabel || null,
+        reward_icon_url: pp.point.rewardIconUrl || null,
+        audio_url: pp.point.audioUrl || null,
+        character: pp.character ? {
+          id: pp.character.id,
+          name: pp.character.name,
+          avatarUrl: pp.character.avatarUrl,
+          description: pp.character.description,
+        } : null,
+      }));
+
+      return {
+        success: true,
+        data: publicPoints,
+      };
+    } catch (error: any) {
+      console.error("[user/points/public] Error:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to fetch public points",
       };
     }
   });

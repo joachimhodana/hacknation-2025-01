@@ -1,13 +1,53 @@
 [
   {
-    "name": "Przechodzący przez rzekę",
-    "avatarUrl": "/resources/seeded/characters/przechodzacy-przez-rzekę.png",
-    "description": "Rzeźba przedstawiająca przechodzącego przez rzekę"
+    "name": "Marian Rejewski",
+    "avatarUrl": "/resources/seeded/characters/rejewski.png",
+    "description": "Słynny bydgoski kryptolog, który brał udział w złamaniu szyfru Enigmy i odmienił przebieg II wojny światowej."
   },
   {
-    "name": "Marcin Rejewski",
-    "avatarUrl": "/resources/seeded/characters/rejewski.png",
-    "description": "Kryptolog, który pomógł złamać kod Enigmy"
+    "name": "Przechodzący przez Rzekę",
+    "avatarUrl": "/resources/seeded/characters/przechodzacy-przez-rzekę.png",
+    "description": "Ikoniczna rzeźba zawieszona nad Brdą, symbol odwagi, równowagi i przekraczania granic."
+  },
+  {
+    "name": "Łuczniczka",
+    "avatarUrl": "/resources/seeded/characters/luczniczka.png",
+    "description": "Najsłynniejsza bydgoska rzeźba przedstawiająca skoncentrowaną łuczniczkę w momencie tuż przed wypuszczeniem strzały."
+  },
+  {
+    "name": "Kazimierz Wielki",
+    "avatarUrl": "/resources/seeded/characters/kazimierz-wielki.png",
+    "description": "Król Polski, który nadał Bydgoszczy prawa miejskie — jego pomnik przypomina o początkach miasta."
+  },
+  {
+    "name": "Fontanna Potop",
+    "avatarUrl": "/resources/seeded/characters/potop.png",
+    "description": "Imponująca rzeźba i fontanna symbolizująca walkę człowieka z żywiołem oraz odrodzenie dzieła po latach niszczenia."
+  },
+  {
+    "name": "Pomnik Walki i Męczeństwa",
+    "avatarUrl": "/resources/seeded/characters/walka-i-meczenstwo.png",
+    "description": "Monument upamiętniający ofiary II wojny światowej oraz mieszkańców, którzy sprzeciwili się okupacji."
+  },
+  {
+    "name": "Trzy Gracje",
+    "avatarUrl": "/resources/seeded/characters/trzy-gracje.png",
+    "description": "Rzeźba przedstawiająca trzy kobiece postacie symbolizujące harmonię i piękno."
+  },
+  {
+    "name": "Muzyczna Przechadzka",
+    "avatarUrl": "/resources/seeded/characters/muzyczna-przechadzka.png",
+    "description": "Artystyczna instalacja w Dzielnicy Muzycznej — rzeźba inspirowana muzyką i ruchem."
+  },
+  {
+    "name": "Jan Kochanowski",
+    "avatarUrl": "/resources/seeded/characters/kochanowski.png",
+    "description": "Wybitny poeta renesansu, autor 'Trenów' i 'Fraszek', którego pomnik upamiętnia jego wkład w polską literaturę."
+  },
+  {
+    "name": "Andrzej Szwalbe",
+    "avatarUrl": "/resources/seeded/characters/szwalbe.png",
+    "description": "Twórca koncepcji bydgoskiej Dzielnicy Muzycznej i wybitny promotor kultury w mieście."
   },
   {
     "name": "Józef Świecicki ps. Orzeł",
@@ -15,4 +55,3 @@
     "description": "Poległy podczas zasadzki na Radzie Główną"
   }
 ]
-

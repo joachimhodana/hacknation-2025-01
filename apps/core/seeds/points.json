@@ -8,8 +8,8 @@
     "audioUrl": "/resources/seeded/audio/rejewski_0.mp3",
     "rewardLabel": "Cyfrowy Wirnik I",
     "rewardIconUrl": "/resources/seeded/rewards/wirnik-icon.png",
-    "isPublic": false,
-    "characterId": 1
+    "isPublic": true,
+    "characterId": 0
   },
   {
     "latitude": 53.1255,
@@ -20,8 +20,8 @@
     "audioUrl": "/resources/seeded/audio/rejewski_1.mp3",
     "rewardLabel": "Szyfrogram Wojskowy",
     "rewardIconUrl": "/resources/seeded/rewards/szyfrogram-icon.png",
-    "isPublic": false,
-    "characterId": 1
+    "isPublic": true,
+    "characterId": 0
   },
   {
     "latitude": 53.1230,
@@ -32,7 +32,127 @@
     "audioUrl": "/resources/seeded/audio/rejewski_2.mp3",
     "rewardLabel": "Medal Złamanej Enigmy",
     "rewardIconUrl": "/resources/seeded/rewards/enigma-medal-icon.png",
-    "isPublic": false,
+    "isPublic": true,
+    "characterId": 0
+  },
+  {
+    "latitude": 53.1239,
+    "longitude": 18.0008,
+    "radiusMeters": 50,
+    "locationLabel": "Przechodzący przez Rzekę",
+    "narrationText": "Witaj, śmiałku. Zawieszony nad Brdą balansuję między światem realnym a metaforą. Jestem symbolem odwagi – tej, której potrzebujesz, by ruszyć tam, gdzie inni nie idą. Zatrzymaj się na chwilę. Poczuj powiew wiatru, który opływa moją sylwetkę. Co dziś próbujesz przekroczyć w swoim życiu?",
+    "audioUrl": "/resources/seeded/audio/rzeka_0.mp3",
+    "rewardLabel": "Medal Odwagi",
+    "rewardIconUrl": "/resources/seeded/rewards/medal-odwagi.png",
+    "isPublic": true,
     "characterId": 1
+  },
+  {
+    "latitude": 53.1232,
+    "longitude": 18.0077,
+    "radiusMeters": 50,
+    "locationLabel": "Łuczniczka",
+    "narrationText": "Spójrz na mnie – zamierzoną, skupioną, gotową do strzału. Reprezentuję elegancję, precyzję i determinację. To, co widzisz, to moment zawieszony w czasie. A gdyby w Twoim życiu też był teraz taki moment? Cel już znasz. Pociągnij cięciwę.",
+    "audioUrl": "/resources/seeded/audio/luczniczka_0.mp3",
+    "rewardLabel": "Strzała Determinacji",
+    "rewardIconUrl": "/resources/seeded/rewards/strzala-icon.png",
+    "isPublic": true,
+    "characterId": 2
+  },
+  {
+    "latitude": 53.1268,
+    "longitude": 17.9988,
+    "radiusMeters": 50,
+    "locationLabel": "Pomnik Kazimierza Wielkiego",
+    "narrationText": "Ja jestem Kazimierz, król, który dał Bydgoszczy prawa miejskie. Widzę, że chcesz poznać historię tego miejsca. Dobrze. Król kocha odważnych. To miasto powstało z decyzji, która na zawsze odmieniła jego los. Jaką decyzję dziś podejmiesz Ty?",
+    "audioUrl": "/resources/seeded/audio/kazimierz_0.mp3",
+    "rewardLabel": "Królewski Przywilej",
+    "rewardIconUrl": "/resources/seeded/rewards/przywilej-icon.png",
+    "isPublic": true,
+    "characterId": 3
+  },
+  {
+    "latitude": 53.1195,
+    "longitude": 18.0052,
+    "radiusMeters": 50,
+    "locationLabel": "Fontanna Potop",
+    "narrationText": "Opowiem Ci historię potężnego dzieła. Byłem świadkiem dumy i zniszczenia, a potem – odrodzenia. Potop symbolizuje ludzką walkę z siłami, które wydają się nie do pokonania. Może i Ty walczysz z takim potopem? Pamiętaj – przetrwanie rodzi siłę.",
+    "audioUrl": "/resources/seeded/audio/potop_0.mp3",
+    "rewardLabel": "Kropla Wytrwałości",
+    "rewardIconUrl": "/resources/seeded/rewards/kropla-icon.png",
+    "isPublic": true,
+    "characterId": 4
+  },
+  {
+    "latitude": 53.1247,
+    "longitude": 18.0108,
+    "radiusMeters": 50,
+    "locationLabel": "Pomnik Walki i Męczeństwa",
+    "narrationText": "Pamiętam tych, którzy nie bali się stanąć przeciwko złu. Czasem najmocniejszym krzykiem jest milczenie, a największą siłą – nieugiętość. Jeśli tu stoisz, to może chcesz usłyszeć ich historię. Otwórz serce. Otwórz umysł. Pamięć to obowiązek.",
+    "audioUrl": "/resources/seeded/audio/walka_0.mp3",
+    "rewardLabel": "Płomień Pamięci",
+    "rewardIconUrl": "/resources/seeded/rewards/plomien-icon.png",
+    "isPublic": true,
+    "characterId": 5
+  },
+  {
+    "latitude": 53.1221,
+    "longitude": 18.0033,
+    "radiusMeters": 50,
+    "locationLabel": "Ławeczka Mariana Rejewskiego",
+    "narrationText": "Usiądź. Odpocznij. Tu, na tej ławeczce, możesz poczuć ducha kryptologii. Łamałem szyfry, które miały złamać świat. A jednak to właśnie tu – w Bydgoszczy – zaczęła się moja droga. Pamiętaj: największe zagadki rozwiązują ci, którzy się nie poddają.",
+    "audioUrl": "/resources/seeded/audio/rejewski_laweczka.mp3",
+    "rewardLabel": "Kod Ocalenia",
+    "rewardIconUrl": "/resources/seeded/rewards/kod-icon.png",
+    "isPublic": true,
+    "characterId": 0
+  },
+  {
+    "latitude": 53.1250,
+    "longitude": 18.0013,
+    "radiusMeters": 50,
+    "locationLabel": "Rzeźba Trzy Gracje",
+    "narrationText": "Jesteśmy harmonią, równowagą i pięknem. Trzy sylwetki splecione w rytmicznym ruchu, który zatrzymał się w czasie. Symbolizujemy to, co w życiu najważniejsze – współistnienie. A czy Ty masz wokół siebie ludzi, z którymi tworzysz harmonię?",
+    "audioUrl": "/resources/seeded/audio/gracje_0.mp3",
+    "rewardLabel": "Amulet Harmonii",
+    "rewardIconUrl": "/resources/seeded/rewards/harmonia-icon.png",
+    "isPublic": true,
+    "characterId": 6
+  },
+  {
+    "latitude": 53.1262,
+    "longitude": 18.0072,
+    "radiusMeters": 50,
+    "locationLabel": "Rzeźba Przechadzka po Dzielnicy Muzycznej",
+    "narrationText": "Witaj w miejscu, gdzie muzyka przenika miasto. Moje nuty rozsypują się po trawnikach i chodnikach. Każda z nich niesie wspomnienia dźwięków, które kiedyś tu brzmiały. Posłuchaj – może odnajdziesz swoją melodię?",
+    "audioUrl": "/resources/seeded/audio/muzyczna_0.mp3",
+    "rewardLabel": "Nuta Inspiracji",
+    "rewardIconUrl": "/resources/seeded/rewards/nuta-icon.png",
+    "isPublic": true,
+    "characterId": 7
+  },
+  {
+    "latitude": 53.1207,
+    "longitude": 18.0025,
+    "radiusMeters": 50,
+    "locationLabel": "Pomnik Jana Kochanowskiego",
+    "narrationText": "Cóż to za wędrowiec do mnie przyszedł? Jestem Jan, poeta – ten od trenów, fraszek i mądrości. Zawsze wierzyłem, że słowa mogą leczyć i budować. Pozwól, że podzielę się z Tobą jednym: codzienność jest dziełem sztuki, jeśli tak na nią spojrzysz.",
+    "audioUrl": "/resources/seeded/audio/kochanowski_0.mp3",
+    "rewardLabel": "Pióro Poety",
+    "rewardIconUrl": "/resources/seeded/rewards/piorko-icon.png",
+    "isPublic": true,
+    "characterId": 8
+  },
+  {
+    "latitude": 53.1189,
+    "longitude": 18.0029,
+    "radiusMeters": 50,
+    "locationLabel": "Pomnik Andrzeja Szwalbego",
+    "narrationText": "Byłem człowiekiem, który wierzył w kulturę i potrafił nią zmieniać miasto. To ja stworzyłem fundamenty Dzielnicy Muzycznej. Jeśli wierzysz w swoje idee – pielęgnuj je. Zmieniają więcej, niż myślisz.",
+    "audioUrl": "/resources/seeded/audio/szwalbe_0.mp3",
+    "rewardLabel": "Klucz Kultury",
+    "rewardIconUrl": "/resources/seeded/rewards/klucz-icon.png",
+    "isPublic": true,
+    "characterId": 9
   }
 ]

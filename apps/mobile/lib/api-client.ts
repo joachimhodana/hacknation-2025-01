@@ -439,3 +439,58 @@ export async function markPointVisited(
   }
 }
 
+export interface PublicPoint {
+  point_id: number;
+  name: string;
+  map_marker: {
+    coordinates: {
+      latitude: number;
+      longitude: number;
+    };
+  };
+  place_description: string;
+  radius_meters: number;
+  reward_label?: string | null;
+  reward_icon_url?: string | null;
+  audio_url?: string | null;
+  character: {
+    id: number;
+    name: string;
+    avatarUrl: string;
+    description: string;
+  } | null;
+}
+
+export async function fetchPublicPoints(): Promise<PublicPoint[] | null> {
+  try {
+    const headers = await getAuthHeaders();
+    const baseURL = getAPIBaseURL();
+    const fullURL = `${baseURL}/user/points/public`;
+    
+    if (__DEV__) {
+      console.log("[API] fetchPublicPoints - Full URL:", fullURL);
+    }
+
+    const response = await fetch(fullURL, {
+      method: "GET",
+      headers,
+      credentials: Platform.OS === "web" ? "include" : "omit",
+    });
+
+    if (!response.ok) {
+      console.error("[API] Failed to fetch public points:", response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    if (data.success && data.data) {
+      return data.data;
+    }
+
+    return null;
+  } catch (error) {
+    console.error("[API] Error fetching public points:", error);
+    return null;
+  }
+}
+
