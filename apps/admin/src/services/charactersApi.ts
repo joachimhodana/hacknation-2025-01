@@ -119,7 +119,8 @@ export const updateCharacter = async (id: number, data: CharacterUpdateData & { 
 
     if (data.avatarFile) {
       const formData = new FormData()
-      if (data.name) formData.append('name', data.name)
+      // Zawsze wysyłaj name, nawet gdy jest plik
+      formData.append('name', data.name || '')
       if (data.description) formData.append('description', data.description)
       if (data.voicePreset) formData.append('voicePreset', data.voicePreset)
       formData.append('avatarFile', data.avatarFile)
@@ -180,14 +181,4 @@ export const deleteCharacter = async (id: number): Promise<void> => {
     console.error("Error deleting character:", error)
     throw error
   }
-}
-
-// Upload avatar file and get URL
-// Note: This assumes you have an endpoint for file uploads
-// If not, you'll need to handle file upload separately
-export const uploadAvatar = async (file: File): Promise<string> => {
-  // TODO: Implement file upload endpoint
-  // For now, return a placeholder or handle it differently
-  // You might need to create a FormData and upload to a separate endpoint
-  throw new Error("Avatar upload not implemented yet. Please implement file upload endpoint first.")
 }

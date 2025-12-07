@@ -2,76 +2,10 @@ import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx"
 import { Button } from "@/components/ui/button.tsx"
-import { MapPin, Clock, Route, Edit, Eye, EyeOff, Plus, Grid3x3, List } from "lucide-react"
+import { MapPin, Clock, Route, Edit, Eye, EyeOff, Plus, Grid3x3, List, X } from "lucide-react"
 import type { RoutesObjectType } from "@/types/RoutesType.tsx"
-import { getPaths } from "@/lib/api-client.ts"
-
-// Mock data - w prawdziwej aplikacji dane będą z API
-const mockRoutes: RoutesObjectType[] = [
-  {
-    pathId: "1",
-    title: "Trasa po Warszawie",
-    shortDescription: "Piękna trasa po stolicy",
-    longDescription: "Szczegółowy opis trasy po Warszawie...",
-    category: "walking",
-    totalTimeMinutes: 120,
-    difficulty: "easy",
-    distanceMeters: 5000,
-    thumbnailUrl: "",
-    isPublished: true,
-    stylePreset: "modern",
-    makerIconUrl: "",
-    createBy: "admin",
-    createdAt: Date.now() - 86400000 * 5,
-    updatedAt: Date.now() - 86400000 * 2,
-    stops: [
-      { stop_id: 1, name: "Punkt 1", map_marker: { display_name: "Punkt 1", address: "Warszawa", coordinates: { latitude: 52.2297, longitude: 21.0122 } }, place_description: "Opis", voice_over_text: "Dialog" },
-      { stop_id: 2, name: "Punkt 2", map_marker: { display_name: "Punkt 2", address: "Warszawa", coordinates: { latitude: 52.2297, longitude: 21.0122 } }, place_description: "Opis", voice_over_text: "Dialog" },
-    ]
-  },
-  {
-    pathId: "2",
-    title: "Szlak górski Beskidy",
-    shortDescription: "Trasa górska dla zaawansowanych",
-    longDescription: "Szczegółowy opis trasy górskiej...",
-    category: "hiking",
-    totalTimeMinutes: 300,
-    difficulty: "hard",
-    distanceMeters: 15000,
-    thumbnailUrl: "",
-    isPublished: false,
-    stylePreset: "classic",
-    makerIconUrl: "",
-    createBy: "admin",
-    createdAt: Date.now() - 86400000 * 10,
-    updatedAt: Date.now() - 86400000 * 1,
-    stops: [
-      { stop_id: 1, name: "Punkt 1", map_marker: { display_name: "Punkt 1", address: "Beskidy", coordinates: { latitude: 49.5, longitude: 19.0 } }, place_description: "Opis", voice_over_text: "Dialog" },
-    ]
-  },
-  {
-    pathId: "3",
-    title: "Wycieczka rowerowa",
-    shortDescription: "Trasa rowerowa po okolicy",
-    longDescription: "Szczegółowy opis trasy rowerowej...",
-    category: "cycling",
-    totalTimeMinutes: 90,
-    difficulty: "medium",
-    distanceMeters: 20000,
-    thumbnailUrl: "",
-    isPublished: true,
-    stylePreset: "colorful",
-    makerIconUrl: "",
-    createBy: "admin",
-    createdAt: Date.now() - 86400000 * 3,
-    updatedAt: Date.now() - 3600000,
-    stops: [
-      { stop_id: 1, name: "Punkt 1", map_marker: { display_name: "Punkt 1", address: "Okolica", coordinates: { latitude: 52.0, longitude: 21.0 } }, place_description: "Opis", voice_over_text: "Dialog" },
-      { stop_id: 2, name: "Punkt 2", map_marker: { display_name: "Punkt 2", address: "Okolica", coordinates: { latitude: 52.0, longitude: 21.0 } }, place_description: "Opis", voice_over_text: "Dialog" },
-      { stop_id: 3, name: "Punkt 3", map_marker: { display_name: "Punkt 3", address: "Okolica", coordinates: { latitude: 52.0, longitude: 21.0 } }, place_description: "Opis", voice_over_text: "Dialog" },
-    ]
-  },
-]
+import { getPaths, deletePath } from "@/lib/api-client.ts"
+import { getBackendImageUrl } from "@/lib/image-utils.ts"
 
 const ITEMS_PER_PAGE = 6
 
@@ -199,6 +133,50 @@ const RoutesListPage = () => {
     return `${mins}min`
   }
 
+  const handleDeleteRoute = async (pathId: string) => {
+    try {
+      const response = await deletePath(pathId)
+      if (response.success) {
+        // Odśwież listę tras
+        const pathsResponse = await getPaths()
+        if (pathsResponse.success && pathsResponse.data) {
+          const mappedRoutes: RoutesObjectType[] = pathsResponse.data.map((path: any) => ({
+            pathId: path.pathId || path.id?.toString() || "",
+            id: path.id,
+            title: path.title || "",
+            shortDescription: path.shortDescription || "",
+            longDescription: path.longDescription || "",
+            category: path.category || "",
+            totalTimeMinutes: path.totalTimeMinutes || 0,
+            difficulty: path.difficulty || "",
+            distanceMeters: path.distanceMeters || 0,
+            thumbnailUrl: path.thumbnailUrl || "",
+            isPublished: path.isPublished || false,
+            stylePreset: path.stylePreset || "",
+            makerIconUrl: path.markerIconUrl || "",
+            createBy: path.createdBy || "",
+            createdAt: path.createdAt ? new Date(path.createdAt).getTime() : Date.now(),
+            updatedAt: path.updatedAt ? new Date(path.updatedAt).getTime() : Date.now(),
+            stops: path.stops || [],
+            pointsCount: path.pointsCount,
+          }))
+          setRoutes(mappedRoutes)
+          // Resetuj do pierwszej strony jeśli potrzeba
+          const newTotalPages = Math.ceil(mappedRoutes.length / ITEMS_PER_PAGE)
+          if (currentPage > newTotalPages && newTotalPages > 0) {
+            setCurrentPage(newTotalPages)
+          }
+        }
+        setError(null)
+      } else {
+        setError(response.error || "Nie udało się usunąć trasy")
+      }
+    } catch (err) {
+      console.error("Failed to delete route:", err)
+      setError(err instanceof Error ? err.message : "Nie udało się usunąć trasy")
+    }
+  }
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -272,32 +250,69 @@ const RoutesListPage = () => {
             ? "grid gap-4 md:grid-cols-2 lg:grid-cols-3" 
             : "space-y-4"
           }>
-            {currentRoutes.map((route) => (
-              <Card key={route.pathId} className={`hover:shadow-lg transition-shadow ${
+            {currentRoutes.map((route) => {
+              const thumbnailUrl = route.thumbnailUrl ? getBackendImageUrl(route.thumbnailUrl) : null
+              
+              return (
+              <Card key={route.pathId} className={`hover:shadow-lg transition-shadow relative ${
                 viewMode === "list" ? "flex" : ""
               }`}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-2 right-2 h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 z-10"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    if (window.confirm(`Czy na pewno chcesz usunąć trasę "${route.title}"? Ta operacja jest nieodwracalna.`)) {
+                      handleDeleteRoute(route.pathId)
+                    }
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
                 {viewMode === "list" && (
-                  <div className="w-48 h-48 bg-gray-100 rounded-l-lg flex items-center justify-center flex-shrink-0">
-                    <Route className="h-12 w-12 text-gray-400" />
+                  <div className="w-48 h-48 bg-gray-100 rounded-l-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {thumbnailUrl ? (
+                      <img 
+                        src={thumbnailUrl} 
+                        alt={route.title}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none'
+                          const parent = (e.target as HTMLImageElement).parentElement
+                          if (parent) {
+                            parent.innerHTML = '<div class="flex items-center justify-center w-full h-full"><svg class="h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg></div>'
+                          }
+                        }}
+                      />
+                    ) : (
+                      <Route className="h-12 w-12 text-gray-400" />
+                    )}
+                  </div>
+                )}
+                {viewMode === "grid" && thumbnailUrl && (
+                  <div className="w-full h-48 bg-gray-100 flex items-center justify-center overflow-hidden rounded-t-lg">
+                    <img 
+                      src={thumbnailUrl} 
+                      alt={route.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none'
+                      }}
+                    />
                   </div>
                 )}
                 <div className={viewMode === "list" ? "flex-1 flex flex-col" : ""}>
                   <CardHeader>
                     <div className={`flex items-start justify-between ${viewMode === "list" ? "flex-row" : ""}`}>
-                      <div className="flex-1">
+                      <div className="flex-1 pr-10">
                         <CardTitle className={`${viewMode === "list" ? "text-xl" : "text-lg"} mb-2`}>
                           {route.title}
                         </CardTitle>
                         <p className={`text-sm text-muted-foreground ${viewMode === "list" ? "" : "line-clamp-2"}`}>
                           {route.shortDescription}
                         </p>
-                      </div>
-                      <div className={`px-2 py-1 rounded text-xs font-medium ml-2 ${
-                        route.isPublished 
-                          ? "bg-green-100 text-green-800" 
-                          : "bg-gray-100 text-gray-800"
-                      }`}>
-                        {route.isPublished ? "Opublikowana" : "Szkic"}
                       </div>
                     </div>
                   </CardHeader>
@@ -332,8 +347,19 @@ const RoutesListPage = () => {
                     </div>
 
                     {route.updatedAt && (
-                      <div className={`text-xs text-muted-foreground ${viewMode === "list" ? "mt-2" : "border-t pt-3"}`}>
-                        Ostatnia edycja: {formatDate(route.updatedAt)}
+                      <div className={`${viewMode === "list" ? "mt-2" : "border-t pt-3"}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className={`px-2 py-1 rounded text-xs font-medium ${
+                            route.isPublished 
+                              ? "bg-green-100 text-green-800" 
+                              : "bg-gray-100 text-gray-800"
+                          }`}>
+                            {route.isPublished ? "Opublikowana" : "Szkic"}
+                          </div>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Ostatnia edycja: {formatDate(route.updatedAt)}
+                        </div>
                       </div>
                     )}
 
@@ -374,7 +400,8 @@ const RoutesListPage = () => {
                   </CardContent>
                 </div>
               </Card>
-            ))}
+              )
+            })}
           </div>
 
           {/* Paginacja */}
