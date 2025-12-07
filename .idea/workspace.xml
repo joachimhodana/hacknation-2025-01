@@ -6,8 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="1df88e0a-f3b6-4388-84f9-5fc94cf4eac0" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/RoutesList/RoutesListPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/RoutesList/RoutesListPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/types/RoutesType.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/types/RoutesType.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/CharacterCreator/CharacterCreatorPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/CharacterCreator/CharacterCreatorPage.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/RouteCreator/RouteCreatorPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/RouteCreator/RouteCreatorPage.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -30,6 +30,7 @@
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="RESET_MODE" value="MIXED" />
   </component>
   <component name="GitHubPullRequestSearchHistory">{
   &quot;lastFilter&quot;: {
@@ -58,7 +59,7 @@
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;admin/characters.v2&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;admin/maps&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
@@ -98,14 +99,15 @@
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="javascript">
-          <url>file://$PROJECT_DIR$/apps/admin/src/App.tsx</url>
-          <option name="timeStamp" value="6" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
 </project>
