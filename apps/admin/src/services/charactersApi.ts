@@ -181,13 +181,3 @@ export const deleteCharacter = async (id: number): Promise<void> => {
     throw error
   }
 }
-
-// Upload avatar file and get URL
-// Note: This assumes you have an endpoint for file uploads
-// If not, you'll need to handle file upload separately
-export const uploadAvatar = async (file: File): Promise<string> => {
-  // TODO: Implement file upload endpoint
-  // For now, return a placeholder or handle it differently
-  // You might need to create a FormData and upload to a separate endpoint
-  throw new Error("Avatar upload not implemented yet. Please implement file upload endpoint first.")
-}

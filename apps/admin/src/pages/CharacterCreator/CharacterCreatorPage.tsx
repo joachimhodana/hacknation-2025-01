@@ -1,52 +1,15 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useForm } from "react-hook-form"
 import { useSearchParams, useNavigate } from "react-router-dom"
-import { yupResolver } from "@hookform/resolvers/yup"
-import * as yup from "yup"
 import { Button } from "@/components/ui/button.tsx"
-import { Input } from "@/components/ui/input.tsx"
-import { Label } from "@/components/ui/label.tsx"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx"
-import { Save, MapPin, Settings, ArrowLeft, ArrowRight, CheckCircle2, X } from "lucide-react"
+import { Save, MapPin, Settings, ArrowLeft, ArrowRight } from "lucide-react"
 import MapComponent from "@/components/shared/MapComponent/MapComponent.tsx"
 import InformationCard from "@/components/shared/CustomCards/InformationCard/InformationCard.tsx"
-import { Form } from "@/components/ui/form.tsx"
-import CustomUsualInput from "@/components/shared/CustomCards/CustomInput/CustomUsualInput.tsx"
-import CustomFileInput from "@/components/shared/CustomCards/CustomInput/CustomFileInput.tsx"
 import { getCharacterById, createCharacter, updateCharacter } from "@/services/charactersApi.ts"
-
-interface DefaultPosition {
-  latitude: number
-  longitude: number
-  description: string
-}
-
-// Typ dla formularza
-interface CharacterFormData {
-  name: string
-  avatarFile: File | null
-  description?: string
-}
-
-// Schemat walidacji Yup - avatar jest opcjonalny (może być null przy edycji)
-const characterFormSchema = yup.object({
-  name: yup
-    .string()
-    .required("Nazwa postaci jest wymagana")
-    .min(2, "Nazwa musi mieć co najmniej 2 znaki")
-    .max(50, "Nazwa może mieć maksymalnie 50 znaków"),
-  avatarFile: yup
-    .mixed<File>()
-    .nullable()
-    .test("fileType", "Plik musi być obrazem", (value) => {
-      if (!value) return true // Null jest OK
-      return value instanceof File && value.type.startsWith("image/")
-    })
-    .test("fileSize", "Plik nie może być większy niż 5MB", (value) => {
-      if (!value) return true // Null jest OK
-      return value instanceof File && value.size <= 5 * 1024 * 1024
-    }),
-}) as yup.ObjectSchema<CharacterFormData>
+import GeneralCharacterForm, { type CharacterFormData } from "./components/GeneralCharacterForm/GeneralCharacterForm.tsx"
+import DefaultPositionStep, { type DefaultPosition } from "./components/DefaultPositionStep/DefaultPositionStep.tsx"
+import CharacterStepsHeader from "./components/CharacterStepsHeader/CharacterStepsHeader.tsx"
 
 const CharacterCreatorPage = () => {
   const [searchParams] = useSearchParams()
@@ -61,18 +24,10 @@ const CharacterCreatorPage = () => {
   const [isSelectingPosition, setIsSelectingPosition] = useState(false)
   const [isLoadingCharacter, setIsLoadingCharacter] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [existingAvatarUrl, setExistingAvatarUrl] = useState<string | null>(null)
+  const [initialFormValues, setInitialFormValues] = useState<Partial<CharacterFormData> | null>(null)
 
-  const form = useForm<CharacterFormData>({
-    resolver: yupResolver(characterFormSchema),
-    mode: "onChange",
-    defaultValues: {
-      name: "",
-      avatarFile: null,
-      description: "",
-    },
-  })
-
-  const { formState } = form
+  const formRef = useRef<ReturnType<typeof useForm<CharacterFormData>> | null>(null)
 
   // Ładowanie danych postaci do edycji
   useEffect(() => {
@@ -96,20 +51,20 @@ const CharacterCreatorPage = () => {
 
           if (!isMounted) return
 
-          // Wypełnij formularz
-          form.reset({
+          // Zapisz wartości początkowe dla formularza
+          setInitialFormValues({
             name: character.name,
             avatarFile: null, // Pliki trzeba będzie załadować osobno z URL
             description: character.description || "",
           })
 
+          // Zapisz istniejący URL avatara do wyświetlenia
+          setExistingAvatarUrl(character.avatarUrl)
+
           // TODO: Jeśli API zwraca pozycję domyślną, ustaw ją tutaj
           // Na razie ustawiamy null, ponieważ CharacterType nie ma tego pola
           setDefaultPosition(null)
           setCurrentStep(1)
-
-          // Wyczyść błędy walidacji po załadowaniu danych
-          form.clearErrors()
         } catch (error) {
           console.error("Error loading character:", error)
           if (isMounted) {
@@ -122,12 +77,13 @@ const CharacterCreatorPage = () => {
         }
       } else {
         // Reset formularza jeśli nie edytujemy
-        form.reset({
+        setInitialFormValues({
           name: "",
           avatarFile: null,
           description: "",
         })
         setDefaultPosition(null)
+        setExistingAvatarUrl(null)
         setCurrentStep(1)
       }
     }
@@ -137,7 +93,6 @@ const CharacterCreatorPage = () => {
     return () => {
       isMounted = false
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editCharacterId])
 
   useEffect(() => {
@@ -147,10 +102,9 @@ const CharacterCreatorPage = () => {
     return () => clearTimeout(timer)
   }, [])
 
-  // Informuj o zmianie stanu walidacji
-  useEffect(() => {
-    setIsFormValid(formState.isValid)
-  }, [formState.isValid])
+  const handleFormReady = (form: ReturnType<typeof useForm<CharacterFormData>>) => {
+    formRef.current = form
+  }
 
   const handleMapClick = (lat: number, lng: number) => {
     // W kroku 1 nie pozwalamy na kliknięcie
@@ -170,7 +124,9 @@ const CharacterCreatorPage = () => {
   const handleNextStep = async () => {
     setValidationError(null)
 
-    const isValid = await form.trigger()
+    if (!formRef.current) return
+
+    const isValid = await formRef.current.trigger()
 
     if (!isValid) {
       setValidationError("Proszę wypełnić wszystkie wymagane pola. Sprawdź komunikaty błędów pod polami.")
@@ -185,19 +141,21 @@ const CharacterCreatorPage = () => {
     setIsSaving(true)
 
     try {
-      const isValid = await form.trigger()
+      if (!formRef.current) return
+
+      const isValid = await formRef.current.trigger()
       if (!isValid) {
         setValidationError("Proszę wypełnić wszystkie wymagane pola w ustawieniach ogólnych. Sprawdź komunikaty błędów pod polami.")
         setCurrentStep(1)
         return
       }
 
-      // Pobierz aktualne wartości z formularza - używamy getValues() zamiast watch() dla aktualnych wartości
-      const formValues = form.getValues()
+      // Pobierz aktualne wartości z formularza
+      const formValues = formRef.current.getValues()
       console.log('Form values before save:', formValues)
 
-      // Sprawdź czy avatar jest wymagany (tylko dla nowych postaci)
-      if (!editCharacterId && !formValues.avatarFile) {
+      // Sprawdź czy avatar jest wymagany (tylko dla nowych postaci bez istniejącego URL)
+      if (!editCharacterId && !formValues.avatarFile && !existingAvatarUrl) {
         setValidationError("Avatar jest wymagany dla nowej postaci.")
         setCurrentStep(1)
         return
@@ -256,6 +214,15 @@ const CharacterCreatorPage = () => {
   const handleRemovePosition = () => {
     setDefaultPosition(null)
     setIsSelectingPosition(false)
+  }
+
+  const handlePositionDescriptionChange = (description: string) => {
+    if (defaultPosition) {
+      setDefaultPosition({
+        ...defaultPosition,
+        description,
+      })
+    }
   }
 
   if (!mounted || isLoadingCharacter) {
@@ -331,31 +298,7 @@ const CharacterCreatorPage = () => {
       {/* Prawa strona - Panel kroków */}
       <div className="w-1/3 border-r overflow-y-auto">
         <div className="p-4 space-y-4">
-          {/* Header z krokami */}
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-xl font-bold">
-                {editCharacterId ? "Edytuj postać" : "Kreator postaci"}
-              </h2>
-              {editCharacterId && (
-                <p className="text-sm text-muted-foreground">ID: {editCharacterId}</p>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <div
-                className={`flex items-center gap-1 px-2 py-1 rounded ${currentStep === 1 ? "bg-blue-100 text-blue-900" : "bg-gray-100 text-gray-600"}`}
-              >
-                <CheckCircle2 className={`h-4 w-4 ${currentStep === 1 ? "text-blue-600" : "text-gray-400"}`} />
-                <span className="text-sm font-medium">Krok 1</span>
-              </div>
-              <div
-                className={`flex items-center gap-1 px-2 py-1 rounded ${currentStep === 2 ? "bg-blue-100 text-blue-900" : "bg-gray-100 text-gray-600"}`}
-              >
-                <CheckCircle2 className={`h-4 w-4 ${currentStep === 2 ? "text-blue-600" : "text-gray-400"}`} />
-                <span className="text-sm font-medium">Krok 2</span>
-              </div>
-            </div>
-          </div>
+          <CharacterStepsHeader editCharacterId={editCharacterId} currentStep={currentStep} />
 
           {currentStep === 1 ? (
             /* Krok 1 - Ustawienia ogólne */
@@ -375,28 +318,12 @@ const CharacterCreatorPage = () => {
                   <CardTitle>Ustawienia ogólne</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Form {...form}>
-                    <div className="space-y-4">
-                      <CustomUsualInput
-                        name="name"
-                        label="Nazwa postaci"
-                        placeholder="Podaj nazwę postaci"
-                      />
-
-                      <CustomUsualInput
-                        name="description"
-                        label="Opis postaci (opcjonalnie)"
-                        placeholder="Podaj opis postaci"
-                      />
-
-                      <CustomFileInput
-                        name="avatarFile"
-                        label="Avatar (opcjonalnie)"
-                        description="Przeciągnij i upuść plik obrazu lub kliknij, aby wybrać"
-                        accept="image/*"
-                      />
-                    </div>
-                  </Form>
+                  <GeneralCharacterForm
+                    onFormReady={handleFormReady}
+                    onValidationChange={setIsFormValid}
+                    initialValues={initialFormValues || undefined}
+                    existingAvatarUrl={existingAvatarUrl}
+                  />
                 </CardContent>
               </Card>
               <Button
@@ -429,74 +356,13 @@ const CharacterCreatorPage = () => {
                 icon={<MapPin className="h-5 w-5 text-blue-600" />}
               />
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Pozycja domyślna</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {defaultPosition ? (
-                    <div className="space-y-3">
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="font-semibold text-blue-900">Pozycja wybrana</p>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleRemovePosition}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        <div className="text-sm text-blue-800 space-y-1">
-                          <p>
-                            <strong>Szerokość:</strong> {defaultPosition.latitude.toFixed(6)}
-                          </p>
-                          <p>
-                            <strong>Długość:</strong> {defaultPosition.longitude.toFixed(6)}
-                          </p>
-                        </div>
-                      </div>
-                      <div>
-                        <Label htmlFor="position-description">Opis pozycji (opcjonalnie)</Label>
-                        <Input
-                          id="position-description"
-                          value={defaultPosition.description}
-                          onChange={(e) =>
-                            setDefaultPosition({
-                              ...defaultPosition,
-                              description: e.target.value,
-                            })
-                          }
-                          placeholder="Np. Główna siedziba postaci"
-                          className="bg-background"
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-4">
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Nie wybrano pozycji domyślnej. Kliknij przycisk poniżej, aby wybrać pozycję na mapie.
-                      </p>
-                      <Button
-                        onClick={() => setIsSelectingPosition(true)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
-                      >
-                        <MapPin className="h-4 w-4" />
-                        Wybierz pozycję na mapie
-                      </Button>
-                    </div>
-                  )}
-
-                  {isSelectingPosition && !defaultPosition && (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                      <p className="text-sm text-yellow-800">
-                        Kliknij na mapie po lewej stronie, aby wybrać pozycję domyślną.
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <DefaultPositionStep
+                defaultPosition={defaultPosition}
+                isSelectingPosition={isSelectingPosition}
+                onPositionSelect={() => setIsSelectingPosition(true)}
+                onPositionRemove={handleRemovePosition}
+                onPositionDescriptionChange={handlePositionDescriptionChange}
+              />
 
               <Button
                 onClick={handleSaveCharacter}
