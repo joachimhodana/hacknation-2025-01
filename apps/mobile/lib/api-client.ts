@@ -1,64 +1,11 @@
-import { authClient } from "./auth-client";
 import { Platform } from "react-native";
+// Import api-url FIRST to avoid circular dependency
+// auth-client depends on api-url, so we need it loaded first
+import { getAPIBaseURL } from "./api-url";
+import { authClient } from "./auth-client";
 
-// Simple, reliable base URL - no complex logic
-export const getAPIBaseURL = () => {
-  // Default URLs per platform
-  const defaults = {
-    web: "http://localhost:8080",
-    android: "http://10.0.2.2:8080", // Android emulator
-    ios: "http://localhost:8080",
-    default: "http://localhost:8080",
-  };
-
-  // Try to read from env, but validate it's actually a proper URL
-  let envUrl: string | null = null;
-  
-  if (Platform.OS === "web") {
-    envUrl = typeof process !== "undefined" && process.env?.EXPO_PUBLIC_BETTER_AUTH_URL_WEB
-      ? process.env.EXPO_PUBLIC_BETTER_AUTH_URL_WEB.trim()
-      : null;
-  } else {
-    envUrl = typeof process !== "undefined" && process.env?.EXPO_PUBLIC_BETTER_AUTH_URL_NATIVE
-      ? process.env.EXPO_PUBLIC_BETTER_AUTH_URL_NATIVE.trim()
-      : null;
-  }
-
-  // Validate env URL - must be a proper full URL
-  if (envUrl) {
-    // Must start with http:// or https:// and be a valid URL
-    if (envUrl.startsWith("http://") || envUrl.startsWith("https://")) {
-      try {
-        const url = new URL(envUrl);
-        const result = url.origin;
-    if (__DEV__) {
-          console.log("[API] Using env URL:", result);
-        }
-        return result;
-      } catch (e) {
-        console.warn("[API] Invalid env URL, using default:", envUrl);
-      }
-    } else {
-      console.warn("[API] Env URL missing protocol, using default:", envUrl);
-    }
-  }
-
-  // Use platform-specific default
-  const defaultUrl = Platform.OS === "web" 
-    ? defaults.web
-    : Platform.OS === "android"
-    ? defaults.android
-    : defaults.ios;
-
-  if (__DEV__) {
-    console.log("[API] Using default URL:", defaultUrl, "for platform:", Platform.OS);
-    }
-
-  return defaultUrl;
-};
-
-// For backward compatibility, but prefer using getAPIBaseURL() directly
-export const API_BASE_URL = getAPIBaseURL();
+// Re-export for convenience
+export { getAPIBaseURL };
 
 export interface UserStats {
   completionPercentage: number;
@@ -167,6 +114,48 @@ export interface Path {
   }>;
 }
 
+export interface PathProgress {
+  progress: {
+    id: number;
+    status: string;
+    visitedStopsCount: number;
+    lastVisitedStopOrder: number | null;
+    startedAt: string;
+  };
+  path: {
+    id: number;
+    pathId: string;
+    title: string;
+    theme: string;
+    category: string;
+    total_time_minutes: number;
+    difficulty: string;
+    distance_meters?: number | null;
+    thumbnail_url?: string | null;
+    marker_icon_url?: string | null;
+    style_preset?: string | null;
+    stops: Array<{
+      stop_id: number;
+      point_id: number;
+      name: string;
+      map_marker: {
+        display_name: string;
+        address: string;
+        coordinates: {
+          latitude: number;
+          longitude: number;
+        };
+      };
+      place_description: string;
+      voice_over_text: string;
+      radius_meters: number;
+      reward_label?: string | null;
+      reward_icon_url?: string | null;
+      visited: boolean;
+    }>;
+  };
+}
+
 export async function fetchPaths(): Promise<Path[] | null> {
   try {
     const headers = await getAuthHeaders();
@@ -244,6 +233,158 @@ export async function fetchLeaderboard(): Promise<LeaderboardData | null> {
   } catch (error) {
     console.error("[API] Error fetching leaderboard:", error);
     return null;
+  }
+}
+
+export async function startPath(pathId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const headers = await getAuthHeaders();
+    const baseURL = getAPIBaseURL();
+    const fullURL = `${baseURL}/user/paths/${pathId}/start`;
+    
+    if (__DEV__) {
+      console.log("[API] startPath - Full URL:", fullURL);
+    }
+
+    const response = await fetch(fullURL, {
+      method: "POST",
+      headers,
+      credentials: Platform.OS === "web" ? "include" : "omit",
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok || !data.success) {
+      console.error("[API] Failed to start path:", data.error || response.status);
+      return {
+        success: false,
+        error: data.error || "Failed to start path",
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("[API] Error starting path:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to start path",
+    };
+  }
+}
+
+export async function pausePath(pathId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const headers = await getAuthHeaders();
+    const baseURL = getAPIBaseURL();
+    const fullURL = `${baseURL}/user/paths/${pathId}/pause`;
+    
+    if (__DEV__) {
+      console.log("[API] pausePath - Full URL:", fullURL);
+    }
+
+    const response = await fetch(fullURL, {
+      method: "POST",
+      headers,
+      credentials: Platform.OS === "web" ? "include" : "omit",
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok || !data.success) {
+      console.error("[API] Failed to pause path:", data.error || response.status);
+      return {
+        success: false,
+        error: data.error || "Failed to pause path",
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("[API] Error pausing path:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to pause path",
+    };
+  }
+}
+
+export async function getActivePathProgress(): Promise<PathProgress | null> {
+  try {
+    const headers = await getAuthHeaders();
+    const baseURL = getAPIBaseURL();
+    const fullURL = `${baseURL}/user/paths/progress`;
+    
+    if (__DEV__) {
+      console.log("[API] getActivePathProgress - Full URL:", fullURL);
+    }
+
+    const response = await fetch(fullURL, {
+      method: "GET",
+      headers,
+      credentials: Platform.OS === "web" ? "include" : "omit",
+    });
+
+    if (!response.ok) {
+      console.error("[API] Failed to fetch active path progress:", response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    if (data.success) {
+      // If no active path, data.data will be null
+      return data.data || null;
+    }
+
+    return null;
+  } catch (error) {
+    console.error("[API] Error fetching active path progress:", error);
+    return null;
+  }
+}
+
+export async function markPointVisited(
+  pointId: number,
+  pathProgressId: number
+): Promise<{ success: boolean; isCompleted?: boolean; error?: string }> {
+  try {
+    const headers = await getAuthHeaders();
+    const baseURL = getAPIBaseURL();
+    const fullURL = `${baseURL}/user/paths/progress/visit`;
+    
+    if (__DEV__) {
+      console.log("[API] markPointVisited - Full URL:", fullURL);
+    }
+
+    const response = await fetch(fullURL, {
+      method: "POST",
+      headers,
+      credentials: Platform.OS === "web" ? "include" : "omit",
+      body: JSON.stringify({
+        pointId,
+        pathProgressId,
+      }),
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok || !data.success) {
+      console.error("[API] Failed to mark point as visited:", data.error || response.status);
+      return {
+        success: false,
+        error: data.error || "Failed to mark point as visited",
+      };
+    }
+
+    return {
+      success: true,
+      isCompleted: data.data?.isCompleted || false,
+    };
+  } catch (error) {
+    console.error("[API] Error marking point as visited:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to mark point as visited",
+    };
   }
 }
 
