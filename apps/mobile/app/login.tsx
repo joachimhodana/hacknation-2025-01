@@ -29,23 +29,83 @@ export default function LoginScreen() {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleEmailChange = (text: string) => {
+    setEmail(text);
+    if (error) setError(null); // Clear error when user starts typing
+  };
+
+  const handlePasswordChange = (text: string) => {
+    setPassword(text);
+    if (error) setError(null); // Clear error when user starts typing
+  };
+
+  const getErrorMessage = (error: any): string => {
+    if (!error) return "Wystąpił nieoczekiwany błąd";
+    
+    // Handle Better Auth errors
+    if (error.message) {
+      const message = error.message.toLowerCase();
+      
+      if (message.includes("invalid") || message.includes("credentials")) {
+        return "Nieprawidłowy email lub hasło";
+      }
+      if (message.includes("network") || message.includes("fetch")) {
+        return "Błąd połączenia. Sprawdź połączenie z internetem.";
+      }
+      if (message.includes("email")) {
+        return "Nieprawidłowy adres email";
+      }
+      if (message.includes("password")) {
+        return "Hasło jest zbyt krótkie";
+      }
+      
+      return error.message;
+    }
+    
+    // Handle error objects
+    if (typeof error === "object" && "error" in error) {
+      return getErrorMessage(error.error);
+    }
+    
+    return "Nie udało się zalogować. Spróbuj ponownie.";
+  };
 
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      // TODO: Show validation error
+    // Clear previous errors
+    setError(null);
+
+    // Validation
+    if (!email.trim()) {
+      setError("Podaj adres email");
+      return;
+    }
+
+    if (!password.trim()) {
+      setError("Podaj hasło");
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setError("Podaj prawidłowy adres email");
       return;
     }
 
     try {
       setIsLoading(true);
       await authClient.signIn.email({
-        email,
+        email: email.trim(),
         password,
       });
+      // Success - redirect will happen automatically
       router.replace("/map");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login error:", error);
-      // TODO: Show error message to user
+      const errorMessage = getErrorMessage(error);
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -95,27 +155,42 @@ export default function LoginScreen() {
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>E-mail</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[
+                    styles.input,
+                    error && styles.inputError
+                  ]}
                   value={email}
-                  onChangeText={setEmail}
+                  onChangeText={handleEmailChange}
                   placeholder="bydgoszczanin@mail.com"
                   placeholderTextColor={COLORS.textMuted}
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isLoading}
                 />
               </View>
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Hasło</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[
+                    styles.input,
+                    error && styles.inputError
+                  ]}
                   value={password}
-                  onChangeText={setPassword}
+                  onChangeText={handlePasswordChange}
                   placeholder="••••••••"
                   placeholderTextColor={COLORS.textMuted}
                   secureTextEntry
+                  editable={!isLoading}
                 />
               </View>
+
+              {error && (
+                <View style={styles.errorContainer}>
+                  <Text style={styles.errorText}>{error}</Text>
+                </View>
+              )}
 
               <TouchableOpacity 
                 style={[styles.loginButton, isLoading && styles.loginButtonDisabled]} 
@@ -322,6 +397,25 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 14,
     color: COLORS.textDark,
+  },
+  inputError: {
+    borderColor: COLORS.red,
+    borderWidth: 1.5,
+  },
+  errorContainer: {
+    marginTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: "rgba(237, 28, 36, 0.08)",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(237, 28, 36, 0.2)",
+  },
+  errorText: {
+    fontSize: 13,
+    color: COLORS.red,
+    fontWeight: "500",
+    lineHeight: 18,
   },
 
   loginButton: {

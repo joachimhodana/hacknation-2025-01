@@ -21,6 +21,7 @@ export interface Route {
   total_time_minutes: number;
   difficulty: string;
   stops: RouteStop[];
+  thumbnail_url?: string | null;
 }
 
 export const routes: Route[] = [

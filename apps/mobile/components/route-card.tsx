@@ -2,6 +2,7 @@ import { StyleSheet, TouchableOpacity, View, Text, ImageBackground } from 'react
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Route } from '@/data/routes';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { API_BASE_URL } from '@/lib/api-client';
 
 const COLORS = {
   red: '#ED1C24',
@@ -151,6 +152,13 @@ export function RouteCard({ route, onPress }: RouteCardProps) {
 
   const difficultyInfo = getDifficultyInfo(route.difficulty);
 
+  // Use thumbnail from API if available, otherwise fall back to theme image
+  // Note: thumbnail_url from API should already be a full path like /resources/...
+  // We need to prepend the API base URL
+  const imageUrl = route.thumbnail_url 
+    ? `${API_BASE_URL}${route.thumbnail_url}`
+    : theme.imageUrl;
+
   return (
     <TouchableOpacity
       activeOpacity={0.9}
@@ -158,64 +166,12 @@ export function RouteCard({ route, onPress }: RouteCardProps) {
       style={styles.container}>
       {/* Hero Image z gradientem */}
       <ImageBackground
-        source={{ uri: theme.imageUrl }}
+        source={{ uri: imageUrl }}
         style={styles.heroImage}
         imageStyle={styles.heroImageStyle}>
-        {/* Gradient Overlay - wzmocniony dla lepszej czytelności */}
-        <View style={styles.gradientOverlay}>
-          {/* Czarny gradient od dołu dla czytelności tekstu */}
-          <View
-            style={[
-              StyleSheet.absoluteFill,
-              {
-                backgroundColor: 'rgba(0, 0, 0, 0)',
-                top: 0,
-                height: 100,
-              },
-            ]}
-          />
-          <View
-            style={[
-              StyleSheet.absoluteFill,
-              {
-                backgroundColor: 'rgba(0, 0, 0, 0.4)',
-                top: 100,
-                height: 60,
-              },
-            ]}
-          />
-          <View
-            style={[
-              StyleSheet.absoluteFill,
-              {
-                backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                top: 160,
-                height: 50,
-              },
-            ]}
-          />
-          <View
-            style={[
-              StyleSheet.absoluteFill,
-              {
-                backgroundColor: theme.cardBgColor + 'F5',
-                top: 210,
-                height: 70,
-              },
-            ]}
-          />
-        </View>
+        {/* Unified dark overlay for better text readability */}
+        <View style={styles.darkOverlay} />
         <View style={styles.contentWrapper}>
-          {/* Accent Strip */}
-          <View style={styles.accentStrip}>
-            {theme.accentColors.map((color, index) => (
-              <View
-                key={index}
-                style={[styles.accentSegment, { backgroundColor: color }]}
-              />
-            ))}
-          </View>
-
           {/* Content */}
           <View style={styles.content}>
             {/* Header */}
@@ -327,21 +283,14 @@ const styles = StyleSheet.create({
   heroImageStyle: {
     borderRadius: 16,
   },
-  gradientOverlay: {
+  darkOverlay: {
     ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   contentWrapper: {
     flex: 1,
     justifyContent: 'flex-end',
     paddingTop: 20,
-  },
-  accentStrip: {
-    flexDirection: 'row',
-    height: 4,
-    marginBottom: 16,
-  },
-  accentSegment: {
-    flex: 1,
   },
   content: {
     paddingHorizontal: 20,

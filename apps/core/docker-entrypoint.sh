@@ -23,7 +23,7 @@ echo "Seeding database with initial data..."
 bun run seed || echo "Warning: Failed to seed database, but continuing..."
 
 echo "Creating resources directories..."
-mkdir -p resources/thumbnails resources/marker_icons resources/audio || echo "Warning: Failed to create resources directories, but continuing..."
+mkdir -p resources/thumbnails resources/marker_icons resources/audio resources/seeded/characters resources/seeded/rewards resources/seeded/marker_icons resources/seeded/thumbnails || echo "Warning: Failed to create resources directories, but continuing..."
 
 echo "Starting application..."
 exec "$@"
