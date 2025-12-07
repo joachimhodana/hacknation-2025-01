@@ -1,0 +1,29 @@
+[
+  {
+    "pathId": "route_010",
+    "pointOrder": [
+      {
+        "locationLabel": "Dawna Kawiarnia Bristol",
+        "orderIndex": 0
+      },
+      {
+        "locationLabel": "Hala Targowa",
+        "orderIndex": 1
+      }
+    ]
+  },
+  {
+    "pathId": "route_011",
+    "pointOrder": [
+      {
+        "locationLabel": "Copernicanum (UKW)",
+        "orderIndex": 0
+      },
+      {
+        "locationLabel": "Park Jana Kochanowskiego",
+        "orderIndex": 1
+      }
+    ]
+  }
+]
+

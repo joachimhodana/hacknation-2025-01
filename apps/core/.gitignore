@@ -48,3 +48,5 @@ package-lock.json
 core
 
 resources/*
+!resources/characters/
+!resources/characters/*.png

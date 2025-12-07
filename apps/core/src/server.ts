@@ -6,6 +6,7 @@ import { openapi } from "@elysiajs/openapi";
 // @ts-ignore - static plugin types may not be available
 import { staticPlugin } from "@elysiajs/static";
 import { adminRoutes } from "./routes/admin";
+import { userStatsRoutes } from "./routes/user/stats";
 import { db } from "./db";
 import { user } from "./db/auth-schema";
 import { eq } from "drizzle-orm";
@@ -88,6 +89,9 @@ app.onBeforeHandle(({ request, path }) => {
 
 // routes
 app.get("/health", () => "OK");
+
+// User routes (require authentication)
+app.use(userStatsRoutes);
 
 // Admin routes
 app.use(adminRoutes);

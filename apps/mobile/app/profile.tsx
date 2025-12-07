@@ -6,13 +6,13 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Switch,
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import Navbar from "@/components/Navbar";
 import { authClient } from "@/lib/auth-client";
+import { fetchUserStats, type CollectedItem } from "@/lib/api-client";
 
 const COLORS = {
   red: "#ED1C24",
@@ -25,62 +25,19 @@ const COLORS = {
   softBg: "#F3F4F6",
 };
 
-type LanguageCode = "pl" | "en";
-
-// 👇 export this so collections.tsx can reuse the type
-export type CollectedItem = {
-  id: string;
-  title: string;
-  description: string;
-  emoji: string;
-  collected: boolean;
-  placeName?: string;
-  collectedAt?: string;
-};
-
-// 👇 export this so collections.tsx can reuse the test data
-export const items: CollectedItem[] = [
-  {
-    id: "golden-crown",
-    title: "Złota Korona",
-    description: "Symbol królewskiej historii miasta.",
-    emoji: "👑",
-    collected: true,
-    placeName: "Stary Rynek",
-    collectedAt: "2025-02-01",
-  },
-  {
-    id: "river-stone",
-    title: "Kamień znad Brdy",
-    description: "Wygładzony przez nurt rzeki.",
-    emoji: "🪨",
-    collected: false,
-    placeName: "Nabrzeże Brdy",
-  },
-  {
-    id: "old-ticket",
-    title: "Stary bilet tramwajowy",
-    description: "Relikt dawnej komunikacji miejskiej.",
-    emoji: "🎫",
-    collected: false,
-    placeName: "Zajezdnia tramwajowa",
-  },
-  {
-    id: "mill-island-leaf",
-    title: "Liść z Wyspy Młyńskiej",
-    description: "Pamiątka ze spaceru po sercu miasta.",
-    emoji: "🍃",
-    collected: true,
-    placeName: "Wyspa Młyńska",
-    collectedAt: "2025-02-03",
-  },
-];
+// Export CollectedItem type for collections.tsx
+export type { CollectedItem } from "@/lib/api-client";
 
 const ProfileScreen: React.FC = () => {
   const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
-  const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(true);
-  const [language, setLanguage] = useState<LanguageCode>("pl");
+  const [stats, setStats] = useState<{
+    completionPercentage: number;
+    completedPathsCount: number;
+    totalDistanceKm: number;
+    collectedItems: CollectedItem[];
+  } | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -88,7 +45,33 @@ const ProfileScreen: React.FC = () => {
     }
   }, [session, isPending, router]);
 
-  if (isPending) {
+  // Fetch user stats when session is available
+  useEffect(() => {
+    if (session && !isPending) {
+      loadStats();
+    }
+  }, [session, isPending]);
+
+  const loadStats = async () => {
+    setStatsLoading(true);
+    try {
+      const userStats = await fetchUserStats();
+      if (userStats) {
+        setStats({
+          completionPercentage: userStats.completionPercentage,
+          completedPathsCount: userStats.completedPathsCount,
+          totalDistanceKm: userStats.totalDistanceKm,
+          collectedItems: userStats.collectedItems,
+        });
+      }
+    } catch (error) {
+      console.error("Error loading stats:", error);
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
+  if (isPending || statsLoading) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.loadingContainer}>
@@ -108,8 +91,8 @@ const ProfileScreen: React.FC = () => {
   const userEmail = user?.email || "";
   const userInitials = isAnonymous ? "?" : (user?.name?.substring(0, 2).toUpperCase() || "??");
 
-  const collected = items.filter((i) => i.collected);
-  const previewItems = collected.slice(0, 3);
+  const collectedItems = stats?.collectedItems || [];
+  const previewItems = collectedItems.slice(0, 3);
 
   const handleLogout = async () => {
     try {
@@ -189,30 +172,43 @@ const ProfileScreen: React.FC = () => {
                   {isAnonymous
                     ? "Konto anonimowe"
                     : userEmail
-                    ? `${userEmail} • Poziom 3`
-                    : "Poziom 3 • Odkrywca miasta"}
+                    ? `${userEmail}`
+                    : "Odkrywca miasta"}
                 </Text>
 
                 <View style={styles.progressBar}>
-                  <View style={styles.progressFill} />
+                  <View
+                    style={[
+                      styles.progressFill,
+                      {
+                        width: `${stats?.completionPercentage || 0}%`,
+                      },
+                    ]}
+                  />
                 </View>
                 <Text style={styles.progressLabel}>
-                  60% do kolejnego poziomu
+                  {stats?.completionPercentage || 0}% ukończenia wszystkich tras
                 </Text>
               </View>
             </View>
 
             <View style={styles.statsRow}>
               <View style={styles.statBox}>
-                <Text style={styles.statValue}>7</Text>
-                <Text style={styles.statLabel}>odwiedzone miejsca</Text>
+                <Text style={styles.statValue}>
+                  {stats?.completedPathsCount || 0}
+                </Text>
+                <Text style={styles.statLabel}>skończone trasy</Text>
               </View>
               <View style={styles.statBox}>
-                <Text style={styles.statValue}>{collected.length}</Text>
+                <Text style={styles.statValue}>
+                  {stats?.collectedItems.length || 0}
+                </Text>
                 <Text style={styles.statLabel}>przedmioty zebrane</Text>
               </View>
               <View style={styles.statBox}>
-                <Text style={styles.statValue}>2.4 km</Text>
+                <Text style={styles.statValue}>
+                  {stats?.totalDistanceKm.toFixed(1) || "0.0"} km
+                </Text>
                 <Text style={styles.statLabel}>przespacerowane</Text>
               </View>
             </View>
@@ -253,71 +249,6 @@ const ProfileScreen: React.FC = () => {
           <Text style={styles.sectionTitle}>Ustawienia</Text>
 
           <View style={styles.settingsCard}>
-            {/* Notifications */}
-            <View style={[styles.settingRow, styles.settingRowBorder]}>
-              <View>
-                <Text style={styles.settingLabel}>Powiadomienia</Text>
-                <Text style={styles.settingValue}>
-                  {notificationsEnabled ? "Włączone" : "Wyłączone"}
-                </Text>
-              </View>
-
-              <Switch
-                value={notificationsEnabled}
-                onValueChange={setNotificationsEnabled}
-                trackColor={{
-                  false: "#D1D5DB",
-                  true: COLORS.red,
-                }}
-                thumbColor="#FFFFFF"
-              />
-            </View>
-
-            {/* Language segmented control */}
-            <View style={[styles.settingRow, styles.settingRowBorder]}>
-              <View>
-                <Text style={styles.settingLabel}>Język</Text>
-                <Text style={styles.settingValue}>
-                  {language === "pl" ? "Polski" : "English"}
-                </Text>
-              </View>
-
-              <View style={styles.segmentWrapper}>
-                <TouchableOpacity
-                  style={[
-                    styles.segment,
-                    language === "pl" && styles.segmentActive,
-                  ]}
-                  onPress={() => setLanguage("pl")}
-                >
-                  <Text
-                    style={[
-                      styles.segmentText,
-                      language === "pl" && styles.segmentTextActive,
-                    ]}
-                  >
-                    PL
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.segment,
-                    language === "en" && styles.segmentActive,
-                  ]}
-                  onPress={() => setLanguage("en")}
-                >
-                  <Text
-                    style={[
-                      styles.segmentText,
-                      language === "en" && styles.segmentTextActive,
-                    ]}
-                  >
-                    EN
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
             <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
               <Text style={styles.logoutText}>Wyloguj się</Text>
             </TouchableOpacity>
@@ -463,7 +394,6 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   progressFill: {
-    width: "60%",
     height: "100%",
     backgroundColor: COLORS.red,
     borderRadius: 999,
@@ -561,59 +491,6 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     overflow: "hidden",
   },
-  settingRow: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  settingRowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  settingLabel: {
-    fontSize: 14,
-    color: COLORS.textDark,
-  },
-  settingValue: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-    marginTop: 2,
-  },
-  settingArrow: {
-    fontSize: 18,
-    color: COLORS.textMuted,
-  },
-
-  segmentWrapper: {
-    flexDirection: "row",
-    backgroundColor: COLORS.softBg,
-    borderRadius: 999,
-    padding: 2,
-    gap: 4,
-  },
-  segment: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-    minWidth: 40,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  segmentActive: {
-    backgroundColor: COLORS.red,
-  },
-  segmentText: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-    fontWeight: "500",
-  },
-  segmentTextActive: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-  },
-
   logoutButton: {
     paddingHorizontal: 14,
     paddingVertical: 10,
