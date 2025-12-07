@@ -170,9 +170,6 @@ const CollectionsScreen: React.FC = () => {
 
       {/* Header */}
       <View style={styles.headerRow}>
-        <TouchableOpacity onPress={() => router.push("/profile")}>
-          <Text style={styles.backText}>‹ Wróć</Text>
-        </TouchableOpacity>
         <Text style={styles.headerTitle}>Zebrane przedmioty</Text>
         <View style={{ width: 48 }} />
       </View>
