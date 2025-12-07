@@ -2,31 +2,11 @@ import { createAuthClient } from "better-auth/react";
 import { expoClient } from "@better-auth/expo/client";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
+import { getAPIBaseURL } from "./api-url";
 
-// Get base URL from environment variable or default to localhost
+// Get base URL - reuse the same logic as API client for consistency
 const getBaseURL = () => {
-  // Use platform-specific environment variables
-  if (Platform.OS === "web") {
-    if (typeof process !== "undefined" && process.env?.EXPO_PUBLIC_BETTER_AUTH_URL_WEB) {
-      return process.env.EXPO_PUBLIC_BETTER_AUTH_URL_WEB;
-    }
-    // Default for web
-    return "http://localhost:8080";
-  } else {
-    // Native platforms (iOS, Android)
-    if (typeof process !== "undefined" && process.env?.EXPO_PUBLIC_BETTER_AUTH_URL_NATIVE) {
-      return process.env.EXPO_PUBLIC_BETTER_AUTH_URL_NATIVE;
-    }
-    
-    // Fallback defaults for native
-    if (Platform.OS === "android") {
-      // Android emulator special IP
-      return "http://10.0.2.2:8080";
-    }
-    
-    // Default for iOS simulator
-    return "http://localhost:8080";
-  }
+  return getAPIBaseURL();
 };
 
 // Configure auth client based on platform

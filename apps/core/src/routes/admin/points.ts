@@ -101,7 +101,7 @@ export const adminPointsRoutes = new Elysia({ prefix: "/points" })
         const fileName = `${audioId}${extension}`;
         const filePath = join(process.cwd(), "public", "resources", "audio", fileName);
         await Bun.write(filePath, audioBuffer);
-        audioUrl = `public/resources/audio/${fileName}`;
+        audioUrl = `/resources/audio/${fileName}`;
       }
       
       if (rewardIconFile) {
@@ -112,7 +112,7 @@ export const adminPointsRoutes = new Elysia({ prefix: "/points" })
         const fileName = `${rewardIconId}${extension}`;
         const filePath = join(process.cwd(), "public", "resources", "reward_icons", fileName);
         await Bun.write(filePath, rewardIconBuffer);
-        rewardIconUrl = `public/resources/reward_icons/${fileName}`;
+        rewardIconUrl = `/resources/reward_icons/${fileName}`;
       }
       
       // Coerce string numbers to actual numbers (multipart/form-data sends everything as strings)

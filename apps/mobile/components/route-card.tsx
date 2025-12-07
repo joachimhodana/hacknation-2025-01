@@ -1,7 +1,7 @@
 import { StyleSheet, TouchableOpacity, View, Text, ImageBackground } from 'react-native';
 import { Route } from '@/data/routes';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { getAPIBaseURL } from '@/lib/api-client';
+import { getAPIBaseURL } from '@/lib/api-url';
 
 const COLORS = {
   red: '#ED1C24',
@@ -16,6 +16,8 @@ const COLORS = {
 interface RouteCardProps {
   route: Route;
   onPress?: () => void;
+  isActive?: boolean;
+  isDisabled?: boolean;
 }
 
 // Funkcja zwracająca unikalny styl i hook dla każdej ścieżki
@@ -105,7 +107,7 @@ function getRouteTheme(routeId: string) {
   }
 }
 
-export function RouteCard({ route, onPress }: RouteCardProps) {
+export function RouteCard({ route, onPress, isActive = false, isDisabled = false }: RouteCardProps) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const theme = getRouteTheme(route.route_id);
@@ -160,9 +162,14 @@ export function RouteCard({ route, onPress }: RouteCardProps) {
 
   return (
     <TouchableOpacity
-      activeOpacity={0.9}
+      activeOpacity={isDisabled ? 1 : 0.9}
       onPress={onPress}
-      style={styles.container}>
+      disabled={isDisabled}
+      style={[
+        styles.container,
+        isDisabled && styles.containerDisabled,
+        isActive && styles.containerActive,
+      ]}>
       {/* Hero Image */}
       <ImageBackground
         source={{ uri: imageUrl }}
@@ -200,15 +207,23 @@ export function RouteCard({ route, onPress }: RouteCardProps) {
                   {route.stops.length} miejsc
                 </Text>
               </View>
-              {/* Difficulty badge with color */}
-              <View
-                style={[
-                  styles.difficultyBadge,
-                  { backgroundColor: difficultyInfo.bgColor },
-                ]}>
-                <Text style={styles.difficultyText}>
-                  {difficultyInfo.label}
-                </Text>
+              <View style={styles.infoRight}>
+                {/* Active badge */}
+                {isActive && (
+                  <View style={styles.activeBadge}>
+                    <Text style={styles.activeBadgeText}>W trakcie</Text>
+                  </View>
+                )}
+                {/* Difficulty badge with color */}
+                <View
+                  style={[
+                    styles.difficultyBadge,
+                    { backgroundColor: difficultyInfo.bgColor },
+                  ]}>
+                  <Text style={styles.difficultyText}>
+                    {difficultyInfo.label}
+                  </Text>
+                </View>
               </View>
             </View>
           </View>
@@ -228,6 +243,13 @@ const styles = StyleSheet.create({
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 10 },
     elevation: 8,
+  },
+  containerDisabled: {
+    opacity: 0.5,
+  },
+  containerActive: {
+    borderWidth: 2,
+    borderColor: COLORS.blue,
   },
   heroImage: {
     width: '100%',
@@ -283,6 +305,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+  },
+  infoRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  activeBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: COLORS.blue,
+  },
+  activeBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#ffffff',
+    letterSpacing: 0.5,
   },
   infoText: {
     fontSize: 13,
