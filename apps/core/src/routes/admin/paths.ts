@@ -6,7 +6,6 @@ import { adminMiddleware } from "@/lib/admin-middleware";
 import { join } from "path";
 import { mkdir } from "fs/promises";
 
-// Point structure schema for validation
 const PointSchema = t.Object({
   latitude: t.Number(),
   longitude: t.Number(),
@@ -30,7 +29,6 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         console.log("[paths.ts POST] No user found, returning Unauthorized");
         return { success: false, error: "Unauthorized" };
       }
-      // Step 1: Save thumbnail file
       const thumbnailUUID = crypto.randomUUID();
       let thumbnailUrl: string | undefined;
       
@@ -41,14 +39,12 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         const fileName = `${thumbnailUUID}${extension}`;
         const filePath = join(process.cwd(), "public", "resources", "thumbnails", fileName);
         
-        // Ensure directory exists
         await mkdir(join(process.cwd(),"public", "resources", "thumbnails"), { recursive: true });
         
         await Bun.write(filePath, thumbnailBuffer);
         thumbnailUrl = `/resources/thumbnails/${fileName}`;
       }
 
-      // Step 2: Save marker icon file (if provided)
       const markerIconUUID = crypto.randomUUID();
       let markerIconUrl: string | undefined;
       
@@ -59,17 +55,14 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         const fileName = `${markerIconUUID}${extension}`;
         const filePath = join(process.cwd(), "public", "resources", "marker_icons", fileName);
         
-        // Ensure directory exists
         await mkdir(join(process.cwd(), "public", "resources", "marker_icons"), { recursive: true });
         
         await Bun.write(filePath, markerIconBuffer);
         markerIconUrl = `/resources/marker_icons/${fileName}`;
       }
 
-      // Step 3: Create path with basic info
       const { thumbnailFile, markerIconFile, totalTimeMinutes, distanceMeters, ...pathData } = body;
       
-      // Convert FormData strings to numbers if needed
       const totalTime = totalTimeMinutes 
         ? (typeof totalTimeMinutes === 'string' ? Number(totalTimeMinutes) : totalTimeMinutes)
         : 0;
@@ -77,7 +70,6 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         ? (typeof distanceMeters === 'string' ? Number(distanceMeters) : distanceMeters)
         : null;
       
-      // Extract only valid path fields to avoid passing invalid data
       const {
         pathId,
         title,
@@ -108,7 +100,6 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
 
       const pathIdNumber = newPath.id;
 
-      // Step 4: Create points if provided
       let pointsData: Array<{
         latitude: number;
         longitude: number;
@@ -123,11 +114,9 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
       if (body.points) {
         try {
           const parsed = typeof body.points === 'string' ? JSON.parse(body.points) : body.points;
-          // Validate that it's an array
           if (!Array.isArray(parsed)) {
             return { success: false, error: "Points must be an array" };
           }
-          // Validate each point structure matches PointSchema
           for (const point of parsed) {
             if (typeof point.latitude !== 'number' || typeof point.longitude !== 'number' || typeof point.narrationText !== 'string') {
               return { success: false, error: "Invalid point structure: latitude, longitude, and narrationText are required" };
@@ -142,7 +131,6 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
       
       const createdPoints = [];
 
-      // Get all audio files from body (they may have dynamic keys like audioFile_0, audioFile_1, etc.)
       const bodyAny = body as any;
       const audioFiles: Map<number, File> = new Map();
       for (const key in bodyAny) {
@@ -157,7 +145,6 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
       for (let i = 0; i < pointsData.length; i++) {
         const pointData = pointsData[i];
         
-        // Handle audio file for this point
         let audioUrl: string | undefined = undefined;
         const audioFile = audioFiles.get(i);
         
@@ -179,7 +166,6 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
           audioUrl = `/resources/audio/${fileName}`;
         }
 
-        // Create point
         const [newPoint] = await db
           .insert(points)
           .values({
@@ -197,7 +183,6 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
           })
           .returning();
 
-        // Link point to path
         await db
           .insert(pathPoints)
           .values({
@@ -240,19 +225,15 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
             allowedMimeTypes: ["image/jpeg", "image/png"],
           })
         ),
-        points: t.Optional(t.String()), // JSON string of points array - structure: Array<PointSchema> where PointSchema = {latitude: number, longitude: number, radiusMeters?: number, locationLabel?: string, narrationText: string, characterId?: number, rewardLabel?: string, rewardIconUrl?: string} - structure: Array<PointSchema>
-        // Audio files will be handled dynamically (audioFile_0, audioFile_1, etc.)
+        points: t.Optional(t.String()),
       }),
     }
   )
   .get("/", async () => {
     const allPaths = await db.select().from(paths);
-    // Add count of points in each path
-    // We fetch the point counts for each path in one go for efficiency
     const pathIds = allPaths.map(p => p.id);
     let pointsCounts: Record<number, number> = {};
     if (pathIds.length > 0) {
-      // Get counts per pathId
       const counts = await db
         .select({
           pathId: pathPoints.pathId,
@@ -262,12 +243,10 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         .where(inArray(pathPoints.pathId, pathIds))
         .groupBy(pathPoints.pathId);
 
-      // Convert to a Record for fast access
       for (const row of counts) {
         pointsCounts[row.pathId] = Number(row.count);
       }
     }
-    // Attach `pointsCount` to each path
     for (const p of allPaths) {
       (p as any).pointsCount = pointsCounts[p.id] ?? 0;
     }
@@ -290,7 +269,6 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
       };
     }
 
-    // Get points for this path
     const pathPointsData = await db
       .select({
         point: points,
@@ -316,11 +294,9 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         return { success: false, error: "Unauthorized" };
       }
 
-      // Prepare update values and handle file uploads
       let thumbnailUrl: string | undefined;
       let markerIconUrl: string | undefined;
 
-      // Handle thumbnail file upload if present
       if (body.thumbnailFile) {
         const uuid = crypto.randomUUID();
         const ext =
@@ -334,7 +310,6 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         thumbnailUrl = `/resources/thumbnails/${fileName}`;
       }
 
-      // Handle marker icon file upload if present
       if (body.markerIconFile) {
         const uuid = crypto.randomUUID();
         const ext =
@@ -349,7 +324,6 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
       }
 
       
-      // Remove file fields for DB update
       const {
         thumbnailFile,
         markerIconFile,
@@ -375,7 +349,6 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
       }
       
 
-      // Only allow the path author to update
       const [updatedPath] = await db
         .update(paths)
         .set(updateData)
@@ -394,7 +367,6 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         };
       }
 
-      // Handle points update if provided
       if (typeof points === "string") {
         try {
           const pointsArray: number[] = JSON.parse(points);
@@ -405,15 +377,12 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
             };
           }
 
-          // Get path ID from updatedPath
           const pathIdNumber = updatedPath.id;
 
-          // 1. Remove all current pathPoints for this path
           await db
             .delete(pathPoints)
             .where(eq(pathPoints.pathId, pathIdNumber));
 
-          // 2. Re-insert new point associations with specified order
           if (pointsArray.length > 0) {
             await db.insert(pathPoints).values(
               pointsArray.map((pointId, idx) => ({
@@ -455,7 +424,7 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
           maxFileSize: "10MB",
           allowedMimeTypes: ["image/jpeg", "image/png"],
         })),
-        points: t.Optional(t.String()), // Expecting a stringified JSON array of point IDs
+        points: t.Optional(t.String()),
       }),
     }
   )
@@ -486,10 +455,9 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
   .patch("/:id/toggle", async (context: any) => {
     const { params, user } = context;
     if (!user) {
-      return { success: false, error: "Unauthorized" };
-    }
+        return { success: false, error: "Unauthorized" };
+      }
 
-    // Get the current isPublished value
     const [existingPath] = await db
       .select({ isPublished: paths.isPublished })
       .from(paths)

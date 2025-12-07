@@ -12,7 +12,6 @@ async function createDefaultAdmin() {
   try {
     console.log("Checking for default admin user...");
 
-    // Check if admin user already exists
     const [existingUser] = await db
       .select()
       .from(user)
@@ -22,7 +21,6 @@ async function createDefaultAdmin() {
     if (existingUser && !FORCE_RECREATE) {
       console.log(`Admin user with email ${ADMIN_EMAIL} already exists.`);
       
-      // Ensure the existing user has admin role
       if (existingUser.role !== "admin") {
         await db
           .update(user)
@@ -33,18 +31,14 @@ async function createDefaultAdmin() {
       return;
     }
 
-    // If user exists and we're forcing recreation, delete it first
     if (existingUser && FORCE_RECREATE) {
       console.log("Deleting existing admin user to recreate with correct password...");
-      // Delete account first (foreign key constraint)
       await db.delete(account).where(eq(account.userId, existingUser.id));
-      // Then delete user
       await db.delete(user).where(eq(user.id, existingUser.id));
     }
 
     console.log(`Creating default admin user: ${ADMIN_EMAIL}`);
 
-    // Use Better Auth's API to create the user (this handles password hashing correctly)
     const mockHeaders = new Headers();
     mockHeaders.set("Content-Type", "application/json");
 
@@ -58,7 +52,6 @@ async function createDefaultAdmin() {
     });
 
     if (response.user) {
-      // Update the user to be admin and verified
       await db
         .update(user)
         .set({
@@ -76,11 +69,9 @@ async function createDefaultAdmin() {
     }
   } catch (error: any) {
     console.error("❌ Error creating default admin user:", error.message || error);
-    // Don't throw - allow the app to start even if admin creation fails
   }
 }
 
-// Run the script
 createDefaultAdmin()
   .then(() => {
     process.exit(0);

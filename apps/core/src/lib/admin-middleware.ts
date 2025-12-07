@@ -4,7 +4,6 @@ import { db } from "@/db";
 import { user } from "@/db/auth-schema";
 import { eq } from "drizzle-orm";
 
-// Better Auth middleware using macro (recommended approach for Elysia)
 export const adminMiddleware = new Elysia({ name: "better-auth" })
   .macro({
     auth: {
@@ -20,7 +19,6 @@ export const adminMiddleware = new Elysia({ name: "better-auth" })
             return status(401);
           }
 
-          // Check if user is admin
           const [userData] = await db
             .select()
             .from(user)
@@ -44,7 +42,6 @@ export const adminMiddleware = new Elysia({ name: "better-auth" })
       },
     },
   })
-  // Also provide derive for backward compatibility and direct access
   .derive(async ({ request }) => {
     try {
       const session = await auth.api.getSession({

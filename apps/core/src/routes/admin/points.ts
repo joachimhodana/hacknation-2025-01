@@ -8,7 +8,6 @@ import { mkdir } from "fs/promises";
 
 export const adminPointsRoutes = new Elysia({ prefix: "/points" })
   .use(adminMiddleware)
-  // POST endpoint removed - points are now created together with paths via /admin/paths POST
   .get("/", async () => {
     const allPoints = await db.select().from(points);
     return {
@@ -16,12 +15,10 @@ export const adminPointsRoutes = new Elysia({ prefix: "/points" })
       data: allPoints,
     };
   })
-  // Specific routes must come before generic :id routes
   .post(
     "/:id/add-to-path/:pathId",
     async (context: any) => {
       const { params, body } = context;
-      // Add existing point to a path with order index
       const [pathPoint] = await db
         .insert(pathPoints)
         .values({
@@ -45,7 +42,6 @@ export const adminPointsRoutes = new Elysia({ prefix: "/points" })
   )
   .delete("/:id/remove-from-path/:pathId", async (context: any) => {
     const { params } = context;
-    // Remove point from path
     await db
       .delete(pathPoints)
       .where(
@@ -62,7 +58,6 @@ export const adminPointsRoutes = new Elysia({ prefix: "/points" })
   }, {
     auth: true
   })
-  // Generic :id routes come after specific routes
   .get("/:id", async ({ params }) => {
     const [point] = await db
       .select()
@@ -115,7 +110,6 @@ export const adminPointsRoutes = new Elysia({ prefix: "/points" })
         rewardIconUrl = `/resources/reward_icons/${fileName}`;
       }
       
-      // Coerce string numbers to actual numbers (multipart/form-data sends everything as strings)
       const processedBody: any = { ...restBody };
       if (processedBody.latitude !== undefined && typeof processedBody.latitude === 'string') {
         processedBody.latitude = parseFloat(processedBody.latitude);
@@ -130,7 +124,6 @@ export const adminPointsRoutes = new Elysia({ prefix: "/points" })
         processedBody.characterId = parseInt(processedBody.characterId, 10);
       }
       
-      // Add file URLs if files were uploaded
       if (audioUrl) processedBody.audioUrl = audioUrl;
       if (rewardIconUrl) processedBody.rewardIconUrl = rewardIconUrl;
       
@@ -163,7 +156,6 @@ export const adminPointsRoutes = new Elysia({ prefix: "/points" })
     {
       auth: true,
       body: t.Object({
-        // Accept strings for numbers since multipart/form-data sends everything as strings
         latitude: t.Optional(t.Union([t.Number(), t.String()])),
         longitude: t.Optional(t.Union([t.Number(), t.String()])),
         radiusMeters: t.Optional(t.Union([t.Number(), t.String()])),

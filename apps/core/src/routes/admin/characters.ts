@@ -11,7 +11,6 @@ export const adminCharactersRoutes = new Elysia({ prefix: "/characters" })
   .post(
     "/",
     async ({ body, user: adminUser }) => {
-      // Create a new character
       if (!adminUser) {
         return { success: false, error: "Unauthorized" };
       }
@@ -24,7 +23,6 @@ export const adminCharactersRoutes = new Elysia({ prefix: "/characters" })
         const extension = mimeType === "image/jpeg" ? ".jpg" : ".png";
         const fileName = `${avatarUUID}${extension}`;
         const avatarsDir = join(process.cwd(), "public", "resources", "avatars");
-        // Ensure directory exists
         await mkdir(avatarsDir, { recursive: true });
         const filePath = join(avatarsDir, fileName);
         await Bun.write(filePath, avatarBuffer);
@@ -54,9 +52,9 @@ export const adminCharactersRoutes = new Elysia({ prefix: "/characters" })
           description: newCharacter.description,
         },
       };
-    },
+      },
     {
-      auth: true, // Use macro for authentication
+      auth: true,
       body: t.Object({
         name: t.String(),
         avatarFile: t.Optional(t.File({
@@ -102,7 +100,6 @@ export const adminCharactersRoutes = new Elysia({ prefix: "/characters" })
         return { success: false, error: "Unauthorized" };
       }
 
-      // Handle avatar file update if present
       let avatarUrl: string | undefined = undefined;
       if (body.avatarFile) {
         const avatarUUID = crypto.randomUUID();
@@ -111,14 +108,12 @@ export const adminCharactersRoutes = new Elysia({ prefix: "/characters" })
         const extension = mimeType === "image/jpeg" ? ".jpg" : ".png";
         const fileName = `${avatarUUID}${extension}`;
         const avatarsDir = join(process.cwd(), "public", "resources", "avatars");
-        // Ensure directory exists
         await mkdir(avatarsDir, { recursive: true });
         const filePath = join(avatarsDir, fileName);
         await Bun.write(filePath, avatarBuffer);
         avatarUrl = `/resources/avatars/${fileName}`;
       }
 
-      // Prepare update object, removing avatarFile, and updating updatedAt
       const { avatarFile, ...updateData } = body;
       if (avatarUrl !== undefined) {
         updateData.avatarUrl = avatarUrl;

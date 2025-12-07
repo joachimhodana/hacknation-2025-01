@@ -5,11 +5,9 @@ import { user } from "@/db/auth-schema";
 import { eq, and, inArray, desc, sum, not, isNotNull, ne } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 
-// User stats endpoint - requires authentication but not admin
 export const userStatsRoutes = new Elysia({ prefix: "/user" })
   .get("/stats", async ({ request }) => {
     try {
-      // Get session from Better Auth
       const session = await auth.api.getSession({
         headers: request.headers,
       });
@@ -23,7 +21,6 @@ export const userStatsRoutes = new Elysia({ prefix: "/user" })
 
       const userId = session.user.id;
 
-      // Get all published paths
       const allPublishedPaths = await db
         .select()
         .from(paths)
@@ -31,7 +28,6 @@ export const userStatsRoutes = new Elysia({ prefix: "/user" })
 
       const totalPublishedPaths = allPublishedPaths.length;
 
-      // Get completed paths for user
       const completedPaths = await db
         .select()
         .from(userPathProgress)
@@ -44,13 +40,11 @@ export const userStatsRoutes = new Elysia({ prefix: "/user" })
 
       const completedPathsCount = completedPaths.length;
 
-      // Calculate completion percentage
       const completionPercentage =
         totalPublishedPaths > 0
           ? Math.round((completedPathsCount / totalPublishedPaths) * 100)
           : 0;
 
-      // Calculate total distance from completed paths
       const completedPathIds = completedPaths.map((p) => p.pathId);
       let totalDistanceMeters = 0;
 
@@ -69,7 +63,6 @@ export const userStatsRoutes = new Elysia({ prefix: "/user" })
           ) || 0;
       }
 
-      // Get collected items (rewards from points) - same approach as before
       const collectedItems = await db
         .select({
           id: userItems.id,
@@ -84,7 +77,6 @@ export const userStatsRoutes = new Elysia({ prefix: "/user" })
         .where(eq(userItems.userId, userId))
         .orderBy(desc(userItems.collectedAt));
 
-      // Get all available rewards (all points with rewards) - same query structure as collectedItems
       const allRewardPoints = await db
         .select({
           pointId: points.id,
@@ -95,10 +87,8 @@ export const userStatsRoutes = new Elysia({ prefix: "/user" })
         .from(points)
         .where(isNotNull(points.rewardLabel));
 
-      // Get collected point IDs for this user
       const collectedPointIds = new Set(collectedItems.map((item) => item.pointId));
 
-      // Map all rewards with collected status
       const allRewards = allRewardPoints.map((point) => ({
         id: point.pointId.toString(),
         title: point.rewardLabel || "Nagroda",
@@ -117,7 +107,7 @@ export const userStatsRoutes = new Elysia({ prefix: "/user" })
           completedPathsCount,
           totalPublishedPaths,
           totalDistanceMeters,
-          totalDistanceKm: Math.round((totalDistanceMeters / 1000) * 10) / 10, // Round to 1 decimal
+          totalDistanceKm: Math.round((totalDistanceMeters / 1000) * 10) / 10,
           collectedItemsCount: collectedItems.length,
           collectedItems: collectedItems.map((item) => ({
             id: item.id.toString(),
@@ -125,7 +115,7 @@ export const userStatsRoutes = new Elysia({ prefix: "/user" })
             description: item.locationLabel
               ? `Znaleziony w: ${item.locationLabel}`
               : "Opis do uzupełnienia",
-            emoji: item.rewardIconUrl ? "🎁" : "📦", // Use icon URL if available, otherwise default emoji
+            emoji: item.rewardIconUrl ? "🎁" : "📦",
             collected: true,
             placeName: item.locationLabel || "Miejsce do uzupełnienia",
             collectedAt: item.collectedAt
@@ -133,7 +123,7 @@ export const userStatsRoutes = new Elysia({ prefix: "/user" })
               : undefined,
             rewardIconUrl: item.rewardIconUrl || undefined,
           })),
-          allRewards, // Add all rewards to stats response
+          allRewards,
         },
       };
     } catch (error) {
@@ -146,16 +136,12 @@ export const userStatsRoutes = new Elysia({ prefix: "/user" })
   })
   .get("/leaderboard", async ({ request }) => {
     try {
-      // Get session from Better Auth (optional - for identifying current user)
       const session = await auth.api.getSession({
         headers: request.headers,
       });
 
       const currentUserId = session?.user?.id;
 
-      // Calculate total points (visited stops count) for each user
-      // Points = sum of all visitedStopsCount from userPathProgress
-      // Exclude anonymous users from leaderboard
       const leaderboardData = await db
         .select({
           userId: userPathProgress.userId,
@@ -164,12 +150,11 @@ export const userStatsRoutes = new Elysia({ prefix: "/user" })
         })
         .from(userPathProgress)
         .innerJoin(user, eq(userPathProgress.userId, user.id))
-        .where(not(eq(user.isAnonymous, true))) // Exclude anonymous users
+        .where(not(eq(user.isAnonymous, true)))
         .groupBy(userPathProgress.userId, user.name)
         .orderBy(desc(sum(userPathProgress.visitedStopsCount)))
         .limit(10);
 
-      // Format leaderboard response
       const leaderboard = leaderboardData.map((entry, index) => ({
         rank: index + 1,
         userId: entry.userId,
@@ -194,7 +179,6 @@ export const userStatsRoutes = new Elysia({ prefix: "/user" })
   })
   .get("/rewards", async ({ request }) => {
     try {
-      // Get session from Better Auth
       const session = await auth.api.getSession({
         headers: request.headers,
       });
@@ -208,7 +192,6 @@ export const userStatsRoutes = new Elysia({ prefix: "/user" })
 
       const userId = session.user.id;
 
-      // Get all points that have rewards
       const allRewardPoints = await db
         .select({
           pointId: points.id,
@@ -219,7 +202,6 @@ export const userStatsRoutes = new Elysia({ prefix: "/user" })
         .from(points)
         .where(ne(points.rewardLabel, null));
 
-      // Get collected items for this user
       const collectedItems = await db
         .select({
           pointId: userItems.pointId,
@@ -229,7 +211,6 @@ export const userStatsRoutes = new Elysia({ prefix: "/user" })
 
       const collectedPointIds = new Set(collectedItems.map((item) => item.pointId));
 
-      // Map to rewards format
       const rewards = allRewardPoints.map((point) => ({
         id: point.pointId.toString(),
         title: point.rewardLabel || "Nagroda",

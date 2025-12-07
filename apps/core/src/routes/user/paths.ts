@@ -4,9 +4,7 @@ import { paths, pathPoints, points, userPathProgress, userPointVisit, userItems,
 import { eq, and, asc, desc, isNotNull } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 
-// User paths endpoint - requires authentication, returns only published paths
 export const userPathsRoutes = new Elysia({ prefix: "/user" })
-  // Debug endpoint - no auth required (remove in production)
   .get("/paths/debug", async () => {
     try {
       const allPaths = await db
@@ -31,7 +29,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
     try {
       console.log("[user/paths] GET /user/paths called");
       
-      // Get session from Better Auth
       const session = await auth.api.getSession({
         headers: request.headers,
       });
@@ -46,7 +43,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
         };
       }
 
-      // Get all published paths
       const allPaths = await db
         .select()
         .from(paths)
@@ -55,12 +51,10 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
       console.log("[user/paths] Found", allPaths.length, "published paths");
       if (allPaths.length === 0) {
         console.warn("[user/paths] WARNING: No published paths found in database!");
-        // Also check total paths
         const totalPaths = await db.select().from(paths);
         console.log("[user/paths] Total paths in DB (including unpublished):", totalPaths.length);
       }
 
-      // For each path, get its points
       const pathsWithPoints = await Promise.all(
         allPaths.map(async (path) => {
           const pathPointsData = await db
@@ -73,7 +67,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
             .where(eq(pathPoints.pathId, path.id))
             .orderBy(asc(pathPoints.orderIndex));
 
-          // Transform points to match RouteStop interface
           const stops = pathPointsData.map((pp, index) => ({
             stop_id: index + 1,
             name: pp.point.locationLabel || `Stop ${index + 1}`,
@@ -121,7 +114,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
   })
   .get("/paths/:pathId", async ({ request, params }) => {
     try {
-      // Get session from Better Auth
       const session = await auth.api.getSession({
         headers: request.headers,
       });
@@ -133,7 +125,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
         };
       }
 
-      // Get path by pathId (not database id)
       const [path] = await db
         .select()
         .from(paths)
@@ -147,7 +138,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
         };
       }
 
-      // Get points for this path
       const pathPointsData = await db
         .select({
           point: points,
@@ -158,7 +148,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
         .where(eq(pathPoints.pathId, path.id))
         .orderBy(asc(pathPoints.orderIndex));
 
-      // Transform points to match RouteStop interface
       const stops = pathPointsData.map((pp, index) => ({
         stop_id: index + 1,
         name: pp.point.locationLabel || `Stop ${index + 1}`,
@@ -201,7 +190,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
   })
   .post("/paths/:pathId/start", async ({ request, params }) => {
     try {
-      // Get session from Better Auth
       const session = await auth.api.getSession({
         headers: request.headers,
       });
@@ -215,7 +203,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
 
       const userId = session.user.id;
 
-      // Check if user already has an active path
       const activeProgress = await db
         .select()
         .from(userPathProgress)
@@ -234,7 +221,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
         };
       }
 
-      // Get path by pathId
       const [path] = await db
         .select()
         .from(paths)
@@ -248,7 +234,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
         };
       }
 
-      // Create new path progress
       const [newProgress] = await db
         .insert(userPathProgress)
         .values({
@@ -279,7 +264,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
   })
   .post("/paths/:pathId/pause", async ({ request, params }) => {
     try {
-      // Get session from Better Auth
       const session = await auth.api.getSession({
         headers: request.headers,
       });
@@ -293,7 +277,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
 
       const userId = session.user.id;
 
-      // Get path by pathId
       const [path] = await db
         .select()
         .from(paths)
@@ -307,7 +290,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
         };
       }
 
-      // Find active progress for this path
       const [progress] = await db
         .select()
         .from(userPathProgress)
@@ -327,8 +309,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
         };
       }
 
-      // Update status to paused (we'll use "paused" as a status)
-      // Note: schema allows any text, so "paused" is valid
       const [updatedProgress] = await db
         .update(userPathProgress)
         .set({
@@ -356,7 +336,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
   })
   .get("/paths/progress", async ({ request }) => {
     try {
-      // Get session from Better Auth
       const session = await auth.api.getSession({
         headers: request.headers,
       });
@@ -370,7 +349,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
 
       const userId = session.user.id;
 
-      // Get active path progress
       const [progress] = await db
         .select()
         .from(userPathProgress)
@@ -389,7 +367,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
         };
       }
 
-      // Get path details
       const [path] = await db
         .select()
         .from(paths)
@@ -403,7 +380,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
         };
       }
 
-      // Get points for this path with character data
       const pathPointsData = await db
         .select({
           point: points,
@@ -416,7 +392,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
         .where(eq(pathPoints.pathId, path.id))
         .orderBy(asc(pathPoints.orderIndex));
 
-      // Get visited points for this progress
       const visitedPoints = await db
         .select({
           pointId: userPointVisit.pointId,
@@ -426,7 +401,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
 
       const visitedPointIds = new Set(visitedPoints.map((v) => v.pointId));
 
-      // Transform points to match RouteStop interface and mark visited status
       const stops = pathPointsData.map((pp, index) => ({
         stop_id: index + 1,
         point_id: pp.point.id,
@@ -490,7 +464,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
   })
   .post("/paths/progress/visit", async ({ request, body }) => {
     try {
-      // Get session from Better Auth
       const session = await auth.api.getSession({
         headers: request.headers,
       });
@@ -512,8 +485,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
         };
       }
 
-      // Verify the progress belongs to the user
-      // Allow both "in_progress" and "paused" statuses (user might want to continue)
       const [progress] = await db
         .select()
         .from(userPathProgress)
@@ -521,8 +492,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
           and(
             eq(userPathProgress.id, pathProgressId),
             eq(userPathProgress.userId, userId),
-            // Allow both in_progress and paused statuses
-            // If paused, we'll automatically resume it
           )
         )
         .limit(1);
@@ -534,7 +503,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
         };
       }
 
-      // If progress is paused, resume it
       if (progress.status === "paused") {
         await db
           .update(userPathProgress)
@@ -542,7 +510,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
           .where(eq(userPathProgress.id, pathProgressId));
       }
 
-      // Don't allow marking visited if already completed
       if (progress.status === "completed") {
         return {
           success: false,
@@ -550,7 +517,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
         };
       }
 
-      // Check if point is already visited for this progress
       const existingVisit = await db
         .select()
         .from(userPointVisit)
@@ -563,7 +529,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
         .limit(1);
 
       if (existingVisit.length > 0) {
-        // Update last entered time
         await db
           .update(userPointVisit)
           .set({
@@ -579,7 +544,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
         };
       }
 
-      // Get point details
       const [point] = await db
         .select()
         .from(points)
@@ -593,7 +557,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
         };
       }
 
-      // Get path points to find order index
       const [pathPoint] = await db
         .select()
         .from(pathPoints)
@@ -612,16 +575,13 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
         };
       }
 
-      // Create visit record
       await db.insert(userPointVisit).values({
         userId,
         pointId,
         pathProgressId,
       });
 
-      // If point has reward, create user item
       if (point.rewardLabel) {
-        // Check if item already collected
         const existingItem = await db
           .select()
           .from(userItems)
@@ -643,10 +603,8 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
         }
       }
 
-      // Update progress
       const newVisitedCount = progress.visitedStopsCount + 1;
 
-      // Get total stops count for this path
       const totalStops = await db
         .select()
         .from(pathPoints)
@@ -683,7 +641,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
   })
   .get("/points/public", async ({ request }) => {
     try {
-      // Get session from Better Auth
       const session = await auth.api.getSession({
         headers: request.headers,
       });
@@ -695,7 +652,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
         };
       }
 
-      // Fetch all public points with characters
       const publicPointsData = await db
         .select({
           point: points,
@@ -710,7 +666,6 @@ export const userPathsRoutes = new Elysia({ prefix: "/user" })
           )
         );
 
-      // Transform to match PublicPoint interface
       const publicPoints = publicPointsData.map((pp) => ({
         point_id: pp.point.id,
         name: pp.point.locationLabel || "Public Point",

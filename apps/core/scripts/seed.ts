@@ -78,7 +78,6 @@ async function seedCharacters(adminUserId: string): Promise<Map<number, number>>
   for (let i = 0; i < seedData.length; i++) {
     const char = seedData[i];
 
-    // Check if character already exists (by name)
     const [existing] = await db
       .select()
       .from(characters)
@@ -125,7 +124,6 @@ async function seedPoints(
   const pointIdMap = new Map<string, number>(); // locationLabel -> database id
 
   for (const point of seedData) {
-    // Check if point already exists (by locationLabel and coordinates)
     let existing;
     if (point.locationLabel) {
       [existing] = await db
@@ -136,7 +134,6 @@ async function seedPoints(
     }
 
     if (existing && !FORCE_RESET) {
-      // Update audioUrl if it's missing or different
       if (point.audioUrl && existing.audioUrl !== point.audioUrl) {
         await db
           .update(points)
@@ -160,7 +157,6 @@ async function seedPoints(
       await db.delete(points).where(eq(points.id, existing.id));
     }
 
-    // Map characterId from seed index to database id
     let characterDbId: number | null = null;
     if (point.characterId !== null && point.characterId !== undefined) {
       characterDbId = characterIdMap.get(point.characterId) || null;
@@ -209,7 +205,6 @@ async function seedPaths(adminUserId: string): Promise<Map<string, number>> {
   const pathIdMap = new Map<string, number>(); // pathId -> database id
 
   for (const path of seedData) {
-    // Check if path already exists (by pathId)
     const [existing] = await db
       .select()
       .from(paths)
@@ -223,7 +218,6 @@ async function seedPaths(adminUserId: string): Promise<Map<string, number>> {
     }
 
     if (existing && FORCE_RESET) {
-      // Delete pathPoints first (foreign key constraint)
       await db.delete(pathPoints).where(eq(pathPoints.pathId, existing.id));
       await db.delete(paths).where(eq(paths.id, existing.id));
     }
@@ -273,7 +267,6 @@ async function seedPathPoints(
       continue;
     }
 
-    // Delete existing pathPoints for this path if FORCE_RESET
     if (FORCE_RESET) {
       await db.delete(pathPoints).where(eq(pathPoints.pathId, pathDbId));
     }
@@ -287,7 +280,6 @@ async function seedPathPoints(
         continue;
       }
 
-      // Check if relationship already exists
       if (!FORCE_RESET) {
         const [existing] = await db
           .select()
@@ -326,11 +318,9 @@ async function seed() {
     console.log("🌱 Starting database seeding...");
     console.log(`   Force reset: ${FORCE_RESET ? "YES" : "NO"}`);
 
-    // Get admin user ID
     const adminUserId = await getAdminUserId();
     console.log(`   Using admin user: ${adminUserId}`);
 
-    // Seed in order: characters -> points -> paths -> pathPoints
     const characterIdMap = await seedCharacters(adminUserId);
     const pointIdMap = await seedPoints(adminUserId, characterIdMap);
     const pathIdMap = await seedPaths(adminUserId);
@@ -344,7 +334,6 @@ async function seed() {
   }
 }
 
-// Run the script
 seed()
   .then(() => {
     process.exit(0);

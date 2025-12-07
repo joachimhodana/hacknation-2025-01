@@ -3,7 +3,6 @@ import { auth } from "./lib/auth";
 import { cors } from "@elysiajs/cors";
 import { serverTiming } from "@elysiajs/server-timing";
 import { openapi } from "@elysiajs/openapi";
-// @ts-ignore - static plugin types may not be available
 import { staticPlugin } from "@elysiajs/static";
 import { adminRoutes } from "./routes/admin";
 import { userStatsRoutes } from "./routes/user/stats";
@@ -17,7 +16,6 @@ import { join } from "path";
 
 const app = new Elysia();
 
-// CORS configuration - must be applied before Better Auth
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:3001",
@@ -25,7 +23,6 @@ const allowedOrigins = [
   "http://127.0.0.1:3000",
   "http://127.0.0.1:3001",
   "http://127.0.0.1:8081",
-  // Add production domains from environment variables
   ...(process.env.SERVICE_URL_LANDING ? [process.env.SERVICE_URL_LANDING] : []),
   ...(process.env.SERVICE_URL_ADMIN ? [process.env.SERVICE_URL_ADMIN] : []),
 ];
@@ -33,31 +30,24 @@ const allowedOrigins = [
 const corsConfig = cors({
   credentials: true,
   origin: (request) => {
-    // Allow requests from localhost and trusted origins
     const origin = request.headers.get("origin");
-    if (!origin) return true; // Allow same-origin requests
+    if (!origin) return true;
     return allowedOrigins.includes(origin);
   },
 });
 
-// Apply CORS globally first
 app.use(corsConfig);
 
 app.use(serverTiming());
 app.use(openapi({ provider: "swagger-ui" }));
 
-// Custom route to serve static files from both public/resources and resources directories
-// This allows access to both uploaded files (public/resources) and seeded files (resources/)
-// We check public/resources first, then fall back to resources/ directory
 app.get("/resources/*", async ({ params, set }) => {
   const path = params["*"] || "";
   
-  // First try public/resources (for uploaded files)
   const publicPath = join(process.cwd(), "public", "resources", path);
   if (existsSync(publicPath)) {
     try {
       const file = await readFile(publicPath);
-      // Determine content type from extension
       const ext = path.split(".").pop()?.toLowerCase();
       const contentType = 
         ext === "png" ? "image/png" :
@@ -76,12 +66,10 @@ app.get("/resources/*", async ({ params, set }) => {
     }
   }
   
-  // Fall back to resources directory (for seeded files)
   const resourcesPath = join(process.cwd(), "resources", path);
   if (existsSync(resourcesPath)) {
     try {
       const file = await readFile(resourcesPath);
-      // Determine content type from extension
       const ext = path.split(".").pop()?.toLowerCase();
       const contentType = 
         ext === "png" ? "image/png" :
@@ -104,9 +92,6 @@ app.get("/resources/*", async ({ params, set }) => {
   return "Not Found";
 });
 
-// Better Auth middleware using macro (as per Better Auth docs for Elysia)
-// This allows access to user and session in all routes
-// Mount Better Auth handler - must be after CORS is applied globally
 const betterAuth = new Elysia({ name: "better-auth" })
   .mount(auth.handler)
   .macro({
@@ -131,10 +116,8 @@ const betterAuth = new Elysia({ name: "better-auth" })
     },
   });
 
-// Use Better Auth middleware (includes auth.handler mount)
 app.use(betterAuth);
 
-// Debug: Log all requests to /api/auth/*
 app.onBeforeHandle(({ request, path }) => {
   if (path.startsWith("/api/auth")) {
     console.log(`[Better Auth] ${request.method} ${path}`, {
@@ -144,14 +127,11 @@ app.onBeforeHandle(({ request, path }) => {
   }
 });
 
-// routes
 app.get("/health", () => "OK");
 
-// User routes (require authentication)
 app.use(userStatsRoutes);
 app.use(userPathsRoutes);
 
-// Admin routes
 app.use(adminRoutes);
 
 const port = Number(process.env.PORT) || 8080;
