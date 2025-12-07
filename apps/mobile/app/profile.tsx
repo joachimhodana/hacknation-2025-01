@@ -214,37 +214,6 @@ const ProfileScreen: React.FC = () => {
             </View>
           </View>
         </View>
-
-        {/* Collections / items – 3 in a row preview */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>Zebrane przedmioty</Text>
-            <TouchableOpacity onPress={() => router.push("/collections")}>
-              <Text style={styles.showAllText}>Pokaż wszystkie ›</Text>
-            </TouchableOpacity>
-          </View>
-
-          <Text style={styles.sectionSubtitle}>
-            Podgląd zebranych przedmiotów. Kliknij „Pokaż wszystkie”, żeby
-            zobaczyć więcej.
-          </Text>
-
-          <View style={styles.itemsGridPreview}>
-            {previewItems.map((item) => (
-              <View key={item.id} style={styles.itemTilePreview}>
-                <View style={styles.itemTileInner}>
-                  <Text style={styles.itemTileEmoji}>{item.emoji}</Text>
-                </View>
-              </View>
-            ))}
-            {previewItems.length < 3 &&
-              Array.from({ length: 3 - previewItems.length }).map((_, idx) => (
-                <View key={`phantom-${idx}`} style={styles.itemTilePreviewPhantom} />
-              ))}
-          </View>
-        </View>
-
-        {/* Settings */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Ustawienia</Text>
 
