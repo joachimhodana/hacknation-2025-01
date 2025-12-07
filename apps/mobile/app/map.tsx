@@ -36,7 +36,7 @@ export default function MapScreen() {
   return (
     <View style={styles.container}>
       <Map />
-      <PointsBadge />
+      <PointsBadge showIcon={true} />
       <Navbar />
     </View>
   );
