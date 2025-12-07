@@ -18,6 +18,7 @@ import MapView, {
   Camera,
 } from "react-native-maps";
 import * as Location from "expo-location";
+import { Audio } from "expo-av"; // <- AUDIO
 import { authClient } from "@/lib/auth-client";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -36,7 +37,16 @@ const ZOOM_STEP = 0.6;
 // fallback na altitude (jak zoom nie działa)
 const MIN_ALT = 80;
 const MAX_ALT = 8000;
-const ALT_FACTOR = 0.7; // < 1 → przybliżenie, > 1 → oddalenie
+const ALT_FACTOR = 0.7;
+
+// dystans dla dialogu (w metrach)
+const DIALOG_TRIGGER_DISTANCE_M = 60;
+
+// co ile sekund przeskakiwać do kolejnego zdania
+const DIALOG_STEP_MS = 5000;
+
+const CHARACTER_IMAGE_URL =
+  "https://media.discordapp.net/attachments/1446969558073081918/1446997187228602510/ChatGPT_Image_6_gru_2025_23_49_57.png?format=webp&quality=lossless&width=466&height=700";
 
 type ActiveRoute = {
   title: string;
@@ -64,6 +74,105 @@ type OsrmStep = {
   };
 };
 
+// ------- helpers --------
+
+const distanceMeters = (
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number => {
+  const R = 6371e3; // m
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const φ1 = toRad(lat1);
+  const φ2 = toRad(lat2);
+  const Δφ = toRad(lat2 - lat1);
+  const Δλ = toRad(lon2 - lon1);
+
+  const a =
+    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c;
+};
+
+const formatDistance = (meters: number) => {
+  if (!Number.isFinite(meters)) return "";
+  if (meters < 1000) return `${Math.round(meters)} m`;
+  return `${(meters / 1000).toFixed(1)} km`;
+};
+
+const formatManeuverText = (step: OsrmStep | undefined): string => {
+  if (!step) return "Brak danych o następnym manewrze";
+  const { type, modifier } = step.maneuver || {};
+  const street = step.name ? ` w ${step.name}` : "";
+
+  if (type === "arrive") return "Dotrzesz do celu";
+  if (type === "depart") return "Rozpocznij trasę";
+
+  if (type === "roundabout") {
+    return `Wjedź na rondo${street}`;
+  }
+
+  if (type === "turn" || type === "continue") {
+    switch (modifier) {
+      case "left":
+        return `Skręć w lewo${street}`;
+      case "right":
+        return `Skręć w prawo${street}`;
+      case "slight left":
+        return `Lekko w lewo${street}`;
+      case "slight right":
+        return `Lekko w prawo${street}`;
+      case "straight":
+      default:
+        return `Jedź prosto${street}`;
+    }
+  }
+
+  return `Kontynuuj${street}`;
+};
+
+// progresywny dialog – tablica kwestii na pin
+const getDialogLinesForPin = (pin: RoutePin): string[] => {
+  switch (pin.id) {
+    case "pin-default":
+      return [
+        "Witaj podróżniku. Nazywam się Marian.",
+        "To tutaj zaczyna się opowieść o łamaniu szyfrów i cichej pracy w cieniu.",
+        "Rozejrzyj się – te ulice pamiętają więcej, niż pokazują przewodniki.",
+      ];
+    case "pin-primary":
+      return [
+        "W tym miejscu Bydgoszcz zmieniała swoje oblicze na oczach mieszkańców.",
+        "Spójrz na detale budynków – każdy z nich to osobna historia.",
+      ];
+    case "pin-secondary":
+      return [
+        "Każde miasto ma swoje tajemnice.",
+        "To jedno z tych miejsc, które łatwo minąć, ale warto zapamiętać.",
+      ];
+    case "pin-tertiary":
+      return [
+        "Dobra robota, dotarłeś bardzo blisko kolejnego punktu.",
+        "Nie śpiesz się – najlepsze rzeczy odkrywa się w swoim tempie.",
+      ];
+    default:
+      return [
+        "Jesteś blisko ważnego miejsca na mapie tej gry.",
+        "Podejdź kawałek dalej i zobacz, co kryje ta okolica.",
+      ];
+  }
+};
+
+// 🔊 docelowo backend: tu podpinasz URL audio per pin
+const getDialogAudioUrlForPin = (pin: RoutePin): string | null => {
+  // TODO: podmień na URL z backendu
+  // Na razie jeden sample dla wszystkich:
+  return "https://www2.cs.uic.edu/~i101/SoundFiles/StarWars60.wav";
+};
+
 export const Map: React.FC = () => {
   const colorScheme = Appearance.getColorScheme();
   const isDark = colorScheme === "dark";
@@ -77,10 +186,21 @@ export const Map: React.FC = () => {
     { latitude: number; longitude: number }[]
   >([]);
   const [routeSteps, setRouteSteps] = useState<OsrmStep[]>([]);
+  const [activeDialogPin, setActiveDialogPin] = useState<RoutePin | null>(null);
+  const [dialogIndex, setDialogIndex] = useState(0);
+  const [routeReady, setRouteReady] = useState(false); // trasa dopiero po dialogu
+  const [completedPinIds, setCompletedPinIds] = useState<string[]>([]); // odhaczone punkty
+
+  // AUDIO
+  const [dialogAudioUrl, setDialogAudioUrl] = useState<string | null>(null);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const soundRef = useRef<Audio.Sound | null>(null);
+
   const mapRef = useRef<MapView>(null);
   const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(
     null,
   );
+  const dialogTimerRef = useRef<any>(null);
 
   // Mock – realna trasa później z backendu
   const activeRoute: ActiveRoute = {
@@ -105,7 +225,7 @@ export const Map: React.FC = () => {
   const userInitials = userName
     ? userName
         .split(" ")
-        .map((n: string) => n[0])
+        .map((n) => n[0])
         .join("")
         .toUpperCase()
         .slice(0, 2)
@@ -140,7 +260,6 @@ export const Map: React.FC = () => {
       lng: 18.011,
       variant: "tertiary",
       label: "★",
-      // imageSource: require("@/assets/pins/quest.png"),
     },
   ];
 
@@ -158,48 +277,11 @@ export const Map: React.FC = () => {
     }
   };
 
-  const formatDistance = (meters: number) => {
-    if (!Number.isFinite(meters)) return "";
-    if (meters < 1000) return `${Math.round(meters)} m`;
-    return `${(meters / 1000).toFixed(1)} km`;
-  };
-
-  const formatManeuverText = (step: OsrmStep | undefined): string => {
-    if (!step) return "Brak danych o następnym manewrze";
-    const { type, modifier } = step.maneuver || {};
-    const street = step.name ? ` w ${step.name}` : "";
-
-    if (type === "arrive") return "Dotrzesz do celu";
-    if (type === "depart") return "Rozpocznij trasę";
-
-    if (type === "roundabout") {
-      return `Wjedź na rondo${street}`;
-    }
-
-    if (type === "turn" || type === "continue") {
-      switch (modifier) {
-        case "left":
-          return `Skręć w lewo${street}`;
-        case "right":
-          return `Skręć w prawo${street}`;
-        case "slight left":
-          return `Lekko w lewo${street}`;
-        case "slight right":
-          return `Lekko w prawo${street}`;
-        case "straight":
-        default:
-          return `Jedź prosto${street}`;
-      }
-    }
-
-    return `Kontynuuj${street}`;
-  };
-
   const nextStep = routeSteps[0];
   const nextStepDistance = nextStep ? formatDistance(nextStep.distance) : null;
   const nextStepText = formatManeuverText(nextStep);
 
-  // OSRM – policz trasę między pinami + wyciągnij kroki
+  // OSRM liczymy od razu (albo przy zmianie pinów), NIE od routeReady
   useEffect(() => {
     const fetchOsrmRoute = async () => {
       if (routePins.length < 2) return;
@@ -216,8 +298,7 @@ export const Map: React.FC = () => {
         const res = await fetch(url);
 
         if (!res.ok) {
-          console.log("OSRM error status:", res.status);
-          // fallback: prosta linia
+          __DEV__ && console.log("OSRM error status:", res.status);
           setRouteCoordinates(
             routePins.map((p) => ({
               latitude: p.lat,
@@ -251,7 +332,7 @@ export const Map: React.FC = () => {
 
         setRouteSteps(steps);
       } catch (e) {
-        console.log("Error fetching OSRM route:", e);
+        __DEV__ && console.log("Error fetching OSRM route:", e);
         setRouteCoordinates(
           routePins.map((p) => ({
             latitude: p.lat,
@@ -263,7 +344,7 @@ export const Map: React.FC = () => {
     };
 
     fetchOsrmRoute();
-  }, []); // routePins stałe
+  }, [routePins]);
 
   // Lokalizacja usera
   useEffect(() => {
@@ -286,7 +367,6 @@ export const Map: React.FC = () => {
 
         setUserLocation(base);
 
-        // startowa kamera
         const cam: Camera = {
           center: {
             latitude: base.lat,
@@ -343,12 +423,10 @@ export const Map: React.FC = () => {
     return a;
   };
 
-  // 🔍 Zoom po kamerze – tak, żeby + ZAWSZE przybliżało
   const adjustZoom = async (direction: "in" | "out") => {
     if (!mapRef.current) return;
 
     const cam = await mapRef.current.getCamera();
-
     const hasZoom = cam.zoom !== undefined && cam.zoom !== null;
 
     if (hasZoom) {
@@ -372,9 +450,9 @@ export const Map: React.FC = () => {
       let alt = clampAlt(cam.altitude ?? 600);
 
       if (direction === "in") {
-        alt *= ALT_FACTOR; // < 1 → bliżej
+        alt *= ALT_FACTOR;
       } else {
-        alt /= ALT_FACTOR; // > 1 → dalej
+        alt /= ALT_FACTOR;
       }
 
       alt = clampAlt(alt);
@@ -428,6 +506,174 @@ export const Map: React.FC = () => {
     );
   };
 
+  // DETEKCJA NAJBLIŻSZEGO PUNKTU I DIALOG – ignorujemy odhaczone
+  // + NIE RUSZAMY NIC, JEŚLI JUŻ JEST AKTYWNY DIALOG
+  useEffect(() => {
+    if (!userLocation) return;
+
+    if (activeDialogPin) return;
+
+    const availablePins = routePins.filter(
+      (p) => !completedPinIds.includes(p.id),
+    );
+    if (!availablePins.length) {
+      setActiveDialogPin(null);
+      return;
+    }
+
+    let closest: { pin: RoutePin; dist: number } | null = null;
+
+    for (const pin of availablePins) {
+      const d = distanceMeters(
+        userLocation.lat,
+        userLocation.lng,
+        pin.lat,
+        pin.lng,
+      );
+
+      if (!closest || d < closest.dist) {
+        closest = { pin, dist: d };
+      }
+    }
+
+    if (closest && closest.dist <= DIALOG_TRIGGER_DISTANCE_M) {
+      setActiveDialogPin(closest.pin);
+    } else {
+      setActiveDialogPin(null);
+    }
+  }, [userLocation, completedPinIds, activeDialogPin]);
+
+  // 🔊 AUDIO: reagujemy na zmianę activeDialogPin
+  useEffect(() => {
+    let cancelled = false;
+
+    const setupAudio = async () => {
+      // stop/unload poprzednie audio
+      if (soundRef.current) {
+        try {
+          await soundRef.current.stopAsync();
+        } catch {}
+        try {
+          await soundRef.current.unloadAsync();
+        } catch {}
+        soundRef.current = null;
+      }
+      setIsAudioPlaying(false);
+      setDialogAudioUrl(null);
+
+      if (!activeDialogPin) {
+        return;
+      }
+
+      const url = getDialogAudioUrlForPin(activeDialogPin);
+      if (!url) return;
+
+      setDialogAudioUrl(url);
+
+      try {
+        const { sound } = await Audio.Sound.createAsync(
+          { uri: url },
+          { shouldPlay: true },
+        );
+
+        if (cancelled) {
+          await sound.unloadAsync();
+          return;
+        }
+
+        soundRef.current = sound;
+        setIsAudioPlaying(true);
+
+        sound.setOnPlaybackStatusUpdate((status: any) => {
+          if (!status?.isLoaded) return;
+          if (status.didJustFinish) {
+            setIsAudioPlaying(false);
+          }
+        });
+      } catch (err) {
+        console.log("Error loading/playing audio", err);
+      }
+    };
+
+    setupAudio();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeDialogPin]);
+
+  // cleanup audio na unmount
+  useEffect(
+    () => () => {
+      if (soundRef.current) {
+        soundRef.current.unloadAsync().catch(() => {});
+        soundRef.current = null;
+      }
+    },
+    [],
+  );
+
+  // progresywny dialog + po zakończeniu: schowaj, odhacz, odpal trasę
+  useEffect(() => {
+    if (dialogTimerRef.current) {
+      clearInterval(dialogTimerRef.current);
+      dialogTimerRef.current = null;
+    }
+
+    if (!activeDialogPin) {
+      setDialogIndex(0);
+      return;
+    }
+
+    const lines = getDialogLinesForPin(activeDialogPin);
+    setDialogIndex(0);
+
+    if (lines.length <= 1) {
+      setCompletedPinIds((prev) =>
+        prev.includes(activeDialogPin.id)
+          ? prev
+          : [...prev, activeDialogPin.id],
+      );
+      if (!routeReady) setRouteReady(true);
+      setActiveDialogPin(null);
+      return;
+    }
+
+    dialogTimerRef.current = setInterval(() => {
+      setDialogIndex((prev) => {
+        const lastIndex = lines.length - 1;
+
+        if (prev >= lastIndex) {
+          if (dialogTimerRef.current) {
+            clearInterval(dialogTimerRef.current);
+            dialogTimerRef.current = null;
+          }
+
+          if (activeDialogPin) {
+            setCompletedPinIds((prevIds) =>
+              prevIds.includes(activeDialogPin.id)
+                ? prevIds
+                : [...prevIds, activeDialogPin.id],
+            );
+          }
+          if (!routeReady) setRouteReady(true);
+          setActiveDialogPin(null);
+
+          return prev;
+        }
+
+        return prev + 1;
+      });
+    }, DIALOG_STEP_MS);
+
+    return () => {
+      if (dialogTimerRef.current) {
+        clearInterval(dialogTimerRef.current);
+        dialogTimerRef.current = null;
+      }
+    };
+  }, [activeDialogPin, routeReady]);
+
   if (!userLocation) {
     return (
       <View style={[styles.map, styles.loadingContainer]}>
@@ -437,6 +683,13 @@ export const Map: React.FC = () => {
   }
 
   const floatingTop = insets.top + 12;
+  const dialogBottom = insets.bottom + 130;
+
+  const dialogLines = activeDialogPin
+    ? getDialogLinesForPin(activeDialogPin)
+    : [];
+  const currentDialogText =
+    dialogLines[dialogIndex] ?? dialogLines[dialogLines.length - 1] ?? "";
 
   return (
     <View style={styles.container}>
@@ -469,9 +722,9 @@ export const Map: React.FC = () => {
             : undefined
         }
       >
-        {/* OSRM Polyline pomiędzy pinami */}
-        {routeCoordinates.length >= 2 && (
+        {routeReady && routeCoordinates.length >= 2 && (
           <Polyline
+            key={`route-${routeCoordinates.length}`}
             coordinates={routeCoordinates}
             strokeColor={COLORS.blue}
             strokeWidth={4}
@@ -480,7 +733,6 @@ export const Map: React.FC = () => {
           />
         )}
 
-        {/* marker użytkownika */}
         <Marker
           coordinate={{
             latitude: userLocation.lat,
@@ -493,9 +745,9 @@ export const Map: React.FC = () => {
           </View>
         </Marker>
 
-        {/* piny trasy – kółka */}
         {routePins.map((pin) => {
           const { bg, ring } = getPinColors(pin.variant);
+          const completed = completedPinIds.includes(pin.id);
 
           return (
             <Marker
@@ -508,6 +760,7 @@ export const Map: React.FC = () => {
                   styles.pinCircleOuter,
                   {
                     borderColor: ring,
+                    opacity: completed ? 0.5 : 1,
                   },
                 ]}
               >
@@ -536,7 +789,6 @@ export const Map: React.FC = () => {
         })}
       </MapView>
 
-      {/* pływająca wyspa z progresem trasy + następnym manewrem */}
       {hasRoute && (
         <View style={[styles.floatingRouteCard, { top: floatingTop }]}>
           <View style={styles.routeCardHeaderRow}>
@@ -563,35 +815,77 @@ export const Map: React.FC = () => {
             />
           </View>
 
-          {/* Next turn info */}
-          <View style={styles.nextStepRow}>
-            <View style={styles.nextStepIcon}>
-              <Text style={styles.nextStepIconText}>↱</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.nextStepLabel}>
-                Następny manewr
-                {nextStepDistance ? ` • za ${nextStepDistance}` : ""}
-              </Text>
-              <Text style={styles.nextStepText} numberOfLines={2}>
-                {nextStepText}
-              </Text>
-            </View>
-          </View>
+          {routeReady && (
+            <>
+              <View style={styles.nextStepRow}>
+                <View style={styles.nextStepIcon}>
+                  <Text style={styles.nextStepIconText}>↱</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.nextStepLabel}>
+                    Następny manewr
+                    {nextStepDistance ? ` • za ${nextStepDistance}` : ""}
+                  </Text>
+                  <Text style={styles.nextStepText} numberOfLines={2}>
+                    {nextStepText}
+                  </Text>
+                </View>
+              </View>
 
-          {/* Apple Maps CTA */}
-          <View style={styles.appleRow}>
-            <TouchableOpacity
-              style={styles.appleButton}
-              onPress={openInAppleMaps}
-            >
-              <Text style={styles.appleButtonText}>Otwórz w Apple Maps</Text>
-            </TouchableOpacity>
+              <View style={styles.appleRow}>
+                <TouchableOpacity
+                  style={styles.appleButton}
+                  onPress={openInAppleMaps}
+                >
+                  <Text style={styles.appleButtonText}>Otwórz w Apple Maps</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+        </View>
+      )}
+
+      {activeDialogPin && (
+        <View
+          style={[
+            styles.characterDialogContainer,
+            { bottom: dialogBottom },
+          ]}
+        >
+          <Image
+            source={{ uri: CHARACTER_IMAGE_URL }}
+            style={styles.characterDialogImage}
+          />
+          <View style={styles.characterDialogBubble}>
+            <Text style={styles.characterDialogTitle}>
+              Marian Rejewski
+            </Text>
+            <Text style={styles.characterDialogText}>
+              {currentDialogText}
+            </Text>
+
+            {/* 🔊 Pasek audio pod dialogiem */}
+            {dialogAudioUrl && (
+              <View style={styles.audioRow}>
+                <View style={styles.audioIconCircle}>
+                  <Text style={styles.audioIconText}>
+                    {isAudioPlaying ? "🔊" : "🔈"}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.audioTitle}>Audio opowieści</Text>
+                  <Text style={styles.audioSubtitle}>
+                    {isAudioPlaying
+                      ? "Odtwarzanie nagrania..."
+                      : "Nagranie gotowe do odtworzenia"}
+                  </Text>
+                </View>
+              </View>
+            )}
           </View>
         </View>
       )}
 
-      {/* Kontrolki mapy */}
       <View style={styles.controlsContainer}>
         <TouchableOpacity
           style={styles.controlButton}
@@ -648,7 +942,6 @@ const styles = StyleSheet.create({
     color: "white",
   },
 
-  // Kółkowe piny
   pinCircleOuter: {
     width: 40,
     height: 40,
@@ -682,7 +975,6 @@ const styles = StyleSheet.create({
     resizeMode: "cover",
   },
 
-  // Wyspa
   floatingRouteCard: {
     position: "absolute",
     left: 16,
@@ -790,7 +1082,75 @@ const styles = StyleSheet.create({
     color: COLORS.blue,
   },
 
-  // Kontrolki mapy
+  characterDialogContainer: {
+    position: "absolute",
+    left: 16,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    maxWidth: "80%",
+  },
+  characterDialogImage: {
+    width: 96,
+    height: 150,
+    borderRadius: 20,
+    backgroundColor: "#E5E7EB",
+    marginRight: 10,
+  },
+  characterDialogBubble: {
+    flex: 1,
+    backgroundColor: "rgba(255,255,255,0.98)",
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOpacity: 0.14,
+    shadowRadius: 7,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 6,
+    marginBottom: 36,
+  },
+  characterDialogTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 4,
+  },
+  characterDialogText: {
+    fontSize: 14,
+    color: "#374151",
+    lineHeight: 20,
+  },
+
+  // 🔊 audio UI
+  audioRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
+    gap: 10,
+  },
+  audioIconCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  audioIconText: {
+    fontSize: 16,
+  },
+  audioTitle: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#111827",
+  },
+  audioSubtitle: {
+    fontSize: 11,
+    color: "#6B7280",
+  },
+
   controlsContainer: {
     position: "absolute",
     right: 16,
