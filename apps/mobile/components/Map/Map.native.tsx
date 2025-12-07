@@ -17,7 +17,7 @@ import MapView, {
   Camera,
 } from "react-native-maps";
 import * as Location from "expo-location";
-import { Audio } from "expo-av"; // <- AUDIO
+import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 import { authClient } from "@/lib/auth-client";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -28,20 +28,20 @@ const COLORS = {
   default: "#111827",
 };
 
-// zoom po stronie kamery
+// zoom (camera.zoom) – preferowane
 const MIN_ZOOM = 13;
 const MAX_ZOOM = 19;
 const ZOOM_STEP = 0.6;
 
-// fallback na altitude (jak zoom nie działa)
+// fallback: altitude (gdy zoom brak)
 const MIN_ALT = 80;
 const MAX_ALT = 8000;
 const ALT_FACTOR = 0.7;
 
-// dystans dla dialogu (w metrach)
+// dystans od punktu, żeby odpalić dialog (w metrach)
 const DIALOG_TRIGGER_DISTANCE_M = 60;
 
-// co ile sekund przeskakiwać do kolejnego zdania
+// co ile ms przeskakiwać do kolejnego zdania
 const DIALOG_STEP_MS = 5000;
 
 const CHARACTER_IMAGE_URL =
@@ -81,8 +81,9 @@ const distanceMeters = (
   lat2: number,
   lon2: number,
 ): number => {
-  const R = 6371e3; // m
+  const R = 6371e3;
   const toRad = (deg: number) => (deg * Math.PI) / 180;
+
   const φ1 = toRad(lat1);
   const φ2 = toRad(lat2);
   const Δφ = toRad(lat2 - lat1);
@@ -133,7 +134,7 @@ const formatManeuverText = (step: OsrmStep | undefined): string => {
   return `Kontynuuj${street}`;
 };
 
-// progresywny dialog – tablica kwestii na pin
+// progresywny dialog – linijki per pin
 const getDialogLinesForPin = (pin: RoutePin): string[] => {
   switch (pin.id) {
     case "pin-default":
@@ -165,9 +166,8 @@ const getDialogLinesForPin = (pin: RoutePin): string[] => {
   }
 };
 
-// 🔊 docelowo backend: tu podpinasz URL audio per pin
-const getDialogAudioUrlForPin = (pin: RoutePin): string | null => {
-  // TODO: podmień na URL z backendu
+// 🔊 tu później podepniesz realne URL-e z backendu
+const getDialogAudioUrlForPin = (_pin: RoutePin): string | null => {
   // Na razie jeden sample dla wszystkich:
   return "https://www2.cs.uic.edu/~i101/SoundFiles/StarWars60.wav";
 };
@@ -186,20 +186,22 @@ export const Map: React.FC = () => {
   const [activeDialogPin, setActiveDialogPin] = useState<RoutePin | null>(null);
   const [dialogIndex, setDialogIndex] = useState(0);
   const [routeReady, setRouteReady] = useState(false); // trasa dopiero po dialogu
-  const [completedPinIds, setCompletedPinIds] = useState<string[]>([]); // odhaczone punkty
+  const [completedPinIds, setCompletedPinIds] = useState<string[]>([]);
 
-  // AUDIO
   const [dialogAudioUrl, setDialogAudioUrl] = useState<string | null>(null);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
-  const soundRef = useRef<Audio.Sound | null>(null);
 
   const mapRef = useRef<MapView>(null);
   const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(
     null,
   );
-  const dialogTimerRef = useRef<any>(null);
+  const dialogTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Mock – realna trasa później z backendu
+  // AUDIO – expo-audio
+  const audioPlayer = useAudioPlayer();
+  const audioStatus = useAudioPlayerStatus(audioPlayer);
+
+  // Mock trasy – później z backendu
   const activeRoute: ActiveRoute = {
     title: "Szlak Mariana Rejewskiego",
     totalStops: 8,
@@ -278,15 +280,13 @@ export const Map: React.FC = () => {
   const nextStepDistance = nextStep ? formatDistance(nextStep.distance) : null;
   const nextStepText = formatManeuverText(nextStep);
 
-  // OSRM liczymy od razu (albo przy zmianie pinów), NIE od routeReady
+  // OSRM – liczymy trasę od razu (między pinami), ale rysujemy dopiero gdy routeReady === true
   useEffect(() => {
     const fetchOsrmRoute = async () => {
       if (routePins.length < 2) return;
 
       try {
-        const coordsStr = routePins
-          .map((p) => `${p.lng},${p.lat}`)
-          .join(";");
+        const coordsStr = routePins.map((p) => `${p.lng},${p.lat}`).join(";");
 
         const url =
           `https://router.project-osrm.org/route/v1/foot/${coordsStr}` +
@@ -295,7 +295,6 @@ export const Map: React.FC = () => {
         const res = await fetch(url);
 
         if (!res.ok) {
-          __DEV__ && console.log("OSRM error status:", res.status);
           setRouteCoordinates(
             routePins.map((p) => ({
               latitude: p.lat,
@@ -309,8 +308,7 @@ export const Map: React.FC = () => {
         const data = await res.json();
         const coords: [number, number][] =
           data.routes?.[0]?.geometry?.coordinates ?? [];
-        const steps: OsrmStep[] =
-          data.routes?.[0]?.legs?.[0]?.steps ?? [];
+        const steps: OsrmStep[] = data.routes?.[0]?.legs?.[0]?.steps ?? [];
 
         if (!coords.length) {
           setRouteCoordinates(
@@ -329,7 +327,6 @@ export const Map: React.FC = () => {
 
         setRouteSteps(steps);
       } catch (e) {
-        __DEV__ && console.log("Error fetching OSRM route:", e);
         setRouteCoordinates(
           routePins.map((p) => ({
             latitude: p.lat,
@@ -388,8 +385,8 @@ export const Map: React.FC = () => {
           },
           (location) => {
             const updated = {
-          lat: location.coords.latitude,
-          lng: location.coords.longitude,
+              lat: location.coords.latitude,
+              lng: location.coords.longitude,
             };
             setUserLocation(updated);
           },
@@ -473,10 +470,10 @@ export const Map: React.FC = () => {
       const newCam: Camera = hasZoom
         ? {
             ...cam,
-          center: {
-            latitude: userLocation.lat,
-            longitude: userLocation.lng,
-          },
+            center: {
+              latitude: userLocation.lat,
+              longitude: userLocation.lng,
+            },
             zoom: clampZoom((cam.zoom as number) || 16),
           }
         : {
@@ -503,12 +500,10 @@ export const Map: React.FC = () => {
     );
   };
 
-  // DETEKCJA NAJBLIŻSZEGO PUNKTU I DIALOG – ignorujemy odhaczone
-  // + NIE RUSZAMY NIC, JEŚLI JUŻ JEST AKTYWNY DIALOG
+  // DETEKCJA NAJBLIŻSZEGO PUNKTU / DIALOG
   useEffect(() => {
     if (!userLocation) return;
-
-    if (activeDialogPin) return;
+    if (activeDialogPin) return; // nie ruszamy, jeśli dialog trwa
 
     const availablePins = routePins.filter(
       (p) => !completedPinIds.includes(p.id),
@@ -540,77 +535,37 @@ export const Map: React.FC = () => {
     }
   }, [userLocation, completedPinIds, activeDialogPin]);
 
-  // 🔊 AUDIO: reagujemy na zmianę activeDialogPin
+  // AUDIO – odpalanie dla nowego dialogu
   useEffect(() => {
-    let cancelled = false;
+    setDialogAudioUrl(null);
+    setIsAudioPlaying(false);
 
-    const setupAudio = async () => {
-      // stop/unload poprzednie audio
-      if (soundRef.current) {
-        try {
-          await soundRef.current.stopAsync();
-        } catch {}
-        try {
-          await soundRef.current.unloadAsync();
-        } catch {}
-        soundRef.current = null;
-      }
-      setIsAudioPlaying(false);
-      setDialogAudioUrl(null);
+    if (!activeDialogPin) return;
 
-      if (!activeDialogPin) {
-        return;
-      }
+    const url = getDialogAudioUrlForPin(activeDialogPin);
+    if (!url) return;
 
-      const url = getDialogAudioUrlForPin(activeDialogPin);
-      if (!url) return;
+    setDialogAudioUrl(url);
 
-      setDialogAudioUrl(url);
+    // podmieniamy source i gramy
+    audioPlayer.replace({ uri: url });
+    audioPlayer.play();
+  }, [activeDialogPin, audioPlayer]);
 
-      try {
-        const { sound } = await Audio.Sound.createAsync(
-          { uri: url },
-          { shouldPlay: true },
-        );
+  // status audio -> flagi do UI
+  useEffect(() => {
+    setIsAudioPlaying(!!audioStatus?.playing);
+  }, [audioStatus?.playing]);
 
-        if (cancelled) {
-          await sound.unloadAsync();
-          return;
-        }
-
-        soundRef.current = sound;
-        setIsAudioPlaying(true);
-
-        sound.setOnPlaybackStatusUpdate((status: any) => {
-          if (!status?.isLoaded) return;
-          if (status.didJustFinish) {
-            setIsAudioPlaying(false);
-          }
-        });
-      } catch (err) {
-        console.log("Error loading/playing audio", err);
-      }
-    };
-
-    setupAudio();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [activeDialogPin]);
-
-  // cleanup audio na unmount
+  // cleanup audio na unmount – hook i tak sprząta, ale niech będzie
   useEffect(
     () => () => {
-      if (soundRef.current) {
-        soundRef.current.unloadAsync().catch(() => {});
-        soundRef.current = null;
-      }
+      audioPlayer.remove();
     },
-    [],
+    [audioPlayer],
   );
 
-  // progresywny dialog + po zakończeniu: schowaj, odhacz, odpal trasę
+  // PROGRESYWNY DIALOG + po zakończeniu: odhacz pin, pokaż trasę
   useEffect(() => {
     if (dialogTimerRef.current) {
       clearInterval(dialogTimerRef.current);
@@ -627,9 +582,7 @@ export const Map: React.FC = () => {
 
     if (lines.length <= 1) {
       setCompletedPinIds((prev) =>
-        prev.includes(activeDialogPin.id)
-          ? prev
-          : [...prev, activeDialogPin.id],
+        prev.includes(activeDialogPin.id) ? prev : [...prev, activeDialogPin.id],
       );
       if (!routeReady) setRouteReady(true);
       setActiveDialogPin(null);
@@ -690,13 +643,13 @@ export const Map: React.FC = () => {
 
   return (
     <View style={styles.container}>
-    <MapView
-      ref={mapRef}
-      style={styles.map}
-      provider={Platform.OS === "android" ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
-      initialRegion={{
-        latitude: userLocation.lat,
-        longitude: userLocation.lng,
+      <MapView
+        ref={mapRef}
+        style={styles.map}
+        provider={Platform.OS === "android" ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
+        initialRegion={{
+          latitude: userLocation.lat,
+          longitude: userLocation.lng,
           latitudeDelta: 0.01,
           longitudeDelta: 0.0045,
         }}
@@ -723,6 +676,7 @@ export const Map: React.FC = () => {
           />
         )}
 
+        {/* marker użytkownika */}
         <Marker
           coordinate={{
             latitude: userLocation.lat,
@@ -735,6 +689,7 @@ export const Map: React.FC = () => {
           </View>
         </Marker>
 
+        {/* piny trasy */}
         {routePins.map((pin) => {
           const { bg, ring } = getPinColors(pin.variant);
           const completed = completedPinIds.includes(pin.id);
@@ -763,14 +718,9 @@ export const Map: React.FC = () => {
                   ]}
                 >
                   {pin.imageSource ? (
-                    <Image
-                      source={pin.imageSource}
-                      style={styles.pinImage}
-                    />
+                    <Image source={pin.imageSource} style={styles.pinImage} />
                   ) : (
-                    <Text style={styles.pinLabel}>
-                      {pin.label ?? ""}
-                    </Text>
+                    <Text style={styles.pinLabel}>{pin.label ?? ""}</Text>
                   )}
                 </View>
               </View>
@@ -779,6 +729,7 @@ export const Map: React.FC = () => {
         })}
       </MapView>
 
+      {/* pływająca wyspa z trasą */}
       {hasRoute && (
         <View style={[styles.floatingRouteCard, { top: floatingTop }]}>
           <View style={styles.routeCardHeaderRow}>
@@ -822,18 +773,59 @@ export const Map: React.FC = () => {
                 </View>
               </View>
 
-          {/* Google Maps CTA */}
-          <View style={styles.appleRow}>
-            <TouchableOpacity
-              style={styles.appleButton}
-              onPress={openInGoogleMaps}
-            >
-              <Text style={styles.appleButtonText}>Otwórz w Google Maps</Text>
-            </TouchableOpacity>
+              <View style={styles.appleRow}>
+                <TouchableOpacity
+                  style={styles.appleButton}
+                  onPress={openInGoogleMaps}
+                >
+                  <Text style={styles.appleButtonText}>
+                    Otwórz w Google Maps
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+        </View>
+      )}
+
+      {/* dialog postaci */}
+      {activeDialogPin && (
+        <View
+          style={[
+            styles.characterDialogContainer,
+            { bottom: dialogBottom },
+          ]}
+        >
+          <Image
+            source={{ uri: CHARACTER_IMAGE_URL }}
+            style={styles.characterDialogImage}
+          />
+          <View style={styles.characterDialogBubble}>
+            <Text style={styles.characterDialogTitle}>Marian Rejewski</Text>
+            <Text style={styles.characterDialogText}>{currentDialogText}</Text>
+
+            {dialogAudioUrl && (
+              <View style={styles.audioRow}>
+                <View style={styles.audioIconCircle}>
+                  <Text style={styles.audioIconText}>
+                    {isAudioPlaying ? "🔊" : "🔈"}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.audioTitle}>Audio opowieści</Text>
+                  <Text style={styles.audioSubtitle}>
+                    {isAudioPlaying
+                      ? "Odtwarzanie nagrania..."
+                      : "Nagranie gotowe (podmienisz pod backend)."}
+                  </Text>
+                </View>
+              </View>
+            )}
           </View>
         </View>
       )}
 
+      {/* kontrolki mapy */}
       <View style={styles.controlsContainer}>
         <TouchableOpacity
           style={styles.controlButton}
@@ -849,10 +841,7 @@ export const Map: React.FC = () => {
           <Text style={styles.controlIcon}>－</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.controlButton}
-          onPress={goToMyLocation}
-        >
+        <TouchableOpacity style={styles.controlButton} onPress={goToMyLocation}>
           <Text style={styles.controlIcon}>⌖</Text>
         </TouchableOpacity>
       </View>
@@ -1071,7 +1060,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 
-  // 🔊 audio UI
   audioRow: {
     flexDirection: "row",
     alignItems: "center",
