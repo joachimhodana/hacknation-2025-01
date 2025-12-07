@@ -330,7 +330,7 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         const filePath = join(process.cwd(), "public", "resources", "thumbnails", fileName);
         const fileBuffer = await body.thumbnailFile.arrayBuffer();
         await Bun.write(filePath, fileBuffer);
-        thumbnailUrl = `/public/resources/thumbnails/${fileName}`;
+        thumbnailUrl = `/resources/thumbnails/${fileName}`;
       }
 
       // Handle marker icon file upload if present
@@ -344,7 +344,7 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         const filePath = join(process.cwd(), "public", "resources", "markers", fileName);
         const fileBuffer = await body.markerIconFile.arrayBuffer();
         await Bun.write(filePath, fileBuffer);
-        markerIconUrl = `/public/resources/markers/${fileName}`;
+        markerIconUrl = `/resources/markers/${fileName}`;
       }
 
       // Remove file fields for DB update
