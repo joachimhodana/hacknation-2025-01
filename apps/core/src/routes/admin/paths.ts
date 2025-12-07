@@ -172,7 +172,7 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
           else if (mimeType.includes("m4a")) extension = ".m4a";
           
           const fileName = `${audioUUID}${extension}`;
-          const filePath = join(process.cwd(), "resources", "audio", fileName);
+          const filePath = join(process.cwd(), "public", "resources", "audio", fileName);
           
           await mkdir(join(process.cwd(),"public", "resources", "audio"), { recursive: true });
           await Bun.write(filePath, audioBuffer);
