@@ -7,12 +7,14 @@ import {
   TouchableOpacity,
   Text,
   Appearance,
+  Image,
 } from "react-native";
 import MapView, {
   PROVIDER_GOOGLE,
   PROVIDER_DEFAULT,
   Camera,
   Marker,
+  Polyline,
 } from "react-native-maps";
 import * as Location from "expo-location";
 import { authClient } from "@/lib/auth-client";
@@ -20,12 +22,17 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const MIN_ALT = 120;
 const MAX_ALT = 8000;
-const ZOOM_STEP = 400;
+const ZOOM_ALT_STEP = 400;
+
+const MIN_ZOOM = 13;
+const MAX_ZOOM = 19;
+const ZOOM_STEP = 0.6;
 
 const COLORS = {
   red: "#ED1C24",
   yellow: "#FFDE00",
   blue: "#0095DA",
+  default: "#111827",
 };
 
 type ActiveRoute = {
@@ -34,22 +41,35 @@ type ActiveRoute = {
   completedStops: number;
 } | null;
 
+type MarkerVariant = "default" | "primary" | "secondary" | "tertiary";
+
+type RoutePin = {
+  id: string;
+  lat: number;
+  lng: number;
+  variant: MarkerVariant;
+  label?: string;
+  imageSource?: any; // require(...) jak będziesz miał asset
+};
+
 export const Map: React.FC = () => {
   const colorScheme = Appearance.getColorScheme();
   const isDark = colorScheme === "dark";
   const { data: session } = authClient.useSession();
   const insets = useSafeAreaInsets();
 
-  const [userLocation, setUserLocation] = useState<{
-    lat: number;
-    lng: number;
-  } | null>(null);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(
+    null,
+  );
+  const [routeCoordinates, setRouteCoordinates] = useState<
+    { latitude: number; longitude: number }[]
+  >([]);
   const mapRef = useRef<MapView>(null);
   const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(
     null,
   );
 
-  // 🔹 TU PODSTAWISZ REALNE DANE TRASY
+  // 🔹 Mock – podepniesz tu realne dane trasy
   const activeRoute: ActiveRoute = {
     title: "Szlak Mariana Rejewskiego",
     totalStops: 8,
@@ -59,12 +79,8 @@ export const Map: React.FC = () => {
   const hasRoute = !!activeRoute;
   const routeTitle = activeRoute?.title ?? "";
   const totalStops = activeRoute?.totalStops ?? 0;
-  const completedStops = Math.min(
-    activeRoute?.completedStops ?? 0,
-    totalStops,
-  );
-  const progressRatio =
-    totalStops > 0 ? completedStops / totalStops : 0;
+  const completedStops = Math.min(activeRoute?.completedStops ?? 0, totalStops);
+  const progressRatio = totalStops > 0 ? completedStops / totalStops : 0;
   const progressText =
     totalStops > 0
       ? `${completedStops} / ${totalStops} przystanków`
@@ -81,6 +97,120 @@ export const Map: React.FC = () => {
         .toUpperCase()
         .slice(0, 2)
     : "U";
+
+  // 🔵🔴🟡 Trzy typy markerów + domyślny – wszystkie kółka
+  const routePins: RoutePin[] = [
+    {
+      id: "pin-default",
+      lat: 53.1235,
+      lng: 18.0084,
+      variant: "default",
+      label: "D",
+    },
+    {
+      id: "pin-primary",
+      lat: 53.1227,
+      lng: 18.0048,
+      variant: "primary",
+      label: "Q",
+    },
+    {
+      id: "pin-secondary",
+      lat: 53.1242,
+      lng: 18.0121,
+      variant: "secondary",
+      label: "i",
+    },
+    {
+      id: "pin-tertiary",
+      lat: 53.123,
+      lng: 18.011,
+      variant: "tertiary",
+      label: "★",
+      // imageSource: require("@/assets/pins/quest.png"),
+    },
+  ];
+
+  const getPinColors = (variant: MarkerVariant) => {
+    switch (variant) {
+      case "primary":
+        return { bg: COLORS.red, ring: "#FFFFFF" };
+      case "secondary":
+        return { bg: COLORS.yellow, ring: "#FFFFFF" };
+      case "tertiary":
+        return { bg: COLORS.blue, ring: "#FFFFFF" };
+      case "default":
+      default:
+        return { bg: "#F3F4F6", ring: "#D1D5DB" };
+    }
+  };
+
+  // 🔗 OSRM – pobierz realną trasę między pinami i zapisz jako Polyline
+  useEffect(() => {
+    const fetchOsrmRoute = async () => {
+      if (routePins.length < 2) return;
+
+      try {
+        const coordsStr = routePins
+          .map((p) => `${p.lng},${p.lat}`)
+          .join(";");
+
+        const url =
+          `https://router.project-osrm.org/route/v1/foot/${coordsStr}` +
+          "?overview=full&geometries=geojson";
+
+        const res = await fetch(url);
+
+        if (!res.ok) {
+          console.log("OSRM error status:", res.status);
+          // fallback: prosta linia między pinami
+          setRouteCoordinates(
+            routePins.map((p) => ({
+              latitude: p.lat,
+              longitude: p.lng,
+            })),
+          );
+          return;
+        }
+
+        const data = await res.json();
+
+        const coords: [number, number][] =
+          data.routes?.[0]?.geometry?.coordinates ?? [];
+
+        if (!coords.length) {
+          // fallback jak OSRM nic nie zwróci
+          setRouteCoordinates(
+            routePins.map((p) => ({
+              latitude: p.lat,
+              longitude: p.lng,
+            })),
+          );
+          return;
+        }
+
+        const route = coords.map(([lng, lat]) => ({
+          latitude: lat,
+          longitude: lng,
+        }));
+
+        setRouteCoordinates(route);
+      } catch (e) {
+        console.log("Error fetching OSRM route:", e);
+        // fallback: prosta linia między pinami
+        setRouteCoordinates(
+          routePins.map((p) => ({
+            latitude: p.lat,
+            longitude: p.lng,
+          })),
+        );
+      }
+    };
+
+    // routePins są na razie stałe → wystarczy raz na mount
+    fetchOsrmRoute();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -129,17 +259,29 @@ export const Map: React.FC = () => {
     };
   }, []);
 
+  // Startowa kamera
   useEffect(() => {
     if (userLocation && mapRef.current) {
-      const cam: Camera = {
-        center: {
-          latitude: userLocation.lat,
-          longitude: userLocation.lng,
-        },
-        pitch: 55,
-        heading: 0,
-        altitude: 600,
-      };
+      const cam: Camera =
+        Platform.OS === "android"
+          ? {
+              center: {
+                latitude: userLocation.lat,
+                longitude: userLocation.lng,
+              },
+              pitch: 55,
+              heading: 0,
+              zoom: 16,
+            }
+          : {
+              center: {
+                latitude: userLocation.lat,
+                longitude: userLocation.lng,
+              },
+              pitch: 55,
+              heading: 0,
+              altitude: 600,
+            };
 
       mapRef.current.animateCamera(cam, { duration: 500 });
     }
@@ -158,23 +300,44 @@ export const Map: React.FC = () => {
     return alt;
   };
 
+  const clampZoom = (z?: number) => {
+    let zoom = z ?? 16;
+    if (!Number.isFinite(zoom)) zoom = 16;
+    if (zoom < MIN_ZOOM) zoom = MIN_ZOOM;
+    if (zoom > MAX_ZOOM) zoom = MAX_ZOOM;
+    return zoom;
+  };
+
+  // ✅ poprawione przybliżanie/oddalanie
   const adjustZoom = async (direction: "in" | "out") => {
     if (!mapRef.current) return;
 
     const cam = await mapRef.current.getCamera();
-    let alt = normalizeAltitude(cam.altitude);
+    let newCam: Camera;
 
-    if (direction === "in") {
-      alt = Math.max(MIN_ALT, alt - ZOOM_STEP);
+    if (cam.zoom !== undefined && cam.zoom !== null) {
+      // prefer zoom
+      let zoom = clampZoom(cam.zoom as number);
+      zoom += direction === "in" ? ZOOM_STEP : -ZOOM_STEP;
+      zoom = clampZoom(zoom);
+
+      newCam = {
+        ...cam,
+        zoom,
+        pitch: 55,
+      };
     } else {
-      alt = Math.min(MAX_ALT, alt + ZOOM_STEP);
-    }
+      // fallback: altitude
+      let alt = normalizeAltitude(cam.altitude);
+      alt += direction === "in" ? -ZOOM_ALT_STEP : ZOOM_ALT_STEP;
+      alt = normalizeAltitude(alt);
 
-    const newCam: Camera = {
-      ...cam,
-      altitude: alt,
-      pitch: 55,
-    };
+      newCam = {
+        ...cam,
+        altitude: alt,
+        pitch: 55,
+      };
+    }
 
     mapRef.current.animateCamera(newCam, { duration: 200 });
   };
@@ -187,15 +350,26 @@ export const Map: React.FC = () => {
         accuracy: Location.Accuracy.High,
       });
 
-      const cam: Camera = {
-        center: {
-          latitude: loc.coords.latitude,
-          longitude: loc.coords.longitude,
-        },
-        pitch: 55,
-        heading: 0,
-        altitude: 600,
-      };
+      const cam: Camera =
+        Platform.OS === "android"
+          ? {
+              center: {
+                latitude: loc.coords.latitude,
+                longitude: loc.coords.longitude,
+              },
+              pitch: 55,
+              heading: 0,
+              zoom: 16,
+            }
+          : {
+              center: {
+                latitude: loc.coords.latitude,
+                longitude: loc.coords.longitude,
+              },
+              pitch: 55,
+              heading: 0,
+              altitude: 600,
+            };
 
       mapRef.current.animateCamera(cam, { duration: 700 });
     } catch (e) {
@@ -211,7 +385,6 @@ export const Map: React.FC = () => {
     );
   }
 
-  // 🔝 dynamiczne położenie wyspy – zawsze pod safe area
   const floatingTop = insets.top + 12;
 
   return (
@@ -237,6 +410,8 @@ export const Map: React.FC = () => {
         rotateEnabled={false}
         pitchEnabled={false}
         mapType="standard"
+        minZoomLevel={MIN_ZOOM}
+        maxZoomLevel={MAX_ZOOM}
         customMapStyle={
           Platform.OS === "android"
             ? isDark
@@ -245,6 +420,18 @@ export const Map: React.FC = () => {
             : undefined
         }
       >
+        {/* 🔵 OSRM Polyline pomiędzy pinami */}
+        {routeCoordinates.length >= 2 && (
+          <Polyline
+            coordinates={routeCoordinates}
+            strokeColor={COLORS.blue}
+            strokeWidth={4}
+            lineCap="round"
+            lineJoin="round"
+          />
+        )}
+
+        {/* marker użytkownika */}
         <Marker
           coordinate={{
             latitude: userLocation.lat,
@@ -256,31 +443,53 @@ export const Map: React.FC = () => {
             <Text style={styles.avatarMarkerText}>{userInitials}</Text>
           </View>
         </Marker>
+
+        {/* piny trasy – kółka, jeden styl, 3 typy + domyślny */}
+        {routePins.map((pin) => {
+          const { bg, ring } = getPinColors(pin.variant);
+
+          return (
+            <Marker
+              key={pin.id}
+              coordinate={{ latitude: pin.lat, longitude: pin.lng }}
+              anchor={{ x: 0.5, y: 0.5 }}
+            >
+              <View
+                style={[
+                  styles.pinCircleOuter,
+                  {
+                    borderColor: ring,
+                  },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.pinCircleInner,
+                    {
+                      backgroundColor: bg,
+                    },
+                  ]}
+                >
+                  {pin.imageSource ? (
+                    <Image
+                      source={pin.imageSource}
+                      style={styles.pinImage}
+                    />
+                  ) : (
+                    <Text style={styles.pinLabel}>
+                      {pin.label ?? ""}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            </Marker>
+          );
+        })}
       </MapView>
 
-      {/* 🏝️ Pływająca wyspa – zawsze pod notch, nigdy w safe area */}
+      {/* pływająca wyspa z progresem trasy */}
       {hasRoute && (
-        <View
-          style={[
-            styles.floatingRouteCard,
-            { top: floatingTop },
-          ]}
-        >
-          <View style={styles.routeAccentStrip}>
-            <View
-              style={[styles.routeAccentSegment, { backgroundColor: COLORS.red }]}
-            />
-            <View
-              style={[
-                styles.routeAccentSegment,
-                { backgroundColor: COLORS.yellow },
-              ]}
-            />
-            <View
-              style={[styles.routeAccentSegment, { backgroundColor: COLORS.blue }]}
-            />
-          </View>
-
+        <View style={[styles.floatingRouteCard, { top: floatingTop }]}>
           <View style={styles.routeCardContent}>
             <View style={{ flex: 1 }}>
               <Text style={styles.routeTitle} numberOfLines={1}>
@@ -307,24 +516,27 @@ export const Map: React.FC = () => {
         </View>
       )}
 
+      {/* Kontrolki mapy – równe odstępy, normalne ikonki */}
       <View style={styles.controlsContainer}>
         <TouchableOpacity
           style={styles.controlButton}
           onPress={() => adjustZoom("in")}
         >
-          <Text style={styles.controlButtonText}>+</Text>
+          <Text style={styles.controlIcon}>＋</Text>
         </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.controlButton}
           onPress={() => adjustZoom("out")}
         >
-          <Text style={styles.controlButtonText}>−</Text>
+          <Text style={styles.controlIcon}>－</Text>
         </TouchableOpacity>
-      </View>
 
-      <View style={styles.myLocationButton}>
-        <TouchableOpacity style={styles.controlButton} onPress={goToMyLocation}>
-          <Text style={styles.controlButtonText}>⌖</Text>
+        <TouchableOpacity
+          style={styles.controlButton}
+          onPress={goToMyLocation}
+        >
+          <Text style={styles.controlIcon}>⌖</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -361,7 +573,41 @@ const styles = StyleSheet.create({
     color: "white",
   },
 
-  // wyspa BEZ top – top dostaje dynamicznie
+  // Kółkowe piny – jeden styl, różne warianty kolorystyczne
+  pinCircleOuter: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    backgroundColor: "white",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 6,
+  },
+  pinCircleInner: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pinLabel: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  pinImage: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    resizeMode: "cover",
+  },
+
+  // Wyspa
   floatingRouteCard: {
     position: "absolute",
     left: 16,
@@ -376,16 +622,6 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
     elevation: 6,
-  },
-  routeAccentStrip: {
-    flexDirection: "row",
-    height: 3,
-    borderRadius: 999,
-    overflow: "hidden",
-    marginBottom: 8,
-  },
-  routeAccentSegment: {
-    flex: 1,
   },
   routeCardContent: {
     flexDirection: "row",
@@ -427,35 +663,34 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.blue,
   },
 
+  // Kontrolki mapy
   controlsContainer: {
     position: "absolute",
     right: 16,
-    bottom: 190,
+    bottom: 120,
     flexDirection: "column",
+    alignItems: "center",
   },
   controlButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 48,
+    height: 48,
+    borderRadius: 16,
     backgroundColor: "rgba(255,255,255,0.95)",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 8,
     shadowColor: "#000",
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.12,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 4,
+    elevation: 5,
+    marginBottom: 10,
   },
-  controlButtonText: {
+  controlIcon: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#111",
-  },
-  myLocationButton: {
-    position: "absolute",
-    right: 16,
-    bottom: 120,
+    color: COLORS.red,
   },
 });
 
