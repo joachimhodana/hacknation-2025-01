@@ -67,7 +67,32 @@ const RoutesCreatorPage = () => {
               if (route.points.length > 0) {
                 const convertedPoints: RoutePoint[] = route.points.map((pointData: unknown, index: number) => {
                   // Backend zwraca { point: {...}, orderIndex: number }
-                  const point = pointData.point || pointData
+                  type PointDataWithOrder = {
+                    point?: {
+                      id?: number
+                      latitude: number
+                      longitude: number
+                      locationLabel?: string | null
+                      narrationText?: string | null
+                      audioUrl?: string | null
+                      characterId?: number | null
+                    }
+                    orderIndex?: number
+                  }
+                  
+                  type PointDataDirect = {
+                    id?: number
+                    latitude: number
+                    longitude: number
+                    locationLabel?: string | null
+                    narrationText?: string | null
+                    audioUrl?: string | null
+                    characterId?: number | null
+                  }
+
+                  const data = pointData as PointDataWithOrder | PointDataDirect
+                  const point = 'point' in data && data.point ? data.point : (data as PointDataDirect)
+                  const orderIndex = 'orderIndex' in data ? data.orderIndex : undefined
 
                   if (!point || typeof point.latitude !== 'number' || typeof point.longitude !== 'number') {
                     console.warn('Invalid point data:', pointData)
@@ -80,13 +105,13 @@ const RoutesCreatorPage = () => {
                     description: point.narrationText || "",
                     lat: point.latitude,
                     lng: point.longitude,
-                    order: pointData.orderIndex !== undefined ? pointData.orderIndex + 1 : index + 1,
+                    order: orderIndex !== undefined ? orderIndex + 1 : index + 1,
                     hasCustomAudio: !!point.audioUrl,
                     audioFile: null,
                     characterId: point.characterId || null,
                     dialog: point.narrationText || "",
                   }
-                }).filter((p): p is RoutePoint => p !== null)
+                }).filter((p: RoutePoint | null): p is RoutePoint => p !== null)
 
                 setPoints(convertedPoints)
               } else {
@@ -173,12 +198,13 @@ const RoutesCreatorPage = () => {
     const checkMarkerIcon = () => {
       const formValues = formRef.current?.getValues()
       if (formValues?.makerIconFile instanceof File) {
+        const file = formValues.makerIconFile
         setMarkerIconUrl((prevUrl) => {
           // Only revoke if it's a blob URL (created with createObjectURL)
           if (prevUrl && prevUrl.startsWith('blob:')) {
             URL.revokeObjectURL(prevUrl)
           }
-          return URL.createObjectURL(formValues.makerIconFile)
+          return URL.createObjectURL(file)
         })
       } else if (!formValues?.makerIconFile) {
         // If no file selected, use existing marker icon URL from backend if available
@@ -256,7 +282,7 @@ const RoutesCreatorPage = () => {
   }
 
   const handleDeletePoint = (id: string) => {
-    const newPoints = points.filter((p) => p.id !== id).map((p, index) => ({
+    const newPoints = points.filter((p: RoutePoint) => p.id !== id).map((p: RoutePoint, index: number) => ({
       ...p,
       order: index + 1,
     }))
@@ -594,7 +620,15 @@ const RoutesCreatorPage = () => {
           return
         }
 
-        const pathId = formValues.pathId || `route_${Date.now()}`
+        // Upewnij się, że thumbnailFile jest File (nie null)
+        if (!formValues.thumbnailFile || !(formValues.thumbnailFile instanceof File)) {
+          setValidationError("Miniatura jest wymagana")
+          setCurrentStep(1)
+          setIsSaving(false)
+          return
+        }
+
+        const pathId = `route_${Date.now()}`
 
         const sortedPoints = [...points].sort((a, b) => a.order - b.order)
         const pointsData = sortedPoints.map((point) => ({

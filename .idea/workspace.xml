@@ -5,17 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1df88e0a-f3b6-4388-84f9-5fc94cf4eac0" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/App.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/CharacterCreator/CharacterCreatorPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/CharactersCreatorPage/CharactersCreatorPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/CharacterCreator/components/CharacterStepsHeader/CharacterStepsHeader.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/CharactersCreatorPage/components/CharacterStepsHeader/CharacterStepsHeader.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/CharacterCreator/components/DefaultPositionStep/DefaultPositionStep.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/CharactersCreatorPage/components/DefaultPositionStep/DefaultPositionStep.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/CharacterCreator/components/GeneralCharacterForm/GeneralCharacterForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/CharactersCreatorPage/components/GeneralCharacterForm/GeneralCharacterForm.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/CharactersList/CharactersListPage.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/Dashboard/DashboardPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/Dashboard/DashboardPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/Login/Login.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/Login/Login.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/RouteCreator/RouteCreatorPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/RoutesCreatorPage/RoutesCreatorPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/RouteCreator/components/GeneralRouteForm/GeneralRouteForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/RoutesCreatorPage/components/GeneralRouteForm/GeneralRouteForm.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/admin/src/pages/RoutesCreatorPage/RoutesCreatorPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/admin/src/pages/RoutesCreatorPage/RoutesCreatorPage.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
