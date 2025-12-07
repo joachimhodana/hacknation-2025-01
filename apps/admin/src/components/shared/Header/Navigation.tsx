@@ -1,6 +1,6 @@
-import { Link, useLocation, useNavigate } from "react-router-dom"
+import { Link, useLocation } from "react-router-dom"
 import { Icon } from "@iconify/react"
-import { Home, Route, FileText, LogOut, User } from "lucide-react"
+import { User } from "lucide-react"
 import {
   NavigationMenu,
   NavigationMenuList,
@@ -16,13 +16,19 @@ import { authClient } from "@/lib/auth-client"
 
 export function Navigation() {
   const location = useLocation()
-  const navigate = useNavigate()
 
   const isActive = (path: string) => location.pathname === path
 
   const handleLogout = async () => {
-    await authClient.signOut()
-    navigate("/login")
+    try {
+      await authClient.signOut()
+      // Force navigation - ProtectedRoute will show Login component
+      window.location.href = "/"
+    } catch (error) {
+      console.error("Logout error:", error)
+      // Still redirect even if signOut fails
+      window.location.href = "/"
+    }
   }
 
   return (

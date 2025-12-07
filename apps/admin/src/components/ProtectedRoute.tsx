@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { authClient, useSession } from "@/lib/auth-client";
 import { Login } from "@/pages/Login/Login";
+import { useEffect } from "react";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -40,7 +41,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           <button
             onClick={async () => {
               await authClient.signOut();
-              navigate("/login");
+              window.location.href = "/";
             }}
             className="text-blue-600 hover:underline"
           >

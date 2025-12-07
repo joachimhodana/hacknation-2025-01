@@ -29,7 +29,7 @@ const DashboardCustomStatsCard = ({route}:RouteStatisticsInfoCustomCardProps) =>
                     <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Ilość przystanków:</span>
                         <span className="font-medium text-green-600 ">
-                      {route.stops.length}
+                      {route.pointsCount ?? route.stops.length}
                     </span>
                     </div>
                     <div className="flex justify-between text-sm">

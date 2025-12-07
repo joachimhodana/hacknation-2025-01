@@ -293,6 +293,7 @@ const GeneralRouteForm = ({onFormReady, onValidationChange, initialValues, exist
                     label="Miniatura" 
                     description="Przeciągnij i upuść plik obrazu lub kliknij, aby wybrać"
                     accept="image/*"
+                    existingUrl={existingThumbnailUrl}
                 />
                 
                 <CustomSelectInput 
@@ -307,6 +308,7 @@ const GeneralRouteForm = ({onFormReady, onValidationChange, initialValues, exist
                     label="Ikona na mapie" 
                     description="Przeciągnij i upuść plik obrazu lub kliknij, aby wybrać"
                     accept="image/*"
+                    existingUrl={existingMarkerIconUrl}
                 />
             </div>
         </Form>

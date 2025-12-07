@@ -13,6 +13,7 @@ import InformationCard from "@/components/shared/CustomCards/InformationCard/Inf
 import GeneralRouteForm from "./components/GeneralRouteForm/GeneralRouteForm.tsx"
 import { calculateEstimatedTime, formatTime } from "@/lib/route-utils.ts"
 import { createPath, getPath } from "@/lib/api-client.ts"
+import { getBackendImageUrl } from "@/lib/image-utils.ts"
 import { getCharacters as getCharactersFromApi } from "@/services/charactersApi.ts"
 import type { CharacterType } from "@/types/CharactersType.tsx"
 
@@ -189,22 +190,34 @@ const RouteCreatorPage = () => {
             // Konwertuj points z API na RoutePoint format
             // Backend zwraca points jako tablicę z { point: {...}, orderIndex: number }
             if (route.points && Array.isArray(route.points)) {
-              const convertedPoints: RoutePoint[] = route.points.map((pointData: any, index: number) => {
-                const point = pointData.point || pointData
-                return {
-                  id: point.id?.toString() || `point_${index}`,
-                  name: point.locationLabel || `Punkt ${index + 1}`,
-                  description: point.narrationText || "",
-                  lat: point.latitude,
-                  lng: point.longitude,
-                  order: pointData.orderIndex !== undefined ? pointData.orderIndex + 1 : index + 1,
-                  hasCustomAudio: !!point.audioUrl,
-                  audioFile: null,
-                  characterId: point.characterId || null,
-                  dialog: point.narrationText || "",
-                }
-              })
-              setPoints(convertedPoints)
+              if (route.points.length > 0) {
+                const convertedPoints: RoutePoint[] = route.points.map((pointData: any, index: number) => {
+                  // Backend zwraca { point: {...}, orderIndex: number }
+                  const point = pointData.point || pointData
+                  
+                  if (!point || typeof point.latitude !== 'number' || typeof point.longitude !== 'number') {
+                    console.warn('Invalid point data:', pointData)
+                    return null
+                  }
+                  
+                  return {
+                    id: point.id?.toString() || `point_${index}`,
+                    name: point.locationLabel || `Punkt ${index + 1}`,
+                    description: point.narrationText || "",
+                    lat: point.latitude,
+                    lng: point.longitude,
+                    order: pointData.orderIndex !== undefined ? pointData.orderIndex + 1 : index + 1,
+                    hasCustomAudio: !!point.audioUrl,
+                    audioFile: null,
+                    characterId: point.characterId || null,
+                    dialog: point.narrationText || "",
+                  }
+                }).filter((p): p is RoutePoint => p !== null)
+                
+                setPoints(convertedPoints)
+              } else {
+                setPoints([])
+              }
             } else {
               setPoints([])
             }
@@ -212,6 +225,14 @@ const RouteCreatorPage = () => {
             // Zapisz istniejące URL-e plików
             setExistingThumbnailUrl(route.thumbnailUrl || null)
             setExistingMarkerIconUrl(route.markerIconUrl || null)
+            
+            // Ustaw markerIconUrl z pełnym URL z backendu, jeśli istnieje
+            if (route.markerIconUrl) {
+              const fullMarkerIconUrl = getBackendImageUrl(route.markerIconUrl)
+              if (fullMarkerIconUrl) {
+                setMarkerIconUrl(fullMarkerIconUrl)
+              }
+            }
             
             // Przygotuj wartości formularza z obiektu route
             const formValues = {
@@ -300,18 +321,42 @@ const RouteCreatorPage = () => {
       const formValues = formRef.current?.getValues()
       if (formValues?.makerIconFile instanceof File) {
         setMarkerIconUrl((prevUrl) => {
-          if (prevUrl) {
+          // Only revoke if it's a blob URL (created with createObjectURL)
+          if (prevUrl && prevUrl.startsWith('blob:')) {
             URL.revokeObjectURL(prevUrl)
           }
           return URL.createObjectURL(formValues.makerIconFile)
         })
       } else if (!formValues?.makerIconFile) {
-        setMarkerIconUrl((prevUrl) => {
-          if (prevUrl) {
-            URL.revokeObjectURL(prevUrl)
+        // If no file selected, use existing marker icon URL from backend if available
+        if (existingMarkerIconUrl) {
+          const fullUrl = getBackendImageUrl(existingMarkerIconUrl)
+          if (fullUrl) {
+            setMarkerIconUrl((prevUrl) => {
+              // Only revoke if it's a blob URL
+              if (prevUrl && prevUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(prevUrl)
+              }
+              return fullUrl
+            })
+          } else {
+            setMarkerIconUrl((prevUrl) => {
+              // Only revoke if it's a blob URL
+              if (prevUrl && prevUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(prevUrl)
+              }
+              return null
+            })
           }
-          return null
-        })
+        } else {
+          setMarkerIconUrl((prevUrl) => {
+            // Only revoke if it's a blob URL
+            if (prevUrl && prevUrl.startsWith('blob:')) {
+              URL.revokeObjectURL(prevUrl)
+            }
+            return null
+          })
+        }
       }
     }
 
@@ -324,27 +369,41 @@ const RouteCreatorPage = () => {
     return () => {
       subscription.unsubscribe()
       setMarkerIconUrl((prevUrl) => {
-        if (prevUrl) {
+        // Only revoke if it's a blob URL
+        if (prevUrl && prevUrl.startsWith('blob:')) {
           URL.revokeObjectURL(prevUrl)
         }
         return null
       })
     }
-  }, [formRef.current, isFormValid])
+  }, [formRef.current, isFormValid, existingMarkerIconUrl])
 
   useEffect(() => {
     if (isFormValid && formRef.current) {
       const formValues = formRef.current.getValues()
       if (formValues?.makerIconFile instanceof File) {
         setMarkerIconUrl((prevUrl) => {
-          if (prevUrl) {
+          // Only revoke if it's a blob URL
+          if (prevUrl && prevUrl.startsWith('blob:')) {
             URL.revokeObjectURL(prevUrl)
           }
           return URL.createObjectURL(formValues.makerIconFile)
         })
+      } else if (existingMarkerIconUrl) {
+        // Use existing marker icon URL from backend if no file selected
+        const fullUrl = getBackendImageUrl(existingMarkerIconUrl)
+        if (fullUrl) {
+          setMarkerIconUrl((prevUrl) => {
+            // Only revoke if it's a blob URL
+            if (prevUrl && prevUrl.startsWith('blob:')) {
+              URL.revokeObjectURL(prevUrl)
+            }
+            return fullUrl
+          })
+        }
       }
     }
-  }, [isFormValid])
+  }, [isFormValid, existingMarkerIconUrl])
 
   const estimatedTimeHours = calculateEstimatedTime(routeDistance, 3)
   const formattedTime = formatTime(estimatedTimeHours)
@@ -490,7 +549,8 @@ const RouteCreatorPage = () => {
         return
       }
 
-      // Pobierz dane z formularza ustawień ogólnych
+      // Pobierz aktualne dane z formularza ustawień ogólnych
+      // getValues() zwraca aktualne wartości formularza
       const formValues = formRef.current.getValues()
 
       const estimatedTimeHours = calculateEstimatedTime(routeDistance, 3)
@@ -522,6 +582,38 @@ const RouteCreatorPage = () => {
         if (formValues.stylePreset) {
           formData.append('stylePreset', formValues.stylePreset)
         }
+
+        // Add points data for editing - always send points, even if empty array
+        const sortedPoints = [...points].sort((a, b) => a.order - b.order)
+        const pointsData = sortedPoints.map((point) => ({
+          latitude: point.lat,
+          longitude: point.lng,
+          radiusMeters: 50,
+          locationLabel: point.name,
+          narrationText: point.dialog || point.description || "",
+          characterId: point.characterId ? Number(point.characterId) : undefined,
+          audioFile: point.hasCustomAudio && point.audioFile ? point.audioFile : undefined,
+        }))
+        
+        // Prepare points data (without File objects, they'll be added separately)
+        const pointsDataWithoutFiles = pointsData.map((point) => ({
+          latitude: point.latitude,
+          longitude: point.longitude,
+          radiusMeters: point.radiusMeters,
+          locationLabel: point.locationLabel,
+          narrationText: point.narrationText,
+          characterId: point.characterId,
+        }))
+        
+        // Always send points array, even if empty
+        formData.append('points', JSON.stringify(pointsDataWithoutFiles))
+
+        // Add audio files with indices (audioFile_0, audioFile_1, etc.)
+        pointsData.forEach((point, index) => {
+          if (point.audioFile) {
+            formData.append(`audioFile_${index}`, point.audioFile)
+          }
+        })
 
         const response = await fetch(`${API_BASE_URL}/admin/paths/${editPathId}`, {
           method: 'PATCH',

@@ -112,6 +112,7 @@ const RoutesListPage = () => {
             createdAt: path.createdAt ? new Date(path.createdAt).getTime() : Date.now(),
             updatedAt: path.updatedAt ? new Date(path.updatedAt).getTime() : Date.now(),
             stops: [], // Stops will be loaded when editing a specific route
+            pointsCount: path.pointsCount || 0, // Number of points from API
           }))
           setRoutes(mappedRoutes)
         } else {
@@ -308,7 +309,7 @@ const RoutesListPage = () => {
                       <div className="flex items-center gap-2 text-sm">
                         <MapPin className="h-4 w-4 text-blue-600" />
                         <span className="text-muted-foreground">
-                          {route.stops.length} {route.stops.length === 1 ? "punkt" : route.stops.length < 5 ? "punkty" : "punktów"}
+                          {route.pointsCount ?? route.stops.length} {(route.pointsCount ?? route.stops.length) === 1 ? "punkt" : (route.pointsCount ?? route.stops.length) < 5 ? "punkty" : "punktów"}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
