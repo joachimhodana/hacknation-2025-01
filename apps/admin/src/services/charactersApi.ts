@@ -119,7 +119,8 @@ export const updateCharacter = async (id: number, data: CharacterUpdateData & { 
 
     if (data.avatarFile) {
       const formData = new FormData()
-      if (data.name) formData.append('name', data.name)
+      // Zawsze wysyłaj name, nawet gdy jest plik
+      formData.append('name', data.name || '')
       if (data.description) formData.append('description', data.description)
       if (data.voicePreset) formData.append('voicePreset', data.voicePreset)
       formData.append('avatarFile', data.avatarFile)

@@ -151,8 +151,20 @@ const CharactersCreatorPage = () => {
       }
 
       // Pobierz aktualne wartości z formularza
+      // Użyj watch() aby upewnić się, że otrzymujemy aktualne wartości
       const formValues = formRef.current.getValues()
-      console.log('Form values before save:', formValues)
+      const watchedAvatarFile = formRef.current.watch('avatarFile')
+      
+      console.log('Form values before save:', {
+        name: formValues.name,
+        description: formValues.description,
+        avatarFile: formValues.avatarFile,
+        avatarFileType: typeof formValues.avatarFile,
+        avatarFileInstance: formValues.avatarFile instanceof File,
+        watchedAvatarFile: watchedAvatarFile,
+        watchedAvatarFileType: typeof watchedAvatarFile,
+        watchedAvatarFileInstance: watchedAvatarFile instanceof File,
+      })
 
       // Sprawdź czy avatar jest wymagany (tylko dla nowych postaci bez istniejącego URL)
       if (!editCharacterId && !formValues.avatarFile && !existingAvatarUrl) {
@@ -169,7 +181,7 @@ const CharactersCreatorPage = () => {
           return
         }
 
-        // Przygotuj dane do aktualizacji - zawsze wysyłaj name
+        // Przygotuj dane do aktualizacji
         const updateData: { name: string; description?: string; avatarFile?: File } = {
           name: formValues.name,
         }
@@ -180,11 +192,24 @@ const CharactersCreatorPage = () => {
         }
         
         // Dodaj avatarFile tylko jeśli został zmieniony (jest nowy plik)
-        if (formValues.avatarFile instanceof File) {
-          updateData.avatarFile = formValues.avatarFile
+        // Sprawdź zarówno getValues() jak i watch() aby upewnić się, że mamy aktualną wartość
+        const avatarFile = formValues.avatarFile instanceof File ? formValues.avatarFile : 
+                          (watchedAvatarFile instanceof File ? watchedAvatarFile : null)
+        
+        if (avatarFile instanceof File) {
+          updateData.avatarFile = avatarFile
+          console.log('Avatar file found, will be uploaded:', avatarFile.name, avatarFile.size, avatarFile.type)
+        } else {
+          console.log('No avatar file found. formValues.avatarFile:', formValues.avatarFile, 'watchedAvatarFile:', watchedAvatarFile)
         }
 
-        console.log('Updating character with data:', updateData)
+        console.log('Updating character with data:', {
+          name: updateData.name,
+          description: updateData.description,
+          hasAvatarFile: !!updateData.avatarFile,
+          avatarFileName: updateData.avatarFile?.name,
+          avatarFileSize: updateData.avatarFile?.size
+        })
         await updateCharacter(characterId, updateData)
 
         // Przekieruj do listy postaci po udanej aktualizacji
@@ -300,48 +325,54 @@ const CharactersCreatorPage = () => {
         <div className="p-4 space-y-4">
           <CharacterStepsHeader editCharacterId={editCharacterId} currentStep={currentStep} />
 
-          {currentStep === 1 ? (
-            /* Krok 1 - Ustawienia ogólne */
-            <div className="space-y-4">
-              <InformationCard
-                title="Krok 1: Ustawienia ogólne"
-                description="Wypełnij podstawowe informacje o postaci. Po ukończeniu przejdź do kroku 2, aby opcjonalnie ustawić pozycję domyślną."
-                icon={<Settings className="h-5 w-5 text-blue-600" />}
-              />
-              {validationError && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <p className="text-sm text-red-800">{validationError}</p>
-                </div>
-              )}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Ustawienia ogólne</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <GeneralCharacterForm
-                    onFormReady={handleFormReady}
-                    onValidationChange={setIsFormValid}
-                    initialValues={initialFormValues || undefined}
-                    existingAvatarUrl={existingAvatarUrl}
-                  />
-                </CardContent>
-              </Card>
-              <Button
-                onClick={handleNextStep}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                size="lg"
-                disabled={!isFormValid}
-              >
-                Przejdź do kroku 2
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-              {!isFormValid && (
-                <p className="text-sm text-muted-foreground text-center">
-                  Wypełnij wszystkie wymagane pola, aby przejść do następnego kroku
-                </p>
-              )}
-            </div>
-          ) : (
+          {/* Keep form mounted to preserve state */}
+          <div className={currentStep === 1 ? "space-y-4" : "hidden"}>
+            {/* Krok 1 - Ustawienia ogólne */}
+            <InformationCard
+              title="Krok 1: Ustawienia ogólne"
+              description="Wypełnij podstawowe informacje o postaci. Po ukończeniu przejdź do kroku 2, aby opcjonalnie ustawić pozycję domyślną."
+              icon={<Settings className="h-5 w-5 text-blue-600" />}
+            />
+            {validationError && currentStep === 1 && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-sm text-red-800">{validationError}</p>
+              </div>
+            )}
+            <Card>
+              <CardHeader>
+                <CardTitle>Ustawienia ogólne</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <GeneralCharacterForm
+                  onFormReady={handleFormReady}
+                  onValidationChange={setIsFormValid}
+                  initialValues={initialFormValues || undefined}
+                  existingAvatarUrl={existingAvatarUrl}
+                />
+              </CardContent>
+            </Card>
+            {currentStep === 1 && (
+              <>
+                <Button
+                  onClick={handleNextStep}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  size="lg"
+                  disabled={!isFormValid}
+                >
+                  Przejdź do kroku 2
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+                {!isFormValid && (
+                  <p className="text-sm text-muted-foreground text-center">
+                    Wypełnij wszystkie wymagane pola, aby przejść do następnego kroku
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Krok 2 - Pozycja domyślna */}
+          {currentStep === 2 && (
             /* Krok 2 - Pozycja domyślna */
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-4">
