@@ -8,9 +8,9 @@
     "difficulty": "Trudny",
     "totalTimeMinutes": 60,
     "distanceMeters": null,
-    "thumbnailUrl": null,
+    "thumbnailUrl": "/resources/seeded/thumbnails/sladami_rejewskiego.png",
     "isPublished": true,
     "stylePreset": "historic",
-    "markerIconUrl": null
+    "markerIconUrl": "/resources/seeded/marker_icons/enigma.png"
   }
 ]

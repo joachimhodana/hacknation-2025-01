@@ -7,7 +7,7 @@
     "narrationText": "Cześć. Nazywam się Marian Rejewski. Widzisz ten pomnik? Wyglądam na nim na spokojnego, prawda? Ale w mojej głowie... w mojej głowie zawsze trwała wojna na liczby. Matematyka to nie tylko nudne równania w szkole. To klucz do wolności. Jeśli potrafisz dostrzec wzór tam, gdzie inni widzą chaos – możesz zmienić losy świata. Pomożesz mi? Musimy złamać jeszcze jedną depeszę, zanim zrobi to wróg.",
     "audioUrl": null,
     "rewardLabel": "Cyfrowy Wirnik I",
-    "rewardIconUrl": "/resources/rewards/wirnik-icon.png",
+    "rewardIconUrl": "/resources/seeded/rewards/wirnik-icon.png",
     "isPublic": false,
     "characterId": 1
   },
@@ -19,7 +19,7 @@
     "narrationText": "Jestem bydgoszczaninem, tak jak Ty może jesteś lub będziesz. Urodziłem się tutaj w 1905 roku. Chodziłem do gimnazjum przy Placu Wolności. Wszyscy myśleli, że będę po prostu księgowym albo nauczycielem. Ale ja widziałem świat inaczej. Kiedy wywiad wojskowy szukał ludzi do łamania kodów, nie szukali lingwistów, szukali matematyków. Wybrali mnie. I to była najważniejsza decyzja w moim życiu.",
     "audioUrl": null,
     "rewardLabel": "Szyfrogram Wojskowy",
-    "rewardIconUrl": "/resources/rewards/szyfrogram-icon.png",
+    "rewardIconUrl": "/resources/seeded/rewards/szyfrogram-icon.png",
     "isPublic": false,
     "characterId": 1
   },
@@ -31,7 +31,7 @@
     "narrationText": "To jest cena bycia kryptologiem. Przez całe życie musiałem milczeć. Nawet moja żona nie wiedziała, co robiłem w Warszawie przed wojną. Kiedy uciekaliśmy, niszczyliśmy wszystko. Świat dowiedział się o naszym sukcesie dopiero po latach... Czasem największym bohaterstwem jest milczenie i robienie swojej roboty. Ale cieszę się, że Bydgoszcz teraz pamięta.",
     "audioUrl": null,
     "rewardLabel": "Medal Złamanej Enigmy",
-    "rewardIconUrl": "/resources/rewards/enigma-medal-icon.png",
+    "rewardIconUrl": "/resources/seeded/rewards/enigma-medal-icon.png",
     "isPublic": false,
     "characterId": 1
   }
