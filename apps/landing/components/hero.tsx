@@ -14,7 +14,7 @@ const partners = [
   },
   {
     name: "Govtech Polska",
-    img: "/govtech.svg",
+    img: "/govtech.jpg",
     url: "https://www.govtech.gov.pl/",
   },
   {
