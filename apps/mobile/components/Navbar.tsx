@@ -21,22 +21,22 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { 
-    label: "Map", 
+    label: "Mapa", 
     route: "/map", 
     IconComponent: MapPoint
   },
   { 
-    label: "Explore", 
+    label: "Włóczykij", 
     route: "/explore", 
     IconComponent: Compass
   },
   { 
-    label: "Profile", 
+    label: "Profil", 
     route: "/profile", 
     IconComponent: User
   },
   { 
-    label: "Collection", 
+    label: "Skarbnica", 
     route: "/collections", 
     IconComponent: Box
   },
