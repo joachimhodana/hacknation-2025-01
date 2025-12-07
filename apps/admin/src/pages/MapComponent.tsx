@@ -106,7 +106,6 @@ export default function MapComponent({ points, onMapClick }: MapComponentProps) 
       onMouseLeave={handleMouseUp}
       onWheel={handleWheel}
     >
-      {/* Tło mapy - prosty gradient z siatką */}
       <div
         className="absolute inset-0 opacity-40"
         style={{
@@ -120,7 +119,6 @@ export default function MapComponent({ points, onMapClick }: MapComponentProps) 
         }}
       />
 
-      {/* Punkty na mapie */}
       {points.map((point) => {
         const pos = latLngToPixel(point.lat, point.lng)
         return (
@@ -159,7 +157,6 @@ export default function MapComponent({ points, onMapClick }: MapComponentProps) 
         )
       })}
 
-      {/* Kontrolki zoomu */}
       <div className="absolute bottom-4 right-4 flex flex-col gap-2 bg-background rounded-lg shadow-lg p-2 border border-border z-30">
         <button
           onClick={(e) => {
@@ -194,7 +191,6 @@ export default function MapComponent({ points, onMapClick }: MapComponentProps) 
         </button>
       </div>
 
-      {/* Instrukcja */}
       <div className="absolute top-4 left-4 bg-popover/90 backdrop-blur-sm rounded-lg p-3 shadow-lg border border-border z-30">
         <p className="text-xs text-muted-foreground">
           <strong className="text-foreground">Kliknij</strong> na mapie, aby dodać punkt

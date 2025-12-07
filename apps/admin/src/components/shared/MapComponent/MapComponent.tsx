@@ -464,7 +464,6 @@ export default function MapComponent({
         <FocusOnSelectedPoint selectedPoint={selectedPoint} />
         <RouteRenderer points={points} onRouteDistanceChange={onRouteDistanceChange} />
 
-        {/* Markers for each point */}
         {points
           .sort((a, b) => a.order - b.order)
           .map((point) => (
@@ -479,7 +478,6 @@ export default function MapComponent({
           ))}
       </MapContainer>
 
-      {/* Instructions overlay */}
       <div className="absolute top-4 left-4 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg p-3 shadow-lg border border-gray-200 dark:border-gray-700 z-1000">
         <p className="text-xs text-gray-600 dark:text-gray-400">
           <strong className="text-gray-900 dark:text-gray-100">Kliknij</strong> na mapie, aby dodać punkt

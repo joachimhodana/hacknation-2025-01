@@ -21,10 +21,8 @@ const DashboardPage = () => {
         }
       />
 
-      {/* Statystyki ogólne */}
       <DashboardStats />
 
-      {/* Sekcja z projektami tras */}
       <DashboardRoutes />
     </div>
   )

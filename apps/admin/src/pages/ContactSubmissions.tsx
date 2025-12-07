@@ -72,7 +72,6 @@ export function ContactSubmissions() {
         </p>
       </div>
 
-      {/* Niebieska wstawka -> na tokeny */}
       <div className="bg-primary/5 dark:bg-primary/10 border border-primary/20 dark:border-primary/30 rounded-lg p-4">
         <div className="flex items-start gap-3">
           <div className="bg-primary/10 dark:bg-primary/20 rounded-full p-2">
@@ -90,7 +89,6 @@ export function ContactSubmissions() {
         </div>
       </div>
 
-      {/* Filtry */}
       <div className="flex gap-2 flex-wrap">
         <Button
           variant={filter === "all" ? "default" : "outline"}
@@ -123,7 +121,6 @@ export function ContactSubmissions() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {/* Lista zgłoszeń */}
         <div className="space-y-2">
           <h2 className="text-lg font-semibold mb-4">Lista zgłoszeń</h2>
           {filteredSubmissions.length === 0 ? (
@@ -184,7 +181,6 @@ export function ContactSubmissions() {
           )}
         </div>
 
-        {/* Szczegóły zgłoszenia */}
         {selectedSubmission && (
           <div className="md:col-span-2 lg:col-span-2">
             <Card className="border-primary/20 dark:border-primary/30">
