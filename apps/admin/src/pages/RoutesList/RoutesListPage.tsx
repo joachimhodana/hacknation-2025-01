@@ -134,8 +134,8 @@ const RoutesListPage = () => {
   const currentRoutes = routes.slice(startIndex, endIndex)
 
   const handleTogglePublish = async (route: RoutesObjectType) => {
-    // Use numeric ID from API, fallback to pathId if id is not available
-    const routeId = route.id || route.pathId
+    // Backend uses pathId (string), not numeric id
+    const routeId = route.pathId
     
     if (!routeId) {
       setError("Nie można znaleźć ID trasy")
@@ -148,7 +148,6 @@ const RoutesListPage = () => {
         method: 'PATCH',
         headers: {
           'Accept': 'application/json',
-          'Content-Type': 'application/json',
         },
         credentials: 'include',
       })

@@ -268,7 +268,33 @@ const RouteCreatorPage = () => {
           if (response.success && response.data) {
             const route = response.data
             
-            // Poczekaj aż formularz będzie gotowy
+            // Konwertuj points z API na RoutePoint format
+            if (route.points && Array.isArray(route.points)) {
+              const convertedPoints: RoutePoint[] = route.points.map((pointData: any, index: number) => {
+                const point = pointData.point || pointData
+                return {
+                  id: point.id?.toString() || `point_${index}`,
+                  name: point.locationLabel || `Punkt ${index + 1}`,
+                  description: point.narrationText || "",
+                  lat: point.latitude,
+                  lng: point.longitude,
+                  order: pointData.orderIndex !== undefined ? pointData.orderIndex + 1 : index + 1,
+                  hasCustomAudio: !!point.audioUrl,
+                  audioFile: null, // Audio files are stored on server, not in form
+                  characterId: point.characterId || null,
+                  dialog: point.narrationText || "",
+                }
+              })
+              setPoints(convertedPoints)
+            } else {
+              // Jeśli nie ma punktów, ustaw pustą tablicę
+              setPoints([])
+            }
+            
+            // Wypełnij formularz gdy będzie gotowy (z timeoutem, żeby nie czekać w nieskończoność)
+            const maxAttempts = 50 // maksymalnie 5 sekund (50 * 100ms)
+            let attempts = 0
+            
             const loadData = () => {
               if (formRef.current) {
                 // Wypełnij formularz
@@ -283,35 +309,18 @@ const RouteCreatorPage = () => {
                   stylePreset: route.stylePreset || "",
                   makerIconFile: null, // Pliki trzeba będzie załadować osobno z URL
                 })
-
-                // Konwertuj points z API na RoutePoint format
-                if (route.points && Array.isArray(route.points)) {
-                  const convertedPoints: RoutePoint[] = route.points.map((pointData: any, index: number) => {
-                    const point = pointData.point || pointData
-                    return {
-                      id: point.id?.toString() || `point_${index}`,
-                      name: point.locationLabel || `Punkt ${index + 1}`,
-                      description: point.narrationText || "",
-                      lat: point.latitude,
-                      lng: point.longitude,
-                      order: pointData.orderIndex !== undefined ? pointData.orderIndex + 1 : index + 1,
-                      hasCustomAudio: !!point.audioUrl,
-                      audioFile: null, // Audio files are stored on server, not in form
-                      characterId: point.characterId || null,
-                      dialog: point.narrationText || "",
-                    }
-                  })
-                  setPoints(convertedPoints)
-                  
-                  // Jeśli są punkty, przejdź do kroku 2
-                  if (convertedPoints.length > 0) {
-                    setCurrentStep(2)
-                  }
-                }
+                
+                // Zawsze przejdź do kroku 2 przy edycji
+                setCurrentStep(2)
                 setIsLoading(false)
-              } else {
-                // Spróbuj ponownie za chwilę
+              } else if (attempts < maxAttempts) {
+                attempts++
                 setTimeout(loadData, 100)
+              } else {
+                // Jeśli formularz nie jest gotowy po max próbach, ustaw dane i przejdź do kroku 2
+                console.warn("Formularz nie jest jeszcze gotowy, ale ustawiam dane")
+                setCurrentStep(2)
+                setIsLoading(false)
               }
             }
             
@@ -583,62 +592,115 @@ const RouteCreatorPage = () => {
       // Pobierz dane z formularza ustawień ogólnych
       const formValues = formRef.current.getValues()
 
-      // Validate required files
-      if (!formValues.thumbnailFile || !(formValues.thumbnailFile instanceof File)) {
-        setValidationError("Miniatura jest wymagana")
-        setCurrentStep(1)
-        setIsSaving(false)
-        return
-      }
-
-      // Generate pathId if not provided
-      const pathId = formValues.pathId || `route_${Date.now()}`
-
       // Calculate time in minutes
       const estimatedTimeHours = calculateEstimatedTime(routeDistance, 3)
       const totalTimeMinutes = Math.round(estimatedTimeHours * 60)
       const distanceMeters = Math.round(routeDistance * 1000)
 
-      // Prepare points data
-      const sortedPoints = [...points].sort((a, b) => a.order - b.order)
-      const pointsData = sortedPoints.map((point) => {
-        return {
-          latitude: point.lat,
-          longitude: point.lng,
-          radiusMeters: 50, // Default radius, can be made configurable
-          locationLabel: point.name,
-          narrationText: point.dialog || point.description,
-          characterId: point.characterId ? Number(point.characterId) : undefined,
-          audioFile: point.hasCustomAudio && point.audioFile ? point.audioFile : undefined,
+      const API_BASE_URL = import.meta.env.VITE_BETTER_AUTH_URL || "http://localhost:8080"
+
+      if (editPathId) {
+        // Update existing path using PATCH
+        const formData = new FormData()
+        formData.append('title', formValues.title)
+        formData.append('shortDescription', formValues.shortDescription)
+        if (formValues.longDescription) {
+          formData.append('longDescription', formValues.longDescription)
         }
-      })
+        formData.append('category', formValues.category)
+        formData.append('difficulty', formValues.difficulty)
+        // Backend expects number, but FormData converts to string, so we append as string
+        // Backend will convert it back to number
+        formData.append('totalTimeMinutes', totalTimeMinutes.toString())
+        formData.append('distanceMeters', distanceMeters.toString())
+        
+        if (formValues.thumbnailFile instanceof File) {
+          formData.append('thumbnailFile', formValues.thumbnailFile)
+        }
+        
+        if (formValues.makerIconFile instanceof File) {
+          formData.append('markerIconFile', formValues.makerIconFile)
+        }
+        
+        if (formValues.stylePreset) {
+          formData.append('stylePreset', formValues.stylePreset)
+        }
 
-      // Create the path with all points in one request
-      const pathResponse = await createPath({
-        pathId,
-        title: formValues.title,
-        shortDescription: formValues.shortDescription,
-        longDescription: formValues.longDescription || undefined,
-        category: formValues.category,
-        difficulty: formValues.difficulty,
-        totalTimeMinutes,
-        distanceMeters,
-        thumbnailFile: formValues.thumbnailFile,
-        markerIconFile: formValues.makerIconFile instanceof File ? formValues.makerIconFile : undefined,
-        stylePreset: formValues.stylePreset || undefined,
-        points: pointsData,
-      })
+        const response = await fetch(`${API_BASE_URL}/admin/paths/${editPathId}`, {
+          method: 'PATCH',
+          headers: {
+            'Accept': 'application/json',
+          },
+          credentials: 'include',
+          body: formData,
+        })
 
-      if (!pathResponse.success || !pathResponse.data) {
-        setValidationError(pathResponse.error || "Nie udało się utworzyć trasy")
-        setIsSaving(false)
-        return
+        const result = await response.json()
+
+        if (!result.success || !result.data) {
+          setValidationError(result.error || "Nie udało się zaktualizować trasy")
+          setIsSaving(false)
+          return
+        }
+
+        // Success!
+        alert("Trasa została pomyślnie zaktualizowana!")
+        // Optionally redirect
+        // window.location.href = "/routes"
+      } else {
+        // Create new path
+        // Validate required files for new path
+        if (!formValues.thumbnailFile || !(formValues.thumbnailFile instanceof File)) {
+          setValidationError("Miniatura jest wymagana")
+          setCurrentStep(1)
+          setIsSaving(false)
+          return
+        }
+
+        // Generate pathId if not provided
+        const pathId = formValues.pathId || `route_${Date.now()}`
+
+        // Prepare points data
+        const sortedPoints = [...points].sort((a, b) => a.order - b.order)
+        const pointsData = sortedPoints.map((point) => {
+          return {
+            latitude: point.lat,
+            longitude: point.lng,
+            radiusMeters: 50, // Default radius, can be made configurable
+            locationLabel: point.name,
+            narrationText: point.dialog || point.description,
+            characterId: point.characterId ? Number(point.characterId) : undefined,
+            audioFile: point.hasCustomAudio && point.audioFile ? point.audioFile : undefined,
+          }
+        })
+
+        // Create the path with all points in one request
+        const pathResponse = await createPath({
+          pathId,
+          title: formValues.title,
+          shortDescription: formValues.shortDescription,
+          longDescription: formValues.longDescription || undefined,
+          category: formValues.category,
+          difficulty: formValues.difficulty,
+          totalTimeMinutes,
+          distanceMeters,
+          thumbnailFile: formValues.thumbnailFile,
+          markerIconFile: formValues.makerIconFile instanceof File ? formValues.makerIconFile : undefined,
+          stylePreset: formValues.stylePreset || undefined,
+          points: pointsData,
+        })
+
+        if (!pathResponse.success || !pathResponse.data) {
+          setValidationError(pathResponse.error || "Nie udało się utworzyć trasy")
+          setIsSaving(false)
+          return
+        }
+
+        // Success!
+        alert("Trasa została pomyślnie zapisana!")
+        // Optionally redirect or reset form
+        // window.location.href = "/routes"
       }
-
-      // Success!
-      alert("Trasa została pomyślnie zapisana!")
-      // Optionally redirect or reset form
-      // window.location.href = "/routes"
 
     } catch (error: any) {
       console.error("Error saving route:", error)
@@ -675,7 +737,7 @@ const RouteCreatorPage = () => {
               selectedPointId={selectedPoint?.id || null}
             />
             {currentStep === 1 && (
-              <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+              <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-40">
                 <div className="bg-white rounded-lg p-6 max-w-md mx-4 shadow-lg border border-gray-200">
                   <div className="flex items-center gap-3 mb-3">
                     <Icon icon="solar:map-point-bold-duotone" className="h-6 w-6 text-blue-600" />
