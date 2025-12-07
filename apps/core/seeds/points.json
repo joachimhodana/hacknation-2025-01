@@ -1,0 +1,51 @@
+[
+  {
+    "latitude": 53.1226,
+    "longitude": 18.0013,
+    "radiusMeters": 50,
+    "locationLabel": "Dawna Kawiarnia Bristol",
+    "narrationText": "Dzień dobry, Szanowny Panie. Stolik przy oknie? Oczywiście. Ach, co to były za czasy... Kawiarnia Bristol. Tu nie wpadało się na 'szybką kawę'. Tu się bywało! Panowie w cylindrach czytali 'Dziennik Bydgoski', dyskutowali o polityce, dym z cygar unosił się pod sufit. Pachniało świeżo mieloną arabiką i wuzetkami. Dziś jest tu bank, ale ja wciąż słyszę brzęk porcelany i dźwięki pianina. Niech Pan usiądzie na chwilę w wyobraźni.",
+    "audioUrl": null,
+    "rewardLabel": "Wspomnienie z Kawiarni",
+    "rewardIconUrl": "/resources/rewards/coffee-icon.png",
+    "isPublic": false,
+    "characterId": null
+  },
+  {
+    "latitude": 53.1222,
+    "longitude": 18.0025,
+    "radiusMeters": 50,
+    "locationLabel": "Hala Targowa",
+    "narrationText": "Świeże ryby! Gęsi owsiane! Najlepsze w mieście! Oj, kochaniutki, tu wrzało życie. Hala Targowa to był brzuch Bydgoszczy. Każdy tu przychodził. Targowali się, krzyczeli, śmiali. Zapach wędzonych ryb mieszał się z zapachem kwiatów. Teraz robią tu jakieś modne jedzenie, ale duch starego targu wciąż tu jest. Słyszysz to echo pod kopułą? To głosy tysięcy bydgoszczan, którzy przez lata robili tu zakupy na niedzielny obiad.",
+    "audioUrl": null,
+    "rewardLabel": "Pamiątka z Targu",
+    "rewardIconUrl": "/resources/rewards/market-icon.png",
+    "isPublic": false,
+    "characterId": null
+  },
+  {
+    "latitude": 53.1312,
+    "longitude": 18.0098,
+    "radiusMeters": 50,
+    "locationLabel": "Copernicanum (UKW)",
+    "narrationText": "Witaj w świątyni wiedzy, młody adepcie! Te mury z czerwonej cegły widziały więcej ściąg niż jesteś w stanie sobie wyobrazić. Kiedyś była tu szkoła realna, potem szpital wojskowy, teraz Uniwersytet. Pokolenia się zmieniają, moda się zmienia, ale stres przed egzaminem jest zawsze ten sam. Weź głęboki oddech. Nauka to przywilej, nawet jeśli sesja wydaje się końcem świata. Powodzenia!",
+    "audioUrl": null,
+    "rewardLabel": "Dyplom Studenta",
+    "rewardIconUrl": "/resources/rewards/diploma-icon.png",
+    "isPublic": false,
+    "characterId": 2
+  },
+  {
+    "latitude": 53.1298,
+    "longitude": 18.0085,
+    "radiusMeters": 50,
+    "locationLabel": "Park Jana Kochanowskiego",
+    "narrationText": "To nasza oaza. Słyszysz? Ktoś ćwiczy na trąbce przy otwartym oknie. Tutaj przychodzimy odpocząć między zajęciami. Możesz położyć się na trawie obok Bacha albo Chopina – oni nie gryzą. To jedyne miejsce w Bydgoszczy, gdzie cisza jest tak samo ważna jak dźwięk. Idealne na drzemkę albo randkę... oczywiście po zaliczeniu kolokwium.",
+    "audioUrl": null,
+    "rewardLabel": "Chwila Spokoju",
+    "rewardIconUrl": "/resources/rewards/peace-icon.png",
+    "isPublic": false,
+    "characterId": 2
+  }
+]
+

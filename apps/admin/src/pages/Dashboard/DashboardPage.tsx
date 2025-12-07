@@ -1,10 +1,9 @@
+import { BarChart3 } from "lucide-react"
 import { Icon } from "@iconify/react"
-import GeneralInfoCustomCard from "@/components/shared/CustomCards/GeneralInfoCustomCard.tsx"
-import RouteStatisticsInfoCustomCard from "@/components/shared/CustomCards/RouteStatisticsInfoCustomCard.tsx";
-import InformationCard from "@/components/shared/CustomCards/InformationCard/InformationCard.tsx";
-
-import { mockedRoutesObject } from "@/mocked/MockedRoutes.ts";
-import type { RoutesObjectType } from "@/types/RoutesType.tsx";
+import InformationCard from "@/components/shared/CustomCards/InformationCard/InformationCard.tsx"
+import DashboardHeader from "@/pages/Dashboard/components/DashboardHeader/DashboardHeader.tsx"
+import DashboardStats from "./components/DashboardStats/DashboardStats"
+import DashboardRoutes from "@/pages/Dashboard/components/DashboardRoutes/DashboardRoutes.tsx"
 
 
 
@@ -62,85 +61,23 @@ const DashboardPage = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Admin Panel</h1>
-        <p className="text-muted-foreground">Przegląd statystyk i projektów tras</p>
-      </div>
+      <DashboardHeader />
 
       <InformationCard
-        title={"Panel administracyjny"}
-        description={"Tutaj możesz zarządzać trasami, przeglądać statystyki i monitorować aktywność użytkowników. \n Wykres poniżej można przełączać, aby wyświetlać różne metryki."}
-        icon={
-          <Icon
-            icon="solar:chart-2-bold-duotone"
-            className="h-5 w-5 text-primary"
-          />
-        }
+          title={"Panel administracyjny"}
+          description={"Tutaj możesz zarządzać trasami, przeglądać statystyki i monitorować aktywność użytkowników. \n Wykres poniżej można przełączać, aby wyświetlać różne metryki."}
+          icon={<Icon icon="solar:chart-2-bold-duotone" className="h-5 w-5 text-blue-600" />}
       />
 
-      {/* Statystyki ogólne */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <GeneralInfoCustomCard
-          title="Wszystkie trasy"
-          icon={
-            <Icon
-              icon="solar:route-bold-duotone"
-              className="h-4 w-4 text-primary"
-            />
-          }
-          // statsData={totalStats.totalRoutes}
-          statsData={512}
-          description="Aktywne projekty"
-        />
-
-        <GeneralInfoCustomCard
-          title="Uczestnicy"
-          icon={
-            <Icon
-              icon="solar:users-group-two-rounded-bold-duotone"
-              className="h-4 w-4 text-primary"
-            />
-          }
-          statsData={215}
-          // statsData={totalStats.totalParticipants}
-          description="Wszystkich uczestników"
-        />
-
-        <GeneralInfoCustomCard
-          title="Ukończone"
-          icon={
-            <Icon
-              icon="solar:check-circle-bold-duotone"
-              className="h-4 w-4 text-primary"
-            />
-          }
-          // statsData={totalStats.totalCompleted}
-          statsData={2137}
-          description="Zakończone trasy"
-        />
-
-        <GeneralInfoCustomCard
-          title="Wskaźnik ukończenia"
-          icon={
-            <Icon
-              icon="solar:graph-up-bold-duotone"
-              className="h-4 w-4 text-primary"
-            />
-          }
-          statsData={69}
-          // statsData={totalStats.completionRate}
-          description="Średnia ukończenia"
-          suffix="%"
-        />
-      </div>
+      <DashboardStats />
 
       {/* Wykres */}
-      {/*<Card className="border-border">*/}
+      {/*<Card className="border-blue-200 dark:border-blue-800">*/}
       {/*  <CardHeader>*/}
       {/*    <div className="flex items-center justify-between">*/}
       {/*      <div>*/}
       {/*        <CardTitle className="flex items-center gap-2">*/}
-      {/*          <BarChart3 className="h-5 w-5 text-primary" />*/}
+      {/*          <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-400" />*/}
       {/*          Wykres statystyk*/}
       {/*        </CardTitle>*/}
       {/*        <CardDescription className="mt-1">*/}
@@ -154,8 +91,8 @@ const DashboardPage = () => {
       {/*          onClick={() => setChartType("participants")}*/}
       {/*          className={*/}
       {/*            chartType === "participants"*/}
-      {/*              ? "bg-primary hover:bg-primary/90 text-primary-foreground"*/}
-      {/*              : "border-border"*/}
+      {/*              ? "bg-blue-600 hover:bg-blue-700 text-white"*/}
+      {/*              : "border-blue-200 dark:border-blue-800"*/}
       {/*          }*/}
       {/*        >*/}
       {/*          Uczestnicy*/}
@@ -166,8 +103,8 @@ const DashboardPage = () => {
       {/*          onClick={() => setChartType("completed")}*/}
       {/*          className={*/}
       {/*            chartType === "completed"*/}
-      {/*              ? "bg-primary hover:bg-primary/90 text-primary-foreground"*/}
-      {/*              : "border-border"*/}
+      {/*              ? "bg-blue-600 hover:bg-blue-700 text-white"*/}
+      {/*              : "border-blue-200 dark:border-blue-800"*/}
       {/*          }*/}
       {/*        >*/}
       {/*          Ukończone*/}
@@ -178,8 +115,8 @@ const DashboardPage = () => {
       {/*          onClick={() => setChartType("inProgress")}*/}
       {/*          className={*/}
       {/*            chartType === "inProgress"*/}
-      {/*              ? "bg-primary hover:bg-primary/90 text-primary-foreground"*/}
-      {/*              : "border-border"*/}
+      {/*              ? "bg-blue-600 hover:bg-blue-700 text-white"*/}
+      {/*              : "border-blue-200 dark:border-blue-800"*/}
       {/*          }*/}
       {/*        >*/}
       {/*          W trakcie*/}
@@ -190,8 +127,8 @@ const DashboardPage = () => {
       {/*          onClick={() => setChartType("completionRate")}*/}
       {/*          className={*/}
       {/*            chartType === "completionRate"*/}
-      {/*              ? "bg-primary hover:bg-primary/90 text-primary-foreground"*/}
-      {/*              : "border-border"*/}
+      {/*              ? "bg-blue-600 hover:bg-blue-700 text-white"*/}
+      {/*              : "border-blue-200 dark:border-blue-800"*/}
       {/*          }*/}
       {/*        >*/}
       {/*          Wskaźnik (%)*/}
@@ -199,10 +136,10 @@ const DashboardPage = () => {
       {/*      </div>*/}
       {/*    </div>*/}
       {/*  </CardHeader>*/}
-      {/*  /!*Chart component*!/*/}
+        {/*Chart component*/}
       {/*  <CardContent>*/}
       {/*    <div className="space-y-4">*/}
-      {/*      <div className="text-sm font-medium text-foreground">*/}
+      {/*      <div className="text-sm font-medium text-blue-900 dark:text-blue-100">*/}
       {/*        {getChartLabel()}*/}
       {/*      </div>*/}
       {/*      <div className="space-y-3">*/}
@@ -210,14 +147,14 @@ const DashboardPage = () => {
       {/*          <div key={index} className="space-y-1">*/}
       {/*            <div className="flex justify-between text-sm">*/}
       {/*              <span className="text-muted-foreground">{item.name}</span>*/}
-      {/*              <span className="font-semibold text-foreground">*/}
+      {/*              <span className="font-semibold text-blue-900 dark:text-blue-100">*/}
       {/*                {item.value}*/}
       {/*                {chartType === "completionRate" && "%"}*/}
       {/*              </span>*/}
       {/*            </div>*/}
-      {/*            <div className="w-full bg-muted rounded-full h-3 overflow-hidden">*/}
+      {/*            <div className="w-full bg-blue-100 dark:bg-blue-900/30 rounded-full h-3 overflow-hidden">*/}
       {/*              <div*/}
-      {/*                className="bg-primary h-full rounded-full transition-all duration-500"*/}
+      {/*                className="bg-blue-600 dark:bg-blue-500 h-full rounded-full transition-all duration-500"*/}
       {/*                style={{ width: `${(item.value / maxValue) * 100}%` }}*/}
       {/*              />*/}
       {/*            </div>*/}
@@ -228,15 +165,7 @@ const DashboardPage = () => {
       {/*  </CardContent>*/}
       {/*</Card>*/}
 
-      {/* Sekcja z projektami tras */}
-      <div>
-        <h2 className="text-2xl font-semibold mb-4">Projekty tras</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {mockedRoutesObject.map((route: RoutesObjectType) => (
-            <RouteStatisticsInfoCustomCard route={route} key={route.pathId} />
-          ))}
-        </div>
-      </div>
+      <DashboardRoutes />
     </div>
   )
 }
