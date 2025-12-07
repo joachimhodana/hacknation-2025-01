@@ -39,10 +39,10 @@ app.use(corsConfig);
 app.use(serverTiming());
 app.use(openapi({ provider: "swagger-ui" }));
 
-// Serve static files from resources directory using staticPlugin
+// Serve static files from public/resources directory using staticPlugin
 // This is more efficient than custom route and handles caching, content-type, etc.
 app.use(staticPlugin({
-  assets: "./resources",
+  assets: "./public/resources",
   prefix: "/resources",
   // Don't fail if directory doesn't exist - it will be created on first upload
   ignorePatterns: [],

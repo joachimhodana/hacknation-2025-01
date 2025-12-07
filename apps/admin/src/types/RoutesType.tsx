@@ -15,7 +15,8 @@ export type RoutesObjectType = {
     createBy:string,
     createdAt: number
     updatedAt: number,
-    stops: RouteStopType[]
+    stops: RouteStopType[],
+    pointsCount?: number // Number of points from API
 }
 
 export type RouteStopType = {

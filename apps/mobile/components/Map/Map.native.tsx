@@ -6,7 +6,6 @@ import {
   View,
   TouchableOpacity,
   Text,
-  Appearance,
   Image,
   Linking,
 } from "react-native";
@@ -174,8 +173,6 @@ const getDialogAudioUrlForPin = (pin: RoutePin): string | null => {
 };
 
 export const Map: React.FC = () => {
-  const colorScheme = Appearance.getColorScheme();
-  const isDark = colorScheme === "dark";
   const { data: session } = authClient.useSession();
   const insets = useSafeAreaInsets();
 
@@ -391,8 +388,8 @@ export const Map: React.FC = () => {
           },
           (location) => {
             const updated = {
-              lat: location.coords.latitude,
-              lng: location.coords.longitude,
+          lat: location.coords.latitude,
+          lng: location.coords.longitude,
             };
             setUserLocation(updated);
           },
@@ -476,10 +473,10 @@ export const Map: React.FC = () => {
       const newCam: Camera = hasZoom
         ? {
             ...cam,
-            center: {
-              latitude: userLocation.lat,
-              longitude: userLocation.lng,
-            },
+          center: {
+            latitude: userLocation.lat,
+            longitude: userLocation.lng,
+          },
             zoom: clampZoom((cam.zoom as number) || 16),
           }
         : {
@@ -497,12 +494,12 @@ export const Map: React.FC = () => {
     }
   };
 
-  const openInAppleMaps = () => {
+  const openInGoogleMaps = () => {
     if (!routePins.length) return;
     const dest = routePins[routePins.length - 1];
-    const url = `http://maps.apple.com/?daddr=${dest.lat},${dest.lng}&dirflg=w`;
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${dest.lat},${dest.lng}&travelmode=walking`;
     Linking.openURL(url).catch((err) =>
-      console.log("Error opening Apple Maps", err),
+      console.log("Error opening Google Maps", err),
     );
   };
 
@@ -693,13 +690,13 @@ export const Map: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        provider={Platform.OS === "android" ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
-        initialRegion={{
-          latitude: userLocation.lat,
-          longitude: userLocation.lng,
+    <MapView
+      ref={mapRef}
+      style={styles.map}
+      provider={Platform.OS === "android" ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
+      initialRegion={{
+        latitude: userLocation.lat,
+        longitude: userLocation.lng,
           latitudeDelta: 0.01,
           longitudeDelta: 0.0045,
         }}
@@ -714,13 +711,6 @@ export const Map: React.FC = () => {
         rotateEnabled={false}
         pitchEnabled={false}
         mapType="standard"
-        customMapStyle={
-          Platform.OS === "android"
-            ? isDark
-              ? darkStyle
-              : subtleStyle
-            : undefined
-        }
       >
         {routeReady && routeCoordinates.length >= 2 && (
           <Polyline
@@ -832,56 +822,14 @@ export const Map: React.FC = () => {
                 </View>
               </View>
 
-              <View style={styles.appleRow}>
-                <TouchableOpacity
-                  style={styles.appleButton}
-                  onPress={openInAppleMaps}
-                >
-                  <Text style={styles.appleButtonText}>Otwórz w Apple Maps</Text>
-                </TouchableOpacity>
-              </View>
-            </>
-          )}
-        </View>
-      )}
-
-      {activeDialogPin && (
-        <View
-          style={[
-            styles.characterDialogContainer,
-            { bottom: dialogBottom },
-          ]}
-        >
-          <Image
-            source={{ uri: CHARACTER_IMAGE_URL }}
-            style={styles.characterDialogImage}
-          />
-          <View style={styles.characterDialogBubble}>
-            <Text style={styles.characterDialogTitle}>
-              Marian Rejewski
-            </Text>
-            <Text style={styles.characterDialogText}>
-              {currentDialogText}
-            </Text>
-
-            {/* 🔊 Pasek audio pod dialogiem */}
-            {dialogAudioUrl && (
-              <View style={styles.audioRow}>
-                <View style={styles.audioIconCircle}>
-                  <Text style={styles.audioIconText}>
-                    {isAudioPlaying ? "🔊" : "🔈"}
-                  </Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.audioTitle}>Audio opowieści</Text>
-                  <Text style={styles.audioSubtitle}>
-                    {isAudioPlaying
-                      ? "Odtwarzanie nagrania..."
-                      : "Nagranie gotowe do odtworzenia"}
-                  </Text>
-                </View>
-              </View>
-            )}
+          {/* Google Maps CTA */}
+          <View style={styles.appleRow}>
+            <TouchableOpacity
+              style={styles.appleButton}
+              onPress={openInGoogleMaps}
+            >
+              <Text style={styles.appleButtonText}>Otwórz w Google Maps</Text>
+            </TouchableOpacity>
           </View>
         </View>
       )}
@@ -1180,15 +1128,5 @@ const styles = StyleSheet.create({
     color: COLORS.red,
   },
 });
-
-// Android styles
-const darkStyle = [
-  { elementType: "geometry", stylers: [{ color: "#1E1E1E" }] },
-  { featureType: "poi", stylers: [{ visibility: "off" }] },
-];
-
-const subtleStyle = [
-  { featureType: "poi", stylers: [{ visibility: "off" }] },
-];
 
 export default Map;

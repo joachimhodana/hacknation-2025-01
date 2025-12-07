@@ -38,6 +38,74 @@ function getRouteImage(routeId: string): string {
   return imageMap[routeId] || 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800';
 }
 
+function getRouteBackgroundTheme(routeId: string) {
+  switch (routeId) {
+    case 'route_001': // Kod/Matematyka - techniczny, cyfrowy
+      return {
+        backgroundColor: '#0f172a', // Ciemny granat
+        accentColor: '#0d9488', // Teal
+        textColor: '#ffffff',
+        cardBg: '#1e293b',
+      };
+    case 'route_002': // Magia/Legendy - tajemniczy, mistyczny
+      return {
+        backgroundColor: '#581c87', // Ciemny fiolet
+        accentColor: '#a855f7', // Fiolet
+        textColor: '#ffffff',
+        cardBg: '#6b21a8',
+      };
+    case 'route_003': // Historia/Wojna - poważny, refleksyjny
+      return {
+        backgroundColor: '#451a03', // Ciemny brąz
+        accentColor: '#92400e', // Brąz
+        textColor: '#ffffff',
+        cardBg: '#78350f',
+      };
+    case 'route_004': // Technika/Przemysł - industrialny
+      return {
+        backgroundColor: '#1e293b', // Ciemny szary
+        accentColor: '#475569', // Szary
+        textColor: '#ffffff',
+        cardBg: '#334155',
+      };
+    case 'route_006': // Muzyka/Sztuka - artystyczny
+      return {
+        backgroundColor: '#7f1d1d', // Ciemny czerwony
+        accentColor: '#dc2626', // Czerwony
+        textColor: '#ffffff',
+        cardBg: '#991b1b',
+      };
+    case 'route_007': // Architektura/Secesja - elegancki
+      return {
+        backgroundColor: '#78350f', // Ciemny złoty
+        accentColor: '#d97706', // Złoty
+        textColor: '#ffffff',
+        cardBg: '#92400e',
+      };
+    case 'route_010': // Nostalgia/Lifestyle - ciepły
+      return {
+        backgroundColor: '#7c2d12', // Ciemny pomarańcz
+        accentColor: '#ea580c', // Pomarańczowy
+        textColor: '#ffffff',
+        cardBg: '#9a3412',
+      };
+    case 'route_011': // Edukacja/Studencki - dynamiczny
+      return {
+        backgroundColor: '#1e3a8a', // Ciemny niebieski
+        accentColor: '#0095DA', // Niebieski
+        textColor: '#ffffff',
+        cardBg: '#1e40af',
+      };
+    default:
+      return {
+        backgroundColor: '#1a1a1a',
+        accentColor: '#ED1C24',
+        textColor: '#ffffff',
+        cardBg: '#2a2a2a',
+      };
+  }
+}
+
 export default function RouteDetailsScreen() {
   const { routeId } = useLocalSearchParams<{ routeId: string }>();
   const router = useRouter();
@@ -51,6 +119,7 @@ export default function RouteDetailsScreen() {
   }
 
   const imageUrl = getRouteImage(route.route_id);
+  const backgroundTheme = getRouteBackgroundTheme(route.route_id);
 
   const formatTime = (minutes: number) => {
     if (minutes < 60) {
@@ -97,13 +166,13 @@ export default function RouteDetailsScreen() {
     <SafeAreaView
       style={[
         styles.safeArea,
-        { backgroundColor: isDark ? '#151718' : '#FEFEFE' },
+        { backgroundColor: backgroundTheme.backgroundColor },
       ]}>
       <View style={styles.header}>
         <TouchableOpacity
-          style={styles.backButton}
+          style={[styles.backButton, { backgroundColor: 'rgba(255, 255, 255, 0.2)' }]}
           onPress={() => router.back()}>
-          <MaterialIcons name="arrow-back" size={24} color={COLORS.textDark} />
+          <MaterialIcons name="arrow-back" size={24} color={backgroundTheme.textColor} />
         </TouchableOpacity>
       </View>
 
@@ -123,22 +192,22 @@ export default function RouteDetailsScreen() {
           <Text
             style={[
               styles.routeTitle,
-              { color: isDark ? '#ECEDEE' : COLORS.textDark },
+              { color: backgroundTheme.textColor },
             ]}>
             {route.title}
           </Text>
 
           <View style={styles.tagsRow}>
-            <View style={[styles.tag, { backgroundColor: COLORS.bgSoft }]}>
+            <View style={[styles.tag, { backgroundColor: 'rgba(255, 255, 255, 0.2)' }]}>
               <MaterialIcons
                 name="schedule"
                 size={16}
-                color={COLORS.textMuted}
+                color={backgroundTheme.textColor}
               />
               <Text
                 style={[
                   styles.tagText,
-                  { color: isDark ? '#9BA1A6' : COLORS.textMuted },
+                  { color: backgroundTheme.textColor },
                 ]}>
                 {formatTime(route.total_time_minutes)}
               </Text>
@@ -146,19 +215,19 @@ export default function RouteDetailsScreen() {
             <View
               style={[
                 styles.tag,
-                { backgroundColor: difficultyInfo.bgColor + '20' },
+                { backgroundColor: difficultyInfo.bgColor + '40' },
               ]}>
               <Text
                 style={[styles.tagText, { color: difficultyInfo.color }]}>
                 {difficultyInfo.label}
               </Text>
             </View>
-            <View style={[styles.tag, { backgroundColor: COLORS.bgSoft }]}>
-              <MaterialIcons name="place" size={16} color={COLORS.textMuted} />
+            <View style={[styles.tag, { backgroundColor: 'rgba(255, 255, 255, 0.2)' }]}>
+              <MaterialIcons name="place" size={16} color={backgroundTheme.textColor} />
               <Text
                 style={[
                   styles.tagText,
-                  { color: isDark ? '#9BA1A6' : COLORS.textMuted },
+                  { color: backgroundTheme.textColor },
                 ]}>
                 {route.stops.length} przystanków
               </Text>
@@ -170,14 +239,14 @@ export default function RouteDetailsScreen() {
           <Text
             style={[
               styles.descriptionTitle,
-              { color: isDark ? '#ECEDEE' : COLORS.textDark },
+              { color: backgroundTheme.textColor },
             ]}>
             O ścieżce
           </Text>
           <Text
             style={[
               styles.description,
-              { color: isDark ? '#9BA1A6' : COLORS.textMuted },
+              { color: backgroundTheme.textColor + 'CC' },
             ]}>
             {route.theme}
           </Text>
@@ -187,7 +256,7 @@ export default function RouteDetailsScreen() {
           <Text
             style={[
               styles.sectionTitle,
-              { color: isDark ? '#ECEDEE' : COLORS.textDark },
+              { color: backgroundTheme.textColor },
             ]}>
             Przystanki ({route.stops.length})
           </Text>
@@ -197,25 +266,25 @@ export default function RouteDetailsScreen() {
               style={[
                 styles.stopCard,
                 {
-                  backgroundColor: isDark ? '#1a1a1a' : '#FFFFFF',
-                  borderColor: isDark ? '#2a2a2a' : COLORS.border,
+                  backgroundColor: backgroundTheme.cardBg,
+                  borderColor: backgroundTheme.accentColor + '40',
                 },
               ]}>
-              <View style={styles.stopNumber}>
+              <View style={[styles.stopNumber, { backgroundColor: backgroundTheme.accentColor }]}>
                 <Text style={styles.stopNumberText}>{stop.stop_id}</Text>
               </View>
               <View style={styles.stopContent}>
                 <Text
                   style={[
                     styles.stopName,
-                    { color: isDark ? '#ECEDEE' : COLORS.textDark },
+                    { color: backgroundTheme.textColor },
                   ]}>
                   {stop.name}
                 </Text>
                 <Text
                   style={[
                     styles.stopAddress,
-                    { color: isDark ? '#9BA1A6' : COLORS.textMuted },
+                    { color: backgroundTheme.textColor + 'AA' },
                   ]}
                   numberOfLines={1}>
                   {stop.map_marker.address}
@@ -227,7 +296,7 @@ export default function RouteDetailsScreen() {
             <Text
               style={[
                 styles.moreStops,
-                { color: isDark ? '#9BA1A6' : COLORS.textMuted },
+                { color: backgroundTheme.textColor + 'AA' },
               ]}>
               +{route.stops.length - 3} więcej przystanków
             </Text>
@@ -241,12 +310,12 @@ export default function RouteDetailsScreen() {
         style={[
           styles.stickyFooter,
           {
-            backgroundColor: isDark ? '#1a1a1a' : '#FFFFFF',
-            borderTopColor: isDark ? '#2a2a2a' : COLORS.border,
+            backgroundColor: backgroundTheme.cardBg,
+            borderTopColor: backgroundTheme.accentColor + '40',
           },
         ]}>
         <TouchableOpacity
-          style={[styles.startButton, { backgroundColor: COLORS.red }]}
+          style={[styles.startButton, { backgroundColor: backgroundTheme.accentColor }]}
           onPress={() => router.push(`/map?routeId=${route.route_id}`)}>
           <Text style={styles.startButtonText}>Rozpocznij ścieżkę</Text>
           <MaterialIcons name="arrow-forward" size={20} color="#FFFFFF" />

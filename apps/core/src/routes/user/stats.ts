@@ -1,7 +1,8 @@
 import { Elysia } from "elysia";
 import { db } from "@/db";
 import { paths, userPathProgress, userItems, points } from "@/db/schema";
-import { eq, and, inArray, desc } from "drizzle-orm";
+import { user } from "@/db/auth-schema";
+import { eq, and, inArray, desc, sum, not } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 
 // User stats endpoint - requires authentication but not admin
@@ -109,6 +110,54 @@ export const userStatsRoutes = new Elysia({ prefix: "/user" })
       };
     } catch (error) {
       console.error("[user/stats] Error:", error);
+      return {
+        success: false,
+        error: "Internal server error",
+      };
+    }
+  })
+  .get("/leaderboard", async ({ request }) => {
+    try {
+      // Get session from Better Auth (optional - for identifying current user)
+      const session = await auth.api.getSession({
+        headers: request.headers,
+      });
+
+      const currentUserId = session?.user?.id;
+
+      // Calculate total points (visited stops count) for each user
+      // Points = sum of all visitedStopsCount from userPathProgress
+      // Exclude anonymous users from leaderboard
+      const leaderboardData = await db
+        .select({
+          userId: userPathProgress.userId,
+          totalPoints: sum(userPathProgress.visitedStopsCount).as("totalPoints"),
+          userName: user.name,
+        })
+        .from(userPathProgress)
+        .innerJoin(user, eq(userPathProgress.userId, user.id))
+        .where(not(eq(user.isAnonymous, true))) // Exclude anonymous users
+        .groupBy(userPathProgress.userId, user.name)
+        .orderBy(desc(sum(userPathProgress.visitedStopsCount)))
+        .limit(10);
+
+      // Format leaderboard response
+      const leaderboard = leaderboardData.map((entry, index) => ({
+        rank: index + 1,
+        userId: entry.userId,
+        name: entry.userName || "Użytkownik",
+        points: Number(entry.totalPoints) || 0,
+        isCurrentUser: currentUserId ? entry.userId === currentUserId : false,
+      }));
+
+      return {
+        success: true,
+        data: {
+          leaderboard,
+        },
+      };
+    } catch (error) {
+      console.error("[user/leaderboard] Error:", error);
       return {
         success: false,
         error: "Internal server error",

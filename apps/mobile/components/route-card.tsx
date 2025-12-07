@@ -1,7 +1,7 @@
 import { StyleSheet, TouchableOpacity, View, Text, ImageBackground } from 'react-native';
 import { Route } from '@/data/routes';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { API_BASE_URL } from '@/lib/api-client';
+import { getAPIBaseURL } from '@/lib/api-client';
 
 const COLORS = {
   red: '#ED1C24',
@@ -155,7 +155,7 @@ export function RouteCard({ route, onPress }: RouteCardProps) {
   // Note: thumbnail_url from API should already be a full path like /resources/...
   // We need to prepend the API base URL
   const imageUrl = route.thumbnail_url 
-    ? `${API_BASE_URL}${route.thumbnail_url}`
+    ? `${getAPIBaseURL()}${route.thumbnail_url}`
     : theme.imageUrl;
 
   return (

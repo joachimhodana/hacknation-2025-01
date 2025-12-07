@@ -34,6 +34,7 @@ const DashboardRoutes = () => {
             createdAt: path.createdAt ? new Date(path.createdAt).getTime() : Date.now(),
             updatedAt: path.updatedAt ? new Date(path.updatedAt).getTime() : Date.now(),
             stops: [], // Will be loaded separately
+            pointsCount: path.pointsCount || 0, // Number of points from API
           }))
           
           // Fetch full data (with points) for each route to get stops count

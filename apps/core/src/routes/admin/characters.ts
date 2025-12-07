@@ -179,4 +179,6 @@ export const adminCharactersRoutes = new Elysia({ prefix: "/characters" })
       success: true,
       message: "Character deleted successfully",
     };
+  }, {
+    auth: true
   });

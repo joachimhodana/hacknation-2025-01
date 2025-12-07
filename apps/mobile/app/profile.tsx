@@ -13,7 +13,7 @@ import { useRouter } from "expo-router";
 import Navbar from "@/components/Navbar";
 import { PointsBadge } from "@/components/PointsBadge";
 import { authClient } from "@/lib/auth-client";
-import { fetchUserStats, type CollectedItem } from "@/lib/api-client";
+import { fetchUserStats, fetchLeaderboard, type CollectedItem, type LeaderboardEntry } from "@/lib/api-client";
 
 const COLORS = {
   red: "#ED1C24",
@@ -39,12 +39,7 @@ const ProfileScreen: React.FC = () => {
     collectedItems: CollectedItem[];
   } | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
-  const [leaderboard, setLeaderboard] = useState<Array<{
-    rank: number;
-    name: string;
-    points: number;
-    isCurrentUser: boolean;
-  }>>([]);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
 
   useEffect(() => {
@@ -83,45 +78,27 @@ const ProfileScreen: React.FC = () => {
     if (!session) return;
     setLeaderboardLoading(true);
     try {
-      const currentUserPoints = calculateUserPoints();
-      const currentUserName = session.user?.name || "Użytkownik";
-      
-      // Mock leaderboard data - w przyszłości można dodać endpoint API
-      const mockLeaderboard = [
-        { rank: 1, name: "Anna K.", points: 2450, isCurrentUser: false },
-        { rank: 2, name: "Marek W.", points: 2180, isCurrentUser: false },
-        { rank: 3, name: "Kasia M.", points: 1950, isCurrentUser: false },
-        { rank: 4, name: currentUserName, points: currentUserPoints, isCurrentUser: true },
-        { rank: 5, name: "Tomek Z.", points: 1200, isCurrentUser: false },
-        { rank: 6, name: "Ola P.", points: 980, isCurrentUser: false },
-        { rank: 7, name: "Piotr K.", points: 750, isCurrentUser: false },
-      ].sort((a, b) => b.points - a.points)
-       .map((item, index) => ({ ...item, rank: index + 1 }));
-      
-      setLeaderboard(mockLeaderboard);
+      const leaderboardData = await fetchLeaderboard();
+      if (leaderboardData && leaderboardData.leaderboard) {
+        setLeaderboard(leaderboardData.leaderboard);
+      } else {
+        // Fallback to empty array if fetch fails
+        setLeaderboard([]);
+      }
     } catch (error) {
       console.error("Error loading leaderboard:", error);
+      setLeaderboard([]);
     } finally {
       setLeaderboardLoading(false);
     }
   };
 
-  const calculateUserPoints = (): number => {
-    if (!stats) return 0;
-    // Punkty za ukończone trasy: 100 pkt za każdą
-    const pathsPoints = stats.completedPathsCount * 100;
-    // Punkty za zebrane przedmioty: 50 pkt za każdy
-    const itemsPoints = stats.collectedItems.length * 50;
-    // Punkty za przespacerowane km: 10 pkt za każdy km
-    const distancePoints = Math.floor(stats.totalDistanceKm) * 10;
-    return pathsPoints + itemsPoints + distancePoints;
-  };
 
   useEffect(() => {
-    if (stats && session) {
+    if (session) {
       loadLeaderboard();
     }
-  }, [stats, session]);
+  }, [session]);
 
   if (isPending || statsLoading) {
     return (
@@ -161,7 +138,6 @@ const ProfileScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <PointsBadge />
       {/* Background blobs */}
       <View style={[styles.blob, styles.blobRed]} />
       <View style={[styles.blob, styles.blobBlue]} />
@@ -279,6 +255,14 @@ const ProfileScreen: React.FC = () => {
             <View style={styles.leaderboardLoading}>
               <ActivityIndicator size="small" color={COLORS.red} />
             </View>
+          ) : leaderboard.length === 0 ? (
+            <View style={styles.emptyStateCard}>
+              <Text style={styles.emptyStateEmoji}>🏁</Text>
+              <Text style={styles.emptyStateTitle}>Brak graczy w rankingu</Text>
+              <Text style={styles.emptyStateDescription}>
+                Bądź pierwszym, który ukończy trasę i pojawi się w rankingu!
+              </Text>
+            </View>
           ) : (
             <View style={styles.leaderboardCard}>
               {leaderboard.slice(0, 5).map((player) => (
@@ -323,6 +307,55 @@ const ProfileScreen: React.FC = () => {
                 </View>
               )}
             </View>
+          )}
+        </View>
+
+        {/* Collections / items – 3 in a row preview */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>Zebrane przedmioty</Text>
+            {collectedItems.length > 0 && (
+              <TouchableOpacity onPress={() => router.push("/collections")}>
+                <Text style={styles.showAllText}>Pokaż wszystkie ›</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {collectedItems.length === 0 ? (
+            <View style={styles.emptyStateCard}>
+              <Text style={styles.emptyStateEmoji}>📦</Text>
+              <Text style={styles.emptyStateTitle}>Brak zebranych przedmiotów</Text>
+              <Text style={styles.emptyStateDescription}>
+                Rozpocznij trasę i zbieraj przedmioty podczas zwiedzania miasta!
+              </Text>
+              <TouchableOpacity
+                style={styles.emptyStateButton}
+                onPress={() => router.push("/explore")}
+              >
+                <Text style={styles.emptyStateButtonText}>Przeglądaj trasy</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <>
+              <Text style={styles.sectionSubtitle}>
+                Podgląd zebranych przedmiotów. Kliknij „Pokaż wszystkie", żeby
+                zobaczyć więcej.
+              </Text>
+
+              <View style={styles.itemsGridPreview}>
+                {previewItems.map((item) => (
+                  <View key={item.id} style={styles.itemTilePreview}>
+                    <View style={styles.itemTileInner}>
+                      <Text style={styles.itemTileEmoji}>{item.emoji}</Text>
+                    </View>
+                  </View>
+                ))}
+                {previewItems.length < 3 &&
+                  Array.from({ length: 3 - previewItems.length }).map((_, idx) => (
+                    <View key={`phantom-${idx}`} style={styles.itemTilePreviewPhantom} />
+                  ))}
+              </View>
+            </>
           )}
         </View>
 
@@ -446,7 +479,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   avatarAnonymous: {
-    backgroundColor: COLORS.bgSoft,
+    backgroundColor: COLORS.softBg,
     borderColor: COLORS.textMuted,
     borderWidth: 2,
   },
@@ -702,6 +735,47 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   anonymousBannerButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  // Empty state
+  emptyStateCard: {
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderStyle: "dashed",
+    padding: 32,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  emptyStateEmoji: {
+    fontSize: 48,
+    marginBottom: 12,
+  },
+  emptyStateTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: COLORS.textDark,
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  emptyStateDescription: {
+    fontSize: 13,
+    color: COLORS.textMuted,
+    textAlign: "center",
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  emptyStateButton: {
+    backgroundColor: COLORS.blue,
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    marginTop: 4,
+  },
+  emptyStateButtonText: {
     color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "600",

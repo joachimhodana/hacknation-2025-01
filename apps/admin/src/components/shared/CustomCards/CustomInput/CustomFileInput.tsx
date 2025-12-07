@@ -2,17 +2,22 @@ import {FormField, FormLabel, FormItem, FormControl, FormDescription, FormMessag
 import {useState, useRef} from "react";
 import { Icon } from "@iconify/react";
 import {cn} from "@/lib/utils";
+import {getBackendImageUrl} from "@/lib/image-utils.ts";
 
 type CustomFileInputProps = {
     name: string,
     label: string,
     description?: string,
     accept?: string,
+    existingUrl?: string | null,
 }
 
-const CustomFileInput = ({name, label, description="", accept="image/*"}:CustomFileInputProps) => {
+const CustomFileInput = ({name, label, description="", accept="image/*", existingUrl}:CustomFileInputProps) => {
     const [preview, setPreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    
+    // Get full URL for existing image from backend
+    const existingImageUrl = existingUrl ? getBackendImageUrl(existingUrl) : null;
 
     return (
         <FormField
@@ -97,6 +102,17 @@ const CustomFileInput = ({name, label, description="", accept="image/*"}:CustomF
                                             >
                                                 <Icon icon="solar:close-circle-bold-duotone" className="h-4 w-4" />
                                             </button>
+                                        </div>
+                                    ) : existingImageUrl ? (
+                                        <div className="relative">
+                                            <img 
+                                                src={existingImageUrl} 
+                                                alt="Existing" 
+                                                className="max-w-full h-32 object-contain mx-auto rounded-md"
+                                                onError={(e) => {
+                                                    (e.target as HTMLImageElement).style.display = 'none';
+                                                }}
+                                            />
                                         </div>
                                     ) : (
                                         <div>
