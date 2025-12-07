@@ -26,17 +26,15 @@ services:
     volumes:
       - ./apps/core:/app
       - core_node_modules:/app/node_modules
-    # Port mapping - only needed for local dev. Coolify handles routing via Traefik/Caddy
-    # Remove CORE_PORT from env vars in Coolify to avoid port conflicts
     ports:
-      - "${CORE_PORT:-8089}:${PORT:-8089}"
+      - "${CORE_PORT:-${PORT:-8080}}:${PORT:-8080}"
     environment:
       - WATCH_FILES=true
-      - PORT=${PORT:-8089}
+      - PORT=${PORT:-8080}
       - HOST=${HOST:-0.0.0.0}
       - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/hacknation}
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
-      - BETTER_AUTH_URL=${BETTER_AUTH_URL:-${SERVICE_URL_CORE:-http://localhost:${CORE_PORT:-${PORT:-8089}}}}
+      - BETTER_AUTH_URL=${BETTER_AUTH_URL:-${SERVICE_URL_CORE:-http://localhost:${CORE_PORT:-${PORT:-8080}}}}
       - DEFAULT_ADMIN_EMAIL=${DEFAULT_ADMIN_EMAIL:-admin@admin.com}
       - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD:-admin123}
       - DEFAULT_ADMIN_NAME=${DEFAULT_ADMIN_NAME:-Admin}
@@ -53,14 +51,13 @@ services:
       - ./apps/core:/app
       - drizzle_studio_node_modules:/app/node_modules
     ports:
-      - "${DRIZZLE_PORT:-4983}:${DRIZZLE_STUDIO_PORT:-4983}"
+      - "4983:4983"
     environment:
       - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/hacknation}
-      - DRIZZLE_STUDIO_PORT=${DRIZZLE_STUDIO_PORT:-4983}
     depends_on:
       postgres:
         condition: service_healthy
-    command: sh -c "cd /app && bun install && bunx drizzle-kit studio --port ${DRIZZLE_STUDIO_PORT:-4983} --host 0.0.0.0"
+    command: sh -c "cd /app && bun install && bunx drizzle-kit studio --port 4983 --host 0.0.0.0"
     restart: unless-stopped
 
   landing:
@@ -72,11 +69,10 @@ services:
       - ./apps/landing:/app
       - landing_node_modules:/app/node_modules
     ports:
-      - "${LANDING_PORT:-3000}:${LANDING_CONTAINER_PORT:-3000}"
+      - "3000:3000"
     environment:
       - NODE_ENV=${NODE_ENV:-development}
-      - PORT=${LANDING_CONTAINER_PORT:-3000}
-      - HOST=${LANDING_HOST:-0.0.0.0}
+      - PORT=${PORT:-3000}
     restart: unless-stopped
 
   admin:
@@ -88,12 +84,11 @@ services:
       - ./apps/admin:/app
       - admin_node_modules:/app/node_modules
     ports:
-      - "${ADMIN_PORT:-3001}:${ADMIN_CONTAINER_PORT:-3001}"
+      - "3001:3001"
     environment:
       - NODE_ENV=${NODE_ENV:-development}
-      - PORT=${ADMIN_CONTAINER_PORT:-3001}
-      - HOST=${ADMIN_HOST:-0.0.0.0}
-      - VITE_BETTER_AUTH_URL=${VITE_BETTER_AUTH_URL:-${SERVICE_URL_CORE:-http://localhost:8089}}
+      - PORT=${PORT:-3001}
+      - VITE_BETTER_AUTH_URL=${VITE_BETTER_AUTH_URL:-http://localhost:8080}
     restart: unless-stopped
 
 volumes:
