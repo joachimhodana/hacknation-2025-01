@@ -22,9 +22,9 @@ export const adminCharactersRoutes = new Elysia({ prefix: "/characters" })
         const mimeType = body.avatarFile.type;
         const extension = mimeType === "image/jpeg" ? ".jpg" : ".png";
         const fileName = `${avatarUUID}${extension}`;
-        const filePath = join(process.cwd(), "public", "resources", "avatars", fileName);
+        const filePath = join(process.cwd(),"public", "resources", "avatars", fileName);
         await Bun.write(filePath, avatarBuffer);
-        avatarUrl = `/public/resources/avatars/${fileName}`;
+        avatarUrl = `/resources/avatars/${fileName}`;
       }
 
 
@@ -108,7 +108,7 @@ export const adminCharactersRoutes = new Elysia({ prefix: "/characters" })
         const fileName = `${avatarUUID}${extension}`;
         const filePath = join(process.cwd(),"public", "resources", "avatars", fileName);
         await Bun.write(filePath, avatarBuffer);
-        avatarUrl = `public/resources/avatars/${fileName}`;
+        avatarUrl = `/resources/avatars/${fileName}`;
       }
 
       // Prepare update object, removing avatarFile, and updating updatedAt

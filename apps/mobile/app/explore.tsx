@@ -6,7 +6,7 @@ import { RouteCard } from '@/components/route-card';
 import Navbar from '@/components/Navbar';
 import { PointsBadge } from '@/components/PointsBadge';
 import { authClient } from '@/lib/auth-client';
-import { fetchPaths, type Path } from '@/lib/api-client';
+import { fetchPaths, type Path, getActivePathProgress } from '@/lib/api-client';
 import { Route } from '@/data/routes';
 
 const COLORS = {
@@ -25,6 +25,7 @@ export default function ExploreScreen() {
   const [paths, setPaths] = useState<Route[]>([]);
   const [pathsLoading, setPathsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activePathId, setActivePathId] = useState<string | null>(null);
 
   console.log("[Explore] Component render:", { 
     hasSession: !!session, 
@@ -91,6 +92,21 @@ export default function ExploreScreen() {
     }
   }, []);
 
+  // Fetch active path progress
+  const loadActivePath = useCallback(async () => {
+    try {
+      const progress = await getActivePathProgress();
+      if (progress) {
+        setActivePathId(progress.path.pathId);
+      } else {
+        setActivePathId(null);
+      }
+    } catch (error) {
+      console.error("[Explore] Error loading active path:", error);
+      setActivePathId(null);
+    }
+  }, []);
+
   // Fetch paths when session is available
   useEffect(() => {
     console.log("[Explore] ===== FETCH EFFECT TRIGGERED =====");
@@ -104,13 +120,14 @@ export default function ExploreScreen() {
     if (session && !isPending) {
       console.log("[Explore] Conditions met - calling loadPaths()");
       loadPaths();
+      loadActivePath();
     } else {
       console.log("[Explore] Conditions NOT met:", {
         hasSession: !!session,
         isPending
       });
     }
-  }, [session, isPending, loadPaths]);
+  }, [session, isPending, loadPaths, loadActivePath]);
 
   if (isPending || pathsLoading) {
     return (
@@ -191,13 +208,20 @@ export default function ExploreScreen() {
               </TouchableOpacity>
             </View>
           ) : paths.length > 0 ? (
-            paths.map((route) => (
-              <RouteCard
-                key={route.route_id}
-                route={route}
-                onPress={() => handleRoutePress(route.route_id)}
-              />
-            ))
+            paths.map((route) => {
+              const isActive = activePathId === route.route_id;
+              const isDisabled = activePathId !== null && !isActive;
+              
+              return (
+                <RouteCard
+                  key={route.route_id}
+                  route={route}
+                  onPress={() => !isDisabled && handleRoutePress(route.route_id)}
+                  isActive={isActive}
+                  isDisabled={isDisabled}
+                />
+              );
+            })
           ) : null}
         </ScrollView>
 

@@ -1,6 +1,9 @@
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useDeviceDetection } from "@/hooks/use-device-detection";
 import { authClient } from "@/lib/auth-client";
+import { getActivePathProgress, markPointVisited, type PathProgress } from "@/lib/api-client";
+import { getAPIBaseURL } from "@/lib/api-url";
+import { isWithinGeofence } from "@/lib/geofence-utils";
 
 export type MapProps = {
   lat?: number;
@@ -73,6 +76,11 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
     { latitude: number; longitude: number }[]
   >([]);
   const [routeSteps, setRouteSteps] = useState<OsrmStep[]>([]);
+  const [pathProgress, setPathProgress] = useState<PathProgress | null>(null);
+  const [selectedStop, setSelectedStop] = useState<PathProgress["path"]["stops"][0] | null>(null);
+  const [showStopDialog, setShowStopDialog] = useState(false);
+  const [markingVisited, setMarkingVisited] = useState(false);
+  const geofenceCheckIntervalRef = useRef<number | null>(null);
 
   // Get user info for avatar
   const user = session?.user;
@@ -86,58 +94,53 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
         .slice(0, 2)
     : "U";
 
-  // 🔹 Mock aktywnej trasy – podmień na realne dane (API / store)
-  const activeRoute: ActiveRoute = {
-    title: "Szlak Mariana Rejewskiego",
-    totalStops: 8,
-    completedStops: 3,
-  };
+  // Fetch active path progress
+  useEffect(() => {
+    const loadProgress = async () => {
+      try {
+        const progress = await getActivePathProgress();
+        setPathProgress(progress);
+      } catch (error) {
+        console.error("[Map] Error loading path progress:", error);
+        setPathProgress(null);
+      }
+    };
 
-  const hasRoute = !!activeRoute;
-  const routeTitle = activeRoute?.title ?? "";
-  const totalStops = activeRoute?.totalStops ?? 0;
-  const completedStops = Math.min(
-    activeRoute?.completedStops ?? 0,
-    totalStops,
-  );
-  const progressRatio =
-    totalStops > 0 ? completedStops / totalStops : 0;
+    loadProgress();
+  }, []);
+
+  const hasRoute = !!pathProgress;
+  const routeTitle = pathProgress?.path.title ?? "";
+  const totalStops = pathProgress?.path.stops.length ?? 0;
+  const completedStops = pathProgress?.progress.visitedStopsCount ?? 0;
+  const progressRatio = totalStops > 0 ? completedStops / totalStops : 0;
   const progressText =
     totalStops > 0
       ? `${completedStops} / ${totalStops} przystanków`
       : "Brak przystanków na trasie";
 
-  // Piny trasy
-  const routePins: RoutePin[] = [
-    {
-      id: "pin-default",
-      lat: 53.1235,
-      lng: 18.0084,
-      variant: "default",
-      label: "D",
-    },
-    {
-      id: "pin-primary",
-      lat: 53.1227,
-      lng: 18.0048,
-      variant: "primary",
-      label: "Q",
-    },
-    {
-      id: "pin-secondary",
-      lat: 53.1242,
-      lng: 18.0121,
-      variant: "secondary",
-      label: "i",
-    },
-    {
-      id: "pin-tertiary",
-      lat: 53.123,
-      lng: 18.011,
-      variant: "tertiary",
-      label: "★",
-    },
-  ];
+  // Convert path stops to route pins - memoized to prevent infinite loops
+  const routePins: RoutePin[] = useMemo(() => {
+    if (!pathProgress) return [];
+    
+    return pathProgress.path.stops.map((stop, index) => {
+      const isVisited = stop.visited;
+      const isNext = !isVisited && index === pathProgress.path.stops.findIndex((s) => !s.visited);
+      
+      let variant: MarkerVariant = "default";
+      if (isNext) variant = "primary";
+      else if (isVisited) variant = "default";
+      else variant = "secondary";
+
+      return {
+        id: `stop-${stop.stop_id}`,
+        lat: stop.map_marker.coordinates.latitude,
+        lng: stop.map_marker.coordinates.longitude,
+        variant,
+        label: stop.stop_id.toString(),
+      };
+    });
+  }, [pathProgress]);
 
   const getPinColors = (variant: MarkerVariant) => {
     switch (variant) {
@@ -236,16 +239,34 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
     window.open(url, '_blank');
   };
 
-  // OSRM – policz trasę między pinami + wyciągnij kroki
+  // OSRM – policz trasę od usera do następnego nieodwiedzonego przystanku
   useEffect(() => {
     const fetchOsrmRoute = async () => {
-      if (routePins.length < 2) return;
+      if (!userLocation || !pathProgress || routePins.length === 0) {
+        setRouteCoordinates([]);
+        setRouteSteps([]);
+        return;
+      }
 
+      // Find next unvisited stop
+      const nextUnvisitedStop = pathProgress.path.stops.find((stop) => !stop.visited);
+      if (!nextUnvisitedStop) {
+        // All stops visited, route to last stop
+        const lastStop = pathProgress.path.stops[pathProgress.path.stops.length - 1];
+        if (lastStop) {
+          const coordsStr = `${userLocation.lng},${userLocation.lat};${lastStop.map_marker.coordinates.longitude},${lastStop.map_marker.coordinates.latitude}`;
+          await fetchRoute(coordsStr);
+        }
+        return;
+      }
+
+      // Route from user to next unvisited stop
+      const coordsStr = `${userLocation.lng},${userLocation.lat};${nextUnvisitedStop.map_marker.coordinates.longitude},${nextUnvisitedStop.map_marker.coordinates.latitude}`;
+      await fetchRoute(coordsStr);
+    };
+
+    const fetchRoute = async (coordsStr: string) => {
       try {
-        const coordsStr = routePins
-          .map((p) => `${p.lng},${p.lat}`)
-          .join(";");
-
         const url =
           `https://router.project-osrm.org/route/v1/foot/${coordsStr}` +
           "?overview=full&geometries=geojson&steps=true";
@@ -254,13 +275,7 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
 
         if (!res.ok) {
           console.log("OSRM error status:", res.status);
-          // fallback: prosta linia
-          setRouteCoordinates(
-            routePins.map((p) => ({
-              latitude: p.lat,
-              longitude: p.lng,
-            })),
-          );
+          setRouteCoordinates([]);
           setRouteSteps([]);
           return;
         }
@@ -271,36 +286,26 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
         const steps: OsrmStep[] =
           data.routes?.[0]?.legs?.[0]?.steps ?? [];
 
-        if (!coords.length) {
-          setRouteCoordinates(
-            routePins.map((p) => ({
-              latitude: p.lat,
-              longitude: p.lng,
-            })),
-          );
-        } else {
+        if (coords.length) {
           const route = coords.map(([lng, lat]) => ({
             latitude: lat,
             longitude: lng,
           }));
           setRouteCoordinates(route);
+        } else {
+          setRouteCoordinates([]);
         }
 
         setRouteSteps(steps);
       } catch (e) {
         console.log("Error fetching OSRM route:", e);
-        setRouteCoordinates(
-          routePins.map((p) => ({
-            latitude: p.lat,
-            longitude: p.lng,
-          })),
-        );
+        setRouteCoordinates([]);
         setRouteSteps([]);
       }
     };
 
     fetchOsrmRoute();
-  }, []); // routePins stałe
+  }, [userLocation, pathProgress]); // Removed routePins - it's derived from pathProgress
 
   // Watch user location in real-time
   useEffect(() => {
@@ -361,6 +366,73 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
       }
     };
   }, [lat, lng]);
+
+  const handleMarkVisited = useCallback(async (stop: PathProgress["path"]["stops"][0]) => {
+    if (!pathProgress || markingVisited) return;
+
+    setMarkingVisited(true);
+    try {
+      const result = await markPointVisited(stop.point_id, pathProgress.progress.id);
+      if (result.success) {
+        // Reload progress to get updated state
+        const updatedProgress = await getActivePathProgress();
+        if (updatedProgress) {
+          setPathProgress(updatedProgress);
+        }
+
+        // If path completed, show completion message
+        if (result.isCompleted) {
+          setTimeout(() => {
+            setShowStopDialog(false);
+            // Could show completion modal here
+          }, 2000);
+        }
+      }
+    } catch (error) {
+      console.error("[Map] Error marking point as visited:", error);
+    } finally {
+      setMarkingVisited(false);
+    }
+  }, [pathProgress, markingVisited]);
+
+  // Geofence detection - check if user enters any unvisited stop
+  useEffect(() => {
+    if (!userLocation || !pathProgress || showStopDialog) return;
+
+    const checkGeofences = () => {
+      if (!pathProgress) return;
+
+      const unvisitedStops = pathProgress.path.stops.filter((stop) => !stop.visited);
+      
+      for (const stop of unvisitedStops) {
+        const radius = stop.radius_meters || 50; // Default 50m if not set
+        if (
+          isWithinGeofence(
+            userLocation.lat,
+            userLocation.lng,
+            stop.map_marker.coordinates.latitude,
+            stop.map_marker.coordinates.longitude,
+            radius
+          )
+        ) {
+          // User entered geofence - show dialog and mark as visited
+          setSelectedStop(stop);
+          setShowStopDialog(true);
+          handleMarkVisited(stop);
+          break; // Only handle one stop at a time
+        }
+      }
+    };
+
+    // Check every 2 seconds
+    geofenceCheckIntervalRef.current = window.setInterval(checkGeofences, 2000);
+
+    return () => {
+      if (geofenceCheckIntervalRef.current !== null) {
+        clearInterval(geofenceCheckIntervalRef.current);
+      }
+    };
+  }, [userLocation, pathProgress, showStopDialog, handleMarkVisited]);
 
   useEffect(() => {
     // Only run on client and when we have location
@@ -476,10 +548,22 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
           innerCircle.style.display = "flex";
           innerCircle.style.alignItems = "center";
           innerCircle.style.justifyContent = "center";
-          innerCircle.style.fontSize = "16px";
-          innerCircle.style.fontWeight = "700";
-          innerCircle.style.color = "#FFFFFF";
-          innerCircle.textContent = pin.label || "";
+          
+          // Use custom icon if available, otherwise use label
+          if (pin.imageSource && typeof pin.imageSource === 'object' && 'uri' in pin.imageSource) {
+            const img = document.createElement("img");
+            img.src = pin.imageSource.uri;
+            img.style.width = "22px";
+            img.style.height = "22px";
+            img.style.borderRadius = "11px";
+            img.style.objectFit = "cover";
+            innerCircle.appendChild(img);
+          } else {
+            innerCircle.style.fontSize = "16px";
+            innerCircle.style.fontWeight = "700";
+            innerCircle.style.color = "#FFFFFF";
+            innerCircle.textContent = pin.label || "";
+          }
           
           pinElement.appendChild(innerCircle);
 
@@ -608,6 +692,73 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
       });
     }
   }, [userLocation, defaultZoom, isLoaded]);
+
+  // Update route pins when routePins change
+  useEffect(() => {
+    if (!mapInstanceRef.current || !isLoaded) return;
+
+    const map = mapInstanceRef.current;
+    
+    // Remove existing markers
+    routePinsRef.current.forEach((marker) => {
+      marker.remove();
+    });
+    routePinsRef.current = [];
+
+    // Add new markers
+    if (routePins.length > 0) {
+      const maplibregl = (window as any).maplibregl;
+      if (!maplibregl) return;
+
+      routePinsRef.current = routePins.map((pin) => {
+        const { bg, ring } = getPinColors(pin.variant);
+        const pinElement = document.createElement("div");
+        pinElement.style.width = "40px";
+        pinElement.style.height = "40px";
+        pinElement.style.borderRadius = "50%";
+        pinElement.style.border = `2px solid ${ring}`;
+        pinElement.style.backgroundColor = "white";
+        pinElement.style.display = "flex";
+        pinElement.style.alignItems = "center";
+        pinElement.style.justifyContent = "center";
+        pinElement.style.boxShadow = "0 2px 4px rgba(0,0,0,0.25)";
+        
+        const innerCircle = document.createElement("div");
+        innerCircle.style.width = "30px";
+        innerCircle.style.height = "30px";
+        innerCircle.style.borderRadius = "50%";
+        innerCircle.style.backgroundColor = bg;
+        innerCircle.style.display = "flex";
+        innerCircle.style.alignItems = "center";
+        innerCircle.style.justifyContent = "center";
+        
+        // Use custom icon if available, otherwise use label
+        if (pin.imageSource && typeof pin.imageSource === 'object' && 'uri' in pin.imageSource) {
+          const img = document.createElement("img");
+          img.src = pin.imageSource.uri;
+          img.style.width = "22px";
+          img.style.height = "22px";
+          img.style.borderRadius = "11px";
+          img.style.objectFit = "cover";
+          innerCircle.appendChild(img);
+        } else {
+          innerCircle.style.fontSize = "16px";
+          innerCircle.style.fontWeight = "700";
+          innerCircle.style.color = "#FFFFFF";
+          innerCircle.textContent = pin.label || "";
+        }
+        
+        pinElement.appendChild(innerCircle);
+
+        return new maplibregl.Marker({
+          element: pinElement,
+          anchor: "center",
+        })
+          .setLngLat([pin.lng, pin.lat])
+          .addTo(map);
+      });
+    }
+  }, [routePins, isLoaded]);
 
   if (!userLocation) {
     return (
@@ -908,6 +1059,82 @@ export const Map: React.FC<MapProps> = ({ lat, lng, zoom }) => {
           ⌖
         </button>
       </div>
+
+      {/* Stop Dialog Modal */}
+      {showStopDialog && selectedStop && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 20,
+            zIndex: 1000,
+          }}
+          onClick={() => setShowStopDialog(false)}>
+          <div
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderRadius: 20,
+              padding: 24,
+              width: "100%",
+              maxWidth: 400,
+              boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+            }}
+            onClick={(e) => e.stopPropagation()}>
+            {selectedStop.reward_icon_url && (
+              <img
+                src={`${getAPIBaseURL()}${selectedStop.reward_icon_url}`}
+                alt={selectedStop.name}
+                style={{
+                  width: "100%",
+                  height: 200,
+                  borderRadius: 12,
+                  marginBottom: 16,
+                  objectFit: "cover",
+                }}
+              />
+            )}
+            <h2 style={{ fontSize: 24, fontWeight: 700, color: COLORS.default, marginBottom: 12, margin: 0 }}>
+              {selectedStop.name}
+            </h2>
+            <p style={{ fontSize: 16, color: "#6B7280", lineHeight: 24, marginBottom: 16, margin: 0 }}>
+              {selectedStop.place_description}
+            </p>
+            {selectedStop.reward_label && (
+              <div
+                style={{
+                  backgroundColor: COLORS.yellow,
+                  padding: "8px 16px",
+                  borderRadius: 12,
+                  marginBottom: 16,
+                  display: "inline-block",
+                }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: COLORS.default }}>
+                  🎁 {selectedStop.reward_label}
+                </span>
+              </div>
+            )}
+            <button
+              onClick={() => setShowStopDialog(false)}
+              style={{
+                backgroundColor: COLORS.red,
+                padding: "12px 24px",
+                borderRadius: 12,
+                border: "none",
+                color: "#FFFFFF",
+                fontSize: 16,
+                fontWeight: 600,
+                cursor: "pointer",
+                float: "right",
+              }}>
+              Zamknij
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

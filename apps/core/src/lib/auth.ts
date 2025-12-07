@@ -26,6 +26,8 @@ export const auth = betterAuth({
         "http://127.0.0.1:8081",
         "exp://",
         "exp://10.250.163.140:8081",
+        `exp://${process.env.EXPO_PUBLIC_BETTER_AUTH_URL_NATIVE}`,
+        `exp://${process.env.EXPO_PUBLIC_BETTER_AUTH_URL_WEB}`,
         "exp://*/*",                 // Trust all Expo development URLs
         "exp://10.0.0.*:*/*",        // Trust 10.0.0.x IP range
         "exp://192.168.*.*:*/*",     // Trust 192.168.x.x IP range
