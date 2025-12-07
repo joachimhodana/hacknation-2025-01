@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import Navbar from "@/components/Navbar";
+import { PointsBadge } from "@/components/PointsBadge";
 import { authClient } from "@/lib/auth-client";
 import { fetchUserStats, type CollectedItem } from "@/lib/api-client";
 
@@ -38,6 +39,13 @@ const ProfileScreen: React.FC = () => {
     collectedItems: CollectedItem[];
   } | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
+  const [leaderboard, setLeaderboard] = useState<Array<{
+    rank: number;
+    name: string;
+    points: number;
+    isCurrentUser: boolean;
+  }>>([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -70,6 +78,50 @@ const ProfileScreen: React.FC = () => {
       setStatsLoading(false);
     }
   };
+
+  const loadLeaderboard = async () => {
+    if (!session) return;
+    setLeaderboardLoading(true);
+    try {
+      const currentUserPoints = calculateUserPoints();
+      const currentUserName = session.user?.name || "Użytkownik";
+      
+      // Mock leaderboard data - w przyszłości można dodać endpoint API
+      const mockLeaderboard = [
+        { rank: 1, name: "Anna K.", points: 2450, isCurrentUser: false },
+        { rank: 2, name: "Marek W.", points: 2180, isCurrentUser: false },
+        { rank: 3, name: "Kasia M.", points: 1950, isCurrentUser: false },
+        { rank: 4, name: currentUserName, points: currentUserPoints, isCurrentUser: true },
+        { rank: 5, name: "Tomek Z.", points: 1200, isCurrentUser: false },
+        { rank: 6, name: "Ola P.", points: 980, isCurrentUser: false },
+        { rank: 7, name: "Piotr K.", points: 750, isCurrentUser: false },
+      ].sort((a, b) => b.points - a.points)
+       .map((item, index) => ({ ...item, rank: index + 1 }));
+      
+      setLeaderboard(mockLeaderboard);
+    } catch (error) {
+      console.error("Error loading leaderboard:", error);
+    } finally {
+      setLeaderboardLoading(false);
+    }
+  };
+
+  const calculateUserPoints = (): number => {
+    if (!stats) return 0;
+    // Punkty za ukończone trasy: 100 pkt za każdą
+    const pathsPoints = stats.completedPathsCount * 100;
+    // Punkty za zebrane przedmioty: 50 pkt za każdy
+    const itemsPoints = stats.collectedItems.length * 50;
+    // Punkty za przespacerowane km: 10 pkt za każdy km
+    const distancePoints = Math.floor(stats.totalDistanceKm) * 10;
+    return pathsPoints + itemsPoints + distancePoints;
+  };
+
+  useEffect(() => {
+    if (stats && session) {
+      loadLeaderboard();
+    }
+  }, [stats, session]);
 
   if (isPending || statsLoading) {
     return (
@@ -109,6 +161,7 @@ const ProfileScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <PointsBadge />
       {/* Background blobs */}
       <View style={[styles.blob, styles.blobRed]} />
       <View style={[styles.blob, styles.blobBlue]} />
@@ -213,6 +266,64 @@ const ProfileScreen: React.FC = () => {
               </View>
             </View>
           </View>
+        </View>
+
+        {/* Leader Board */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>🏆 Ranking</Text>
+          <Text style={styles.sectionSubtitle}>
+            Sprawdź swoją pozycję w rankingu i rywalizuj z innymi graczami!
+          </Text>
+          
+          {leaderboardLoading ? (
+            <View style={styles.leaderboardLoading}>
+              <ActivityIndicator size="small" color={COLORS.red} />
+            </View>
+          ) : (
+            <View style={styles.leaderboardCard}>
+              {leaderboard.slice(0, 5).map((player) => (
+                <View
+                  key={player.rank}
+                  style={[
+                    styles.leaderboardRow,
+                    player.isCurrentUser && styles.leaderboardRowCurrent,
+                  ]}>
+                  <View style={styles.leaderboardRank}>
+                    {player.rank <= 3 ? (
+                      <Text style={styles.leaderboardRankIcon}>
+                        {player.rank === 1 ? "🥇" : player.rank === 2 ? "🥈" : "🥉"}
+                      </Text>
+                    ) : (
+                      <Text style={styles.leaderboardRankNumber}>{player.rank}</Text>
+                    )}
+                  </View>
+                  <View style={styles.leaderboardInfo}>
+                    <Text
+                      style={[
+                        styles.leaderboardName,
+                        player.isCurrentUser && styles.leaderboardNameCurrent,
+                      ]}>
+                      {player.name}
+                      {player.isCurrentUser && " (Ty)"}
+                    </Text>
+                  </View>
+                  <View style={styles.leaderboardPoints}>
+                    <Text style={styles.leaderboardPointsValue}>
+                      {player.points.toLocaleString()}
+                    </Text>
+                    <Text style={styles.leaderboardPointsLabel}>pkt</Text>
+                  </View>
+                </View>
+              ))}
+              {leaderboard.length > 5 && (
+                <View style={styles.leaderboardMore}>
+                  <Text style={styles.leaderboardMoreText}>
+                    +{leaderboard.length - 5} więcej graczy
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
         </View>
 
         {/* Collections / items – 3 in a row preview */}
@@ -507,6 +618,80 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  leaderboardLoading: {
+    padding: 20,
+    alignItems: "center",
+  },
+  leaderboardCard: {
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    overflow: "hidden",
+    marginTop: 8,
+  },
+  leaderboardRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  leaderboardRowCurrent: {
+    backgroundColor: COLORS.softBg,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.red,
+  },
+  leaderboardRank: {
+    width: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  leaderboardRankIcon: {
+    fontSize: 24,
+  },
+  leaderboardRankNumber: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: COLORS.textMuted,
+  },
+  leaderboardInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  leaderboardName: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: COLORS.textDark,
+  },
+  leaderboardNameCurrent: {
+    color: COLORS.red,
+    fontWeight: "700",
+  },
+  leaderboardPoints: {
+    alignItems: "flex-end",
+  },
+  leaderboardPointsValue: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: COLORS.textDark,
+  },
+  leaderboardPointsLabel: {
+    fontSize: 11,
+    color: COLORS.textMuted,
+    marginTop: 2,
+  },
+  leaderboardMore: {
+    padding: 12,
+    alignItems: "center",
+    backgroundColor: COLORS.softBg,
+  },
+  leaderboardMoreText: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    fontWeight: "500",
   },
   anonymousBanner: {
     marginBottom: 16,

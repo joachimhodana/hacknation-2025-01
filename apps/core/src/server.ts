@@ -7,6 +7,7 @@ import { openapi } from "@elysiajs/openapi";
 import { staticPlugin } from "@elysiajs/static";
 import { adminRoutes } from "./routes/admin";
 import { userStatsRoutes } from "./routes/user/stats";
+import { userPathsRoutes } from "./routes/user/paths";
 import { db } from "./db";
 import { user } from "./db/auth-schema";
 import { eq } from "drizzle-orm";
@@ -92,6 +93,7 @@ app.get("/health", () => "OK");
 
 // User routes (require authentication)
 app.use(userStatsRoutes);
+app.use(userPathsRoutes);
 
 // Admin routes
 app.use(adminRoutes);

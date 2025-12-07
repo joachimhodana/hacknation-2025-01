@@ -1,17 +1,17 @@
 [
   {
     "name": "Przechodzący przez rzekę",
-    "avatarUrl": "/resources/characters/przechodzacy-przez-rzekę.png",
+    "avatarUrl": "/resources/seeded/characters/przechodzacy-przez-rzekę.png",
     "description": "Rzeźba przedstawiająca przechodzącego przez rzekę"
   },
   {
     "name": "Marcin Rejewski",
-    "avatarUrl": "/resources/characters/rejewski.png",
+    "avatarUrl": "/resources/seeded/characters/rejewski.png",
     "description": "Kryptolog, który pomógł złamać kod Enigmy"
   },
   {
     "name": "Józef Świecicki ps. Orzeł",
-    "avatarUrl": "/resources/characters/swiecicki.png",
+    "avatarUrl": "/resources/seeded/characters/swiecicki.png",
     "description": "Poległy podczas zasadzki na Radzie Główną"
   }
 ]
