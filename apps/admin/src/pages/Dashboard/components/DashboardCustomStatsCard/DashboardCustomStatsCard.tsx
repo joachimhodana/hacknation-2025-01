@@ -12,31 +12,31 @@ const DashboardCustomStatsCard = ({route}:RouteStatisticsInfoCustomCardProps) =>
     return(
         <Card
             key={route.pathId}
-            className="border-border hover:border-primary transition-colors"
+            className="border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600 transition-colors"
         >
             <CardHeader>
-                <CardTitle className="text-primary">{route.title}</CardTitle>
+                <CardTitle className="text-blue-900">{route.title}</CardTitle>
                 <CardDescription>{description}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Czas trasy:</span>
-                        <span className="font-medium text-primary">
-                            {route.totalTimeMinutes}min
-                        </span>
+                        <span className="font-medium text-blue-600">
+                      {route.totalTimeMinutes}min
+                    </span>
                     </div>
                     <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Ilość przystanków:</span>
-                        <span className="font-medium text-foreground">
-                            {route.stops.length}
-                        </span>
+                        <span className="font-medium text-green-600 ">
+                      {route.pointsCount ?? route.stops.length}
+                    </span>
                     </div>
                     <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Trudność:</span>
-                        <span className="font-medium text-destructive">
-                            {route.difficulty}
-                        </span>
+                        <span className="font-medium text-red-600 ">
+                      {route.difficulty}
+                    </span>
                     </div>
                 </div>
             </CardContent>

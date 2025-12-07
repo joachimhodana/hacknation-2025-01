@@ -8,7 +8,11 @@ const COLORS = {
   textDark: "#111827",
 };
 
-export function PointsBadge() {
+interface PointsBadgeProps {
+  showIcon?: boolean;
+}
+
+export function PointsBadge({ showIcon = false }: PointsBadgeProps) {
   const { data: session } = authClient.useSession();
   const [points, setPoints] = useState<number>(0);
   const [loading, setLoading] = useState(true);
@@ -58,7 +62,7 @@ export function PointsBadge() {
 
   return (
     <View style={styles.pointsBadge}>
-      <Text style={styles.pointsIcon}>⭐</Text>
+      {showIcon && <Text style={styles.pointsIcon}>⭐</Text>}
       <Text style={styles.pointsValue}>{points.toLocaleString()}</Text>
     </View>
   );
@@ -67,7 +71,7 @@ export function PointsBadge() {
 const styles = StyleSheet.create({
   pointsBadge: {
     position: "absolute",
-    top: 16,
+    top: 50,
     right: 16,
     flexDirection: "row",
     alignItems: "center",

@@ -132,7 +132,6 @@ export default function ExploreScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <PointsBadge />
       {/* Decorative background blobs - jak w start.tsx */}
       <View style={[styles.blob, styles.blobRed]} />
       <View style={[styles.blob, styles.blobBlue]} />

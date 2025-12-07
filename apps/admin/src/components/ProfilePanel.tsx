@@ -47,8 +47,15 @@ export function ProfilePanel({ isOpen, onClose }: ProfilePanelProps) {
   }, [isOpen, onClose])
 
   const handleLogout = async () => {
-    await authClient.signOut()
-    navigate("/login")
+    try {
+      await authClient.signOut()
+      // Force navigation - ProtectedRoute will show Login component
+      window.location.href = "/"
+    } catch (error) {
+      console.error("Logout error:", error)
+      // Still redirect even if signOut fails
+      window.location.href = "/"
+    }
   }
 
   const user = session?.user
