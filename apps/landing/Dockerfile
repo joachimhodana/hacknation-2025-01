@@ -7,9 +7,10 @@ RUN npm install
 
 COPY . .
 
-EXPOSE 3000
+EXPOSE ${PORT:-3000}
 
-ENV PORT=3000
+ENV PORT=${PORT:-3000}
+ENV HOST=${HOST:-0.0.0.0}
 
-CMD ["npm", "run", "dev", "--", "-H", "0.0.0.0", "-p", "3000"]
+CMD ["sh", "-c", "npm run dev -- -H ${HOST} -p ${PORT}"]
 

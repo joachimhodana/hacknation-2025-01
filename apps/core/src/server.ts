@@ -18,20 +18,24 @@ import { join } from "path";
 const app = new Elysia();
 
 // CORS configuration - must be applied before Better Auth
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://localhost:8081", // Expo web dev server
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:3001",
+  "http://127.0.0.1:8081",
+  // Add production domains from environment variables
+  ...(process.env.SERVICE_URL_LANDING ? [process.env.SERVICE_URL_LANDING] : []),
+  ...(process.env.SERVICE_URL_ADMIN ? [process.env.SERVICE_URL_ADMIN] : []),
+];
+
 const corsConfig = cors({
   credentials: true,
   origin: (request) => {
     // Allow requests from localhost and trusted origins
     const origin = request.headers.get("origin");
     if (!origin) return true; // Allow same-origin requests
-    const allowedOrigins = [
-      "http://localhost:3000",
-      "http://localhost:3001",
-      "http://localhost:8081", // Expo web dev server
-      "http://127.0.0.1:3000",
-      "http://127.0.0.1:3001",
-      "http://127.0.0.1:8081",
-    ];
     return allowedOrigins.includes(origin);
   },
 });
@@ -151,12 +155,13 @@ app.use(userPathsRoutes);
 app.use(adminRoutes);
 
 const port = Number(process.env.PORT) || 8080;
+const hostname = process.env.HOST || "0.0.0.0";
 app.listen(
   {
     port,
-    hostname: "0.0.0.0",
+    hostname,
   },
   () => {
-    console.log(`🦊 Elysia is running at 0.0.0.0:${port}`);
+    console.log(`🦊 Elysia is running at ${hostname}:${port}`);
   }
 );
