@@ -43,6 +43,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:$${PORT:-8080}/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
 
   drizzle-studio:
@@ -74,6 +80,8 @@ services:
     build:
       context: ./apps/landing
       dockerfile: Dockerfile
+      args:
+        - PORT=3000
     container_name: hacknation-landing
     # Source code volume mount removed for production - use files from built image
     # Uncomment for local development with hot reload:
@@ -81,15 +89,25 @@ services:
     #   - ./apps/landing:/app
     #   - landing_node_modules:/app/node_modules
     ports:
-      - "3000:3000"
+      - "${LANDING_PORT:-3000}:${LANDING_CONTAINER_PORT:-3000}"
     environment:
       - NODE_ENV=${NODE_ENV:-development}
+      - PORT=${LANDING_CONTAINER_PORT:-3000}
+      - HOST=${LANDING_HOST:-0.0.0.0}
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:$${LANDING_CONTAINER_PORT:-3000} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
     restart: unless-stopped
 
   admin:
     build:
       context: ./apps/admin
       dockerfile: Dockerfile
+      args:
+        - PORT=3001
     container_name: hacknation-admin
     # Source code volume mount removed for production - use files from built image
     # Uncomment for local development with hot reload:
@@ -97,11 +115,18 @@ services:
     #   - ./apps/admin:/app
     #   - admin_node_modules:/app/node_modules
     ports:
-      - "3001:3001"
+      - "${ADMIN_PORT:-3001}:${ADMIN_CONTAINER_PORT:-3001}"
     environment:
       - NODE_ENV=${NODE_ENV:-development}
-      - PORT=${PORT:-3001}
-      - VITE_BETTER_AUTH_URL=${VITE_BETTER_AUTH_URL:-http://localhost:8080}
+      - PORT=${ADMIN_CONTAINER_PORT:-3001}
+      - HOST=${ADMIN_HOST:-0.0.0.0}
+      - VITE_BETTER_AUTH_URL=${VITE_BETTER_AUTH_URL:-${SERVICE_URL_CORE:-http://localhost:8080}}
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:$${ADMIN_CONTAINER_PORT:-3001} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
     restart: unless-stopped
 
 volumes:
