@@ -9,6 +9,12 @@ export default defineConfig({
   server: {
     port: 3001,
     host: true, // Pozwala na dostęp z zewnątrz kontenera
+    allowedHosts: [
+      'admin-hacknation.harvide.com',
+      'localhost',
+      '.localhost',
+      '.harvide.com', // Allow all subdomains of harvide.com
+    ],
   },
   resolve: {
     alias: {
