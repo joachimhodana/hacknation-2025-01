@@ -1,6 +1,7 @@
 import { StyleSheet, TouchableOpacity, View, Text, ImageBackground } from 'react-native';
 import { Route } from '@/data/routes';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { API_BASE_URL } from '@/lib/api-client';
 
 const COLORS = {
   red: '#ED1C24',
@@ -150,6 +151,13 @@ export function RouteCard({ route, onPress }: RouteCardProps) {
 
   const difficultyInfo = getDifficultyInfo(route.difficulty);
 
+  // Use thumbnail from API if available, otherwise fall back to theme image
+  // Note: thumbnail_url from API should already be a full path like /resources/...
+  // We need to prepend the API base URL
+  const imageUrl = route.thumbnail_url 
+    ? `${API_BASE_URL}${route.thumbnail_url}`
+    : theme.imageUrl;
+
   return (
     <TouchableOpacity
       activeOpacity={0.9}
@@ -157,11 +165,11 @@ export function RouteCard({ route, onPress }: RouteCardProps) {
       style={styles.container}>
       {/* Hero Image */}
       <ImageBackground
-        source={{ uri: theme.imageUrl }}
+        source={{ uri: imageUrl }}
         style={styles.heroImage}
         imageStyle={styles.heroImageStyle}>
-        {/* Simple dark overlay for text readability */}
-        <View style={styles.imageOverlay} />
+        {/* Unified dark overlay for better text readability */}
+        <View style={styles.darkOverlay} />
         <View style={styles.contentWrapper}>
           {/* Content */}
           <View style={styles.content}>
@@ -229,7 +237,7 @@ const styles = StyleSheet.create({
   heroImageStyle: {
     borderRadius: 20,
   },
-  imageOverlay: {
+  darkOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },

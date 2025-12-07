@@ -1,12 +1,13 @@
-import { StyleSheet, ScrollView, View, Text, ActivityIndicator } from 'react-native';
+import { StyleSheet, ScrollView, View, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { RouteCard } from '@/components/route-card';
-import { routes } from '@/data/routes';
 import Navbar from '@/components/Navbar';
 import { PointsBadge } from '@/components/PointsBadge';
 import { authClient } from '@/lib/auth-client';
+import { fetchPaths, type Path } from '@/lib/api-client';
+import { Route } from '@/data/routes';
 
 const COLORS = {
   red: '#ED1C24',
@@ -21,14 +22,97 @@ const COLORS = {
 export default function ExploreScreen() {
   const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
+  const [paths, setPaths] = useState<Route[]>([]);
+  const [pathsLoading, setPathsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  console.log("[Explore] Component render:", { 
+    hasSession: !!session, 
+    isPending, 
+    pathsLoading,
+    pathsCount: paths.length,
+    error
+  });
 
   useEffect(() => {
     if (!isPending && !session) {
+      console.log("[Explore] No session, redirecting to home");
       router.replace("/");
     }
   }, [session, isPending, router]);
 
-  if (isPending) {
+  const loadPaths = useCallback(async () => {
+    console.log("[Explore] ===== LOAD PATHS CALLED =====");
+    setPathsLoading(true);
+    setError(null);
+    
+    try {
+      console.log("[Explore] ===== STARTING LOAD PATHS =====");
+      console.log("[Explore] Calling fetchPaths()...");
+      const apiPaths = await fetchPaths();
+      console.log("[Explore] fetchPaths() returned:", apiPaths);
+      console.log("[Explore] Type:", typeof apiPaths);
+      console.log("[Explore] Is array:", Array.isArray(apiPaths));
+      console.log("[Explore] Length:", apiPaths?.length);
+      
+      if (apiPaths && Array.isArray(apiPaths) && apiPaths.length > 0) {
+        // Transform API paths to Route format
+        const routes: Route[] = apiPaths.map((path) => ({
+          route_id: path.pathId,
+          title: path.title,
+          theme: path.theme,
+          category: path.category,
+          total_time_minutes: path.total_time_minutes,
+          difficulty: path.difficulty,
+          stops: path.stops,
+          thumbnail_url: path.thumbnail_url,
+        }));
+        console.log("[Explore] Transformed routes:", routes.length);
+        setPaths(routes);
+      } else {
+        console.warn("[Explore] No paths received or empty array");
+        setPaths([]);
+        setError("Brak dostępnych ścieżek");
+      }
+    } catch (error) {
+      console.error("[Explore] ===== ERROR IN LOAD PATHS =====");
+      console.error("[Explore] Error loading paths:", error);
+      if (error instanceof Error) {
+        console.error("[Explore] Error message:", error.message);
+        console.error("[Explore] Error stack:", error.stack);
+        setError(`Błąd: ${error.message}`);
+      } else {
+        setError("Wystąpił błąd podczas ładowania ścieżek");
+      }
+      setPaths([]);
+    } finally {
+      setPathsLoading(false);
+      console.log("[Explore] ===== FINISHED LOAD PATHS =====");
+    }
+  }, []);
+
+  // Fetch paths when session is available
+  useEffect(() => {
+    console.log("[Explore] ===== FETCH EFFECT TRIGGERED =====");
+    console.log("[Explore] Session state:", { 
+      hasSession: !!session, 
+      isPending, 
+      userId: session?.user?.id,
+      userEmail: session?.user?.email
+    });
+    
+    if (session && !isPending) {
+      console.log("[Explore] Conditions met - calling loadPaths()");
+      loadPaths();
+    } else {
+      console.log("[Explore] Conditions NOT met:", {
+        hasSession: !!session,
+        isPending
+      });
+    }
+  }, [session, isPending, loadPaths]);
+
+  if (isPending || pathsLoading) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.loadingContainer}>
@@ -91,13 +175,30 @@ export default function ExploreScreen() {
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}>
-          {[...routes].reverse().map((route) => (
-            <RouteCard
-              key={route.route_id}
-              route={route}
-              onPress={() => handleRoutePress(route.route_id)}
-            />
-          ))}
+          {paths.length === 0 && !pathsLoading ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>
+                {error || "Brak dostępnych ścieżek"}
+              </Text>
+              <TouchableOpacity 
+                style={styles.retryButton}
+                onPress={() => {
+                  console.log("[Explore] Manual retry button pressed");
+                  loadPaths();
+                }}
+              >
+                <Text style={styles.retryButtonText}>Spróbuj ponownie</Text>
+              </TouchableOpacity>
+            </View>
+          ) : paths.length > 0 ? (
+            paths.map((route) => (
+              <RouteCard
+                key={route.route_id}
+                route={route}
+                onPress={() => handleRoutePress(route.route_id)}
+              />
+            ))
+          ) : null}
         </ScrollView>
 
         {/* Footer path - jak w start.tsx */}
@@ -231,5 +332,29 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 60,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: COLORS.textMuted,
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: COLORS.red,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  retryButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "600",
   },
 });
