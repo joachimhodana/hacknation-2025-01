@@ -364,6 +364,7 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
         markerIconFile,
         totalTimeMinutes,
         distanceMeters,
+        points,
         ...updateData
       } = body;
 
@@ -385,6 +386,72 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
       }
       updateData.updatedAt = new Date();
 
+      // Get path by pathId and user first to get numeric id (for pathPoints)
+      const [existingPath] = await db
+        .select()
+        .from(paths)
+        .where(and(eq(paths.pathId, params.id), eq(paths.createdBy, user.id)))
+        .limit(1);
+
+      if (!existingPath) {
+        return {
+          success: false,
+          error: "Path not found or you don't have permission",
+        };
+      }
+      const pathNumericId = existingPath.id;
+
+      // If points are present in the payload, update the points for the path
+      if (points !== undefined) {
+        let parsedPoints: any[] = [];
+        try {
+          parsedPoints = typeof points === "string" ? JSON.parse(points) : points;
+        } catch (err) {
+          return { success: false, error: "Invalid points format" };
+        }
+
+        if (!Array.isArray(parsedPoints)) {
+          return { success: false, error: "Points must be an array" };
+        }
+
+        // Validate each point minimally
+        for (const point of parsedPoints) {
+          if (typeof point.latitude !== "number" || typeof point.longitude !== "number" || typeof point.narrationText !== "string") {
+            return { success: false, error: "Invalid point structure: latitude, longitude, and narrationText are required" };
+          }
+        }
+
+        // Remove all existing pathPoints for this path
+        await db.delete(pathPoints).where(eq(pathPoints.pathId, pathNumericId));
+
+        // Create points (upsert or insert new) and connect to pathPoints
+        for (let i = 0; i < parsedPoints.length; i++) {
+          const pt = parsedPoints[i];
+          // Insert into points table
+          const [insertedPoint] = await db
+            .insert(points)
+            .values({
+              latitude: pt.latitude,
+              longitude: pt.longitude,
+              radiusMeters: pt.radiusMeters ?? 10,
+              locationLabel: pt.locationLabel ?? null,
+              narrationText: pt.narrationText,
+              characterId: pt.characterId ?? null,
+              rewardLabel: pt.rewardLabel ?? null,
+              rewardIconUrl: pt.rewardIconUrl ?? null,
+              createdBy: user.id,
+            })
+            .returning();
+          // Insert into pathPoints join table
+          await db.insert(pathPoints).values({
+            pathId: pathNumericId,
+            pointId: insertedPoint.id,
+            orderIndex: i,
+          });
+        }
+      }
+
+      // Update the path itself
       const [updatedPath] = await db
         .update(paths)
         .set(updateData)
@@ -424,6 +491,7 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
           maxFileSize: "10MB",
           allowedMimeTypes: ["image/jpeg", "image/png"],
         })),
+        points: t.Optional(t.Any()), // Support points being sent in patch
       }),
       type: "multipart/form-data",
     }
