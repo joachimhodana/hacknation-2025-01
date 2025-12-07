@@ -628,6 +628,9 @@ const RoutesCreatorPage = () => {
           return
         }
 
+        // Wyodrębnij thumbnailFile jako File (TypeScript type narrowing)
+        const thumbnailFile = formValues.thumbnailFile
+
         const pathId = `route_${Date.now()}`
 
         const sortedPoints = [...points].sort((a, b) => a.order - b.order)
@@ -651,7 +654,7 @@ const RoutesCreatorPage = () => {
         difficulty: formValues.difficulty,
         totalTimeMinutes,
         distanceMeters,
-        thumbnailFile: formValues.thumbnailFile,
+        thumbnailFile,
         markerIconFile: formValues.makerIconFile instanceof File ? formValues.makerIconFile : undefined,
         stylePreset: formValues.stylePreset || undefined,
         points: pointsData,
