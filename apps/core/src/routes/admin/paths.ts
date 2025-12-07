@@ -218,6 +218,7 @@ export const adminPathsRoutes = new Elysia({ prefix: "/paths" })
       };
     },
     {
+      auth: true,
       type: "multipart/form-data",
       body: t.Object({
         pathId: t.String(),
