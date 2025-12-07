@@ -16,4 +16,22 @@
       }
     ]
   }
+  ,
+  {
+    "pathId": "monuments_001",
+    "pointOrder": [
+      {
+        "locationLabel": "Pomnik Mariana Rejewskiego",
+        "orderIndex": 0
+      },
+      {
+        "locationLabel": "Łuczniczka",
+        "orderIndex": 1
+      },
+      {
+        "locationLabel": "Przechodzący przez Rzekę",
+        "orderIndex": 2
+      }
+    ]
+  }
 ]
