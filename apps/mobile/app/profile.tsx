@@ -256,6 +256,14 @@ const ProfileScreen: React.FC = () => {
             <View style={styles.leaderboardLoading}>
               <ActivityIndicator size="small" color={COLORS.red} />
             </View>
+          ) : leaderboard.length === 0 ? (
+            <View style={styles.emptyStateCard}>
+              <Text style={styles.emptyStateEmoji}>🏁</Text>
+              <Text style={styles.emptyStateTitle}>Brak graczy w rankingu</Text>
+              <Text style={styles.emptyStateDescription}>
+                Bądź pierwszym, który ukończy trasę i pojawi się w rankingu!
+              </Text>
+            </View>
           ) : (
             <View style={styles.leaderboardCard}>
               {leaderboard.slice(0, 5).map((player) => (
@@ -307,29 +315,49 @@ const ProfileScreen: React.FC = () => {
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>Zebrane przedmioty</Text>
-            <TouchableOpacity onPress={() => router.push("/collections")}>
-              <Text style={styles.showAllText}>Pokaż wszystkie ›</Text>
-            </TouchableOpacity>
+            {collectedItems.length > 0 && (
+              <TouchableOpacity onPress={() => router.push("/collections")}>
+                <Text style={styles.showAllText}>Pokaż wszystkie ›</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
-          <Text style={styles.sectionSubtitle}>
-            Podgląd zebranych przedmiotów. Kliknij „Pokaż wszystkie”, żeby
-            zobaczyć więcej.
-          </Text>
+          {collectedItems.length === 0 ? (
+            <View style={styles.emptyStateCard}>
+              <Text style={styles.emptyStateEmoji}>📦</Text>
+              <Text style={styles.emptyStateTitle}>Brak zebranych przedmiotów</Text>
+              <Text style={styles.emptyStateDescription}>
+                Rozpocznij trasę i zbieraj przedmioty podczas zwiedzania miasta!
+              </Text>
+              <TouchableOpacity
+                style={styles.emptyStateButton}
+                onPress={() => router.push("/explore")}
+              >
+                <Text style={styles.emptyStateButtonText}>Przeglądaj trasy</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <>
+              <Text style={styles.sectionSubtitle}>
+                Podgląd zebranych przedmiotów. Kliknij „Pokaż wszystkie", żeby
+                zobaczyć więcej.
+              </Text>
 
-          <View style={styles.itemsGridPreview}>
-            {previewItems.map((item) => (
-              <View key={item.id} style={styles.itemTilePreview}>
-                <View style={styles.itemTileInner}>
-                  <Text style={styles.itemTileEmoji}>{item.emoji}</Text>
-                </View>
+              <View style={styles.itemsGridPreview}>
+                {previewItems.map((item) => (
+                  <View key={item.id} style={styles.itemTilePreview}>
+                    <View style={styles.itemTileInner}>
+                      <Text style={styles.itemTileEmoji}>{item.emoji}</Text>
+                    </View>
+                  </View>
+                ))}
+                {previewItems.length < 3 &&
+                  Array.from({ length: 3 - previewItems.length }).map((_, idx) => (
+                    <View key={`phantom-${idx}`} style={styles.itemTilePreviewPhantom} />
+                  ))}
               </View>
-            ))}
-            {previewItems.length < 3 &&
-              Array.from({ length: 3 - previewItems.length }).map((_, idx) => (
-                <View key={`phantom-${idx}`} style={styles.itemTilePreviewPhantom} />
-              ))}
-          </View>
+            </>
+          )}
         </View>
 
         {/* Settings */}
@@ -452,7 +480,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   avatarAnonymous: {
-    backgroundColor: COLORS.bgSoft,
+    backgroundColor: COLORS.softBg,
     borderColor: COLORS.textMuted,
     borderWidth: 2,
   },
@@ -708,6 +736,47 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   anonymousBannerButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  // Empty state
+  emptyStateCard: {
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderStyle: "dashed",
+    padding: 32,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  emptyStateEmoji: {
+    fontSize: 48,
+    marginBottom: 12,
+  },
+  emptyStateTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: COLORS.textDark,
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  emptyStateDescription: {
+    fontSize: 13,
+    color: COLORS.textMuted,
+    textAlign: "center",
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  emptyStateButton: {
+    backgroundColor: COLORS.blue,
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    marginTop: 4,
+  },
+  emptyStateButtonText: {
     color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "600",
