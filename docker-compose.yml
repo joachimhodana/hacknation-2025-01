@@ -26,15 +26,17 @@ services:
     volumes:
       - ./apps/core:/app
       - core_node_modules:/app/node_modules
+    # Port mapping - only needed for local dev. Coolify handles routing via Traefik/Caddy
+    # Remove CORE_PORT from env vars in Coolify to avoid port conflicts
     ports:
-      - "${CORE_PORT:-8089}:${PORT:-8080}"
+      - "${CORE_PORT:-8089}:${PORT:-8089}"
     environment:
       - WATCH_FILES=true
-      - PORT=${PORT:-8080}
+      - PORT=${PORT:-8089}
       - HOST=${HOST:-0.0.0.0}
       - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/hacknation}
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
-      - BETTER_AUTH_URL=${BETTER_AUTH_URL:-${SERVICE_URL_CORE:-http://localhost:${CORE_PORT:-${PORT:-8080}}}}
+      - BETTER_AUTH_URL=${BETTER_AUTH_URL:-${SERVICE_URL_CORE:-http://localhost:${CORE_PORT:-${PORT:-8089}}}}
       - DEFAULT_ADMIN_EMAIL=${DEFAULT_ADMIN_EMAIL:-admin@admin.com}
       - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD:-admin123}
       - DEFAULT_ADMIN_NAME=${DEFAULT_ADMIN_NAME:-Admin}
@@ -91,7 +93,7 @@ services:
       - NODE_ENV=${NODE_ENV:-development}
       - PORT=${ADMIN_CONTAINER_PORT:-3001}
       - HOST=${ADMIN_HOST:-0.0.0.0}
-      - VITE_BETTER_AUTH_URL=${VITE_BETTER_AUTH_URL:-${SERVICE_URL_CORE:-http://localhost:8080}}
+      - VITE_BETTER_AUTH_URL=${VITE_BETTER_AUTH_URL:-${SERVICE_URL_CORE:-http://localhost:8089}}
     restart: unless-stopped
 
 volumes:
