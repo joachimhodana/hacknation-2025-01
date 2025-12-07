@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   ScrollView,
@@ -7,12 +7,15 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { routes } from '@/data/routes';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { fetchPaths, getActivePathProgress, startPath, pausePath, type Path } from '@/lib/api-client';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -110,13 +113,74 @@ export default function RouteDetailsScreen() {
   const { routeId } = useLocalSearchParams<{ routeId: string }>();
   const router = useRouter();
   const isDark = useColorScheme() === 'dark';
+  const [route, setRoute] = useState<Path | null>(null);
+  const [activePathId, setActivePathId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
 
-  const route = routes.find((r) => r.route_id === routeId);
-  
+  // Fetch route data and active path
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        // Try to fetch from API first
+        const paths = await fetchPaths();
+        if (paths) {
+          const apiRoute = paths.find((p) => p.pathId === routeId);
+          if (apiRoute) {
+            setRoute({
+              ...apiRoute,
+              route_id: apiRoute.pathId,
+            } as any);
+          }
+        }
+        
+        // Fallback to static data if API doesn't have it
+        if (!route) {
+          const staticRoute = routes.find((r) => r.route_id === routeId);
+          if (staticRoute) {
+            setRoute(staticRoute as any);
+          }
+        }
+
+        // Fetch active path
+        const progress = await getActivePathProgress();
+        if (progress) {
+          setActivePathId(progress.path.pathId);
+        } else {
+          setActivePathId(null);
+        }
+      } catch (error) {
+        console.error("[RouteDetails] Error loading data:", error);
+        // Fallback to static data
+        const staticRoute = routes.find((r) => r.route_id === routeId);
+        if (staticRoute) {
+          setRoute(staticRoute as any);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [routeId]);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: '#1a1a1a' }]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#ED1C24" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   if (!route) {
     router.back();
     return null;
   }
+
+  const isActive = activePathId === routeId;
+  const hasOtherActivePath = activePathId !== null && !isActive;
 
   const imageUrl = getRouteImage(route.route_id);
   const backgroundTheme = getRouteBackgroundTheme(route.route_id);
@@ -161,6 +225,49 @@ export default function RouteDetailsScreen() {
   };
 
   const difficultyInfo = getDifficultyInfo(route.difficulty);
+
+  const handleStartPath = async () => {
+    if (hasOtherActivePath) {
+      Alert.alert(
+        "Inna ścieżka aktywna",
+        "Masz już aktywną ścieżkę. Zatrzymaj ją, aby rozpocząć nową.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const result = await startPath(routeId);
+      if (result.success) {
+        setActivePathId(routeId);
+        router.push(`/map?routeId=${routeId}`);
+      } else {
+        Alert.alert("Błąd", result.error || "Nie udało się rozpocząć ścieżki");
+      }
+    } catch (error) {
+      Alert.alert("Błąd", "Wystąpił błąd podczas rozpoczynania ścieżki");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handlePausePath = async () => {
+    setActionLoading(true);
+    try {
+      const result = await pausePath(routeId);
+      if (result.success) {
+        setActivePathId(null);
+        Alert.alert("Ścieżka zatrzymana", "Ścieżka została zatrzymana. Możesz teraz rozpocząć inną.");
+      } else {
+        Alert.alert("Błąd", result.error || "Nie udało się zatrzymać ścieżki");
+      }
+    } catch (error) {
+      Alert.alert("Błąd", "Wystąpił błąd podczas zatrzymywania ścieżki");
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView
@@ -314,12 +421,36 @@ export default function RouteDetailsScreen() {
             borderTopColor: backgroundTheme.accentColor + '40',
           },
         ]}>
-        <TouchableOpacity
-          style={[styles.startButton, { backgroundColor: backgroundTheme.accentColor }]}
-          onPress={() => router.push(`/map?routeId=${route.route_id}`)}>
-          <Text style={styles.startButtonText}>Rozpocznij ścieżkę</Text>
-          <MaterialIcons name="arrow-forward" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
+        {hasOtherActivePath ? (
+          <View style={[styles.disabledButton, { backgroundColor: backgroundTheme.cardBg, borderColor: backgroundTheme.accentColor + '40' }]}>
+            <Text style={[styles.disabledButtonText, { color: backgroundTheme.textColor + 'AA' }]}>
+              Zatrzymaj aktywną ścieżkę, aby rozpocząć tę
+            </Text>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={[
+              styles.startButton,
+              { backgroundColor: isActive ? '#ef4444' : backgroundTheme.accentColor },
+            ]}
+            onPress={isActive ? handlePausePath : handleStartPath}
+            disabled={actionLoading}>
+            {actionLoading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <>
+                <Text style={styles.startButtonText}>
+                  {isActive ? "Zatrzymaj podróż" : "Rozpocznij ścieżkę"}
+                </Text>
+                <MaterialIcons
+                  name={isActive ? "pause" : "arrow-forward"}
+                  size={20}
+                  color="#FFFFFF"
+                />
+              </>
+            )}
+          </TouchableOpacity>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -474,6 +605,24 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '700',
+  },
+  disabledButton: {
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  disabledButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

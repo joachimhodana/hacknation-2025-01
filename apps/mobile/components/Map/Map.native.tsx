@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import {
   StyleSheet,
   Platform,
@@ -20,6 +20,10 @@ import * as Location from "expo-location";
 import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 import { authClient } from "@/lib/auth-client";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { getActivePathProgress, markPointVisited, type PathProgress } from "@/lib/api-client";
+import { getAPIBaseURL } from "@/lib/api-url";
+import { isWithinGeofence } from "@/lib/geofence-utils";
+import { Modal } from "react-native";
 
 const COLORS = {
   red: "#ED1C24",
@@ -195,6 +199,7 @@ export const Map: React.FC = () => {
   const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(
     null,
   );
+<<<<<<< HEAD
   const dialogTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // AUDIO – expo-audio
@@ -207,11 +212,33 @@ export const Map: React.FC = () => {
     totalStops: 8,
     completedStops: 3,
   };
+=======
+  const [pathProgress, setPathProgress] = useState<PathProgress | null>(null);
+  const [selectedStop, setSelectedStop] = useState<PathProgress["path"]["stops"][0] | null>(null);
+  const [showStopDialog, setShowStopDialog] = useState(false);
+  const [markingVisited, setMarkingVisited] = useState(false);
+  const geofenceCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const hasRoute = !!activeRoute;
-  const routeTitle = activeRoute?.title ?? "";
-  const totalStops = activeRoute?.totalStops ?? 0;
-  const completedStops = Math.min(activeRoute?.completedStops ?? 0, totalStops);
+  // Fetch active path progress
+  useEffect(() => {
+    const loadProgress = async () => {
+      try {
+        const progress = await getActivePathProgress();
+        setPathProgress(progress);
+      } catch (error) {
+        console.error("[Map] Error loading path progress:", error);
+        setPathProgress(null);
+      }
+    };
+>>>>>>> fc100330b1d8457cbd871e5aa18821186a770dcb
+
+    loadProgress();
+  }, []);
+
+  const hasRoute = !!pathProgress;
+  const routeTitle = pathProgress?.path.title ?? "";
+  const totalStops = pathProgress?.path.stops.length ?? 0;
+  const completedStops = pathProgress?.progress.visitedStopsCount ?? 0;
   const progressRatio = totalStops > 0 ? completedStops / totalStops : 0;
   const progressText =
     totalStops > 0
@@ -230,6 +257,7 @@ export const Map: React.FC = () => {
         .slice(0, 2)
     : "U";
 
+<<<<<<< HEAD
   // Piny trasy
   const routePins: RoutePin[] = [
     {
@@ -261,6 +289,34 @@ export const Map: React.FC = () => {
       label: "★",
     },
   ];
+=======
+  // Convert path stops to route pins - memoized to prevent infinite loops
+  const routePins: RoutePin[] = useMemo(() => {
+    if (!pathProgress) return [];
+    
+    return pathProgress.path.stops.map((stop, index) => {
+      const isVisited = stop.visited;
+      const isNext = !isVisited && index === pathProgress.path.stops.findIndex((s) => !s.visited);
+      
+      // Determine variant based on status
+      let variant: MarkerVariant = "default";
+      if (isNext) variant = "primary";
+      else if (isVisited) variant = "default";
+      else variant = "secondary";
+
+      return {
+        id: `stop-${stop.stop_id}`,
+        lat: stop.map_marker.coordinates.latitude,
+        lng: stop.map_marker.coordinates.longitude,
+        variant,
+        label: stop.stop_id.toString(),
+        imageSource: pathProgress.path.marker_icon_url
+          ? { uri: `${getAPIBaseURL()}${pathProgress.path.marker_icon_url}` }
+          : undefined,
+      };
+    });
+  }, [pathProgress]);
+>>>>>>> fc100330b1d8457cbd871e5aa18821186a770dcb
 
   const getPinColors = (variant: MarkerVariant) => {
     switch (variant) {
@@ -280,14 +336,38 @@ export const Map: React.FC = () => {
   const nextStepDistance = nextStep ? formatDistance(nextStep.distance) : null;
   const nextStepText = formatManeuverText(nextStep);
 
+<<<<<<< HEAD
   // OSRM – liczymy trasę od razu (między pinami), ale rysujemy dopiero gdy routeReady === true
+=======
+  // OSRM – policz trasę od usera do następnego nieodwiedzonego przystanku
+>>>>>>> fc100330b1d8457cbd871e5aa18821186a770dcb
   useEffect(() => {
     const fetchOsrmRoute = async () => {
-      if (routePins.length < 2) return;
+      if (!userLocation || !pathProgress || routePins.length === 0) {
+        setRouteCoordinates([]);
+        setRouteSteps([]);
+        return;
+      }
 
+      // Find next unvisited stop
+      const nextUnvisitedStop = pathProgress.path.stops.find((stop) => !stop.visited);
+      if (!nextUnvisitedStop) {
+        // All stops visited, route to last stop
+        const lastStop = pathProgress.path.stops[pathProgress.path.stops.length - 1];
+        if (lastStop) {
+          const coordsStr = `${userLocation.lng},${userLocation.lat};${lastStop.map_marker.coordinates.longitude},${lastStop.map_marker.coordinates.latitude}`;
+          await fetchRoute(coordsStr);
+        }
+        return;
+      }
+
+      // Route from user to next unvisited stop
+      const coordsStr = `${userLocation.lng},${userLocation.lat};${nextUnvisitedStop.map_marker.coordinates.longitude},${nextUnvisitedStop.map_marker.coordinates.latitude}`;
+      await fetchRoute(coordsStr);
+    };
+
+    const fetchRoute = async (coordsStr: string) => {
       try {
-        const coordsStr = routePins.map((p) => `${p.lng},${p.lat}`).join(";");
-
         const url =
           `https://router.project-osrm.org/route/v1/foot/${coordsStr}` +
           "?overview=full&geometries=geojson&steps=true";
@@ -295,12 +375,8 @@ export const Map: React.FC = () => {
         const res = await fetch(url);
 
         if (!res.ok) {
-          setRouteCoordinates(
-            routePins.map((p) => ({
-              latitude: p.lat,
-              longitude: p.lng,
-            })),
-          );
+          console.log("OSRM error status:", res.status);
+          setRouteCoordinates([]);
           setRouteSteps([]);
           return;
         }
@@ -310,35 +386,39 @@ export const Map: React.FC = () => {
           data.routes?.[0]?.geometry?.coordinates ?? [];
         const steps: OsrmStep[] = data.routes?.[0]?.legs?.[0]?.steps ?? [];
 
-        if (!coords.length) {
-          setRouteCoordinates(
-            routePins.map((p) => ({
-              latitude: p.lat,
-              longitude: p.lng,
-            })),
-          );
-        } else {
+        if (coords.length) {
           const route = coords.map(([lng, lat]) => ({
             latitude: lat,
             longitude: lng,
           }));
           setRouteCoordinates(route);
+        } else {
+          setRouteCoordinates([]);
         }
 
         setRouteSteps(steps);
       } catch (e) {
+<<<<<<< HEAD
         setRouteCoordinates(
           routePins.map((p) => ({
             latitude: p.lat,
             longitude: p.lng,
           })),
         );
+=======
+        console.log("Error fetching OSRM route:", e);
+        setRouteCoordinates([]);
+>>>>>>> fc100330b1d8457cbd871e5aa18821186a770dcb
         setRouteSteps([]);
       }
     };
 
     fetchOsrmRoute();
+<<<<<<< HEAD
   }, [routePins]);
+=======
+  }, [userLocation, pathProgress]); // Removed routePins - it's derived from pathProgress
+>>>>>>> fc100330b1d8457cbd871e5aa18821186a770dcb
 
   // Lokalizacja usera
   useEffect(() => {
@@ -402,6 +482,73 @@ export const Map: React.FC = () => {
       }
     };
   }, []);
+
+  const handleMarkVisited = useCallback(async (stop: PathProgress["path"]["stops"][0]) => {
+    if (!pathProgress || markingVisited) return;
+
+    setMarkingVisited(true);
+    try {
+      const result = await markPointVisited(stop.point_id, pathProgress.progress.id);
+      if (result.success) {
+        // Reload progress to get updated state
+        const updatedProgress = await getActivePathProgress();
+        if (updatedProgress) {
+          setPathProgress(updatedProgress);
+        }
+
+        // If path completed, show completion message
+        if (result.isCompleted) {
+          setTimeout(() => {
+            setShowStopDialog(false);
+            // Could show completion modal here
+          }, 2000);
+        }
+      }
+    } catch (error) {
+      console.error("[Map] Error marking point as visited:", error);
+    } finally {
+      setMarkingVisited(false);
+    }
+  }, [pathProgress, markingVisited]);
+
+  // Geofence detection - check if user enters any unvisited stop
+  useEffect(() => {
+    if (!userLocation || !pathProgress || showStopDialog) return;
+
+    const checkGeofences = () => {
+      if (!pathProgress) return;
+
+      const unvisitedStops = pathProgress.path.stops.filter((stop) => !stop.visited);
+      
+      for (const stop of unvisitedStops) {
+        const radius = stop.radius_meters || 50; // Default 50m if not set
+        if (
+          isWithinGeofence(
+            userLocation.lat,
+            userLocation.lng,
+            stop.map_marker.coordinates.latitude,
+            stop.map_marker.coordinates.longitude,
+            radius
+          )
+        ) {
+          // User entered geofence - show dialog and mark as visited
+          setSelectedStop(stop);
+          setShowStopDialog(true);
+          handleMarkVisited(stop);
+          break; // Only handle one stop at a time
+        }
+      }
+    };
+
+    // Check every 2 seconds
+    geofenceCheckIntervalRef.current = setInterval(checkGeofences, 2000);
+
+    return () => {
+      if (geofenceCheckIntervalRef.current) {
+        clearInterval(geofenceCheckIntervalRef.current);
+      }
+    };
+  }, [userLocation, pathProgress, showStopDialog, handleMarkVisited]);
 
   const clampZoom = (z: number) => {
     if (!Number.isFinite(z)) return 16;
@@ -845,6 +992,45 @@ export const Map: React.FC = () => {
           <Text style={styles.controlIcon}>⌖</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Stop Dialog Modal */}
+      <Modal
+        visible={showStopDialog}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowStopDialog(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {selectedStop && (
+              <>
+                {selectedStop.reward_icon_url && (
+                  <Image
+                    source={{ uri: `${getAPIBaseURL()}${selectedStop.reward_icon_url}` }}
+                    style={styles.modalImage}
+                    resizeMode="cover"
+                  />
+                )}
+                <Text style={styles.modalTitle}>{selectedStop.name}</Text>
+                <Text style={styles.modalDescription}>
+                  {selectedStop.place_description}
+                </Text>
+                {selectedStop.reward_label && (
+                  <View style={styles.rewardBadge}>
+                    <Text style={styles.rewardText}>
+                      🎁 {selectedStop.reward_label}
+                    </Text>
+                  </View>
+                )}
+                <TouchableOpacity
+                  style={styles.modalCloseButton}
+                  onPress={() => setShowStopDialog(false)}>
+                  <Text style={styles.modalCloseText}>Zamknij</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -1114,6 +1300,68 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700",
     color: COLORS.red,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 24,
+    width: "100%",
+    maxWidth: 400,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalImage: {
+    width: "100%",
+    height: 200,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: COLORS.default,
+    marginBottom: 12,
+  },
+  modalDescription: {
+    fontSize: 16,
+    color: "#6B7280",
+    lineHeight: 24,
+    marginBottom: 16,
+  },
+  rewardBadge: {
+    backgroundColor: COLORS.yellow,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 12,
+    marginBottom: 16,
+    alignSelf: "flex-start",
+  },
+  rewardText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: COLORS.default,
+  },
+  modalCloseButton: {
+    backgroundColor: COLORS.red,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignSelf: "flex-end",
+  },
+  modalCloseText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });
 
