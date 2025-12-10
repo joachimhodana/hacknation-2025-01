@@ -30,6 +30,7 @@ export const auth = betterAuth({
         ...(process.env.SERVICE_URL_DRIZZLE_STUDIO ? [process.env.SERVICE_URL_DRIZZLE_STUDIO] : []),
         "exp://",
         "exp://10.250.163.140:8081",
+        "exp://192.168.1.14:8081",
         ...(process.env.EXPO_PUBLIC_BETTER_AUTH_URL_NATIVE ? [`exp://${process.env.EXPO_PUBLIC_BETTER_AUTH_URL_NATIVE}`] : []),
         ...(process.env.EXPO_PUBLIC_BETTER_AUTH_URL_WEB ? [`exp://${process.env.EXPO_PUBLIC_BETTER_AUTH_URL_WEB}`] : []),
         "exp://*/*",
