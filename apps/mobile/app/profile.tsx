@@ -322,7 +322,7 @@ const ProfileScreen: React.FC = () => {
           )}
         </View>
 
-        <View style={styles.section}>
+        {/* <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>Zebrane przedmioty</Text>
             {collectedItems.length > 0 && (
@@ -376,7 +376,7 @@ const ProfileScreen: React.FC = () => {
               </View>
             </>
           )}
-        </View>
+        </View> */}
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Ustawienia</Text>

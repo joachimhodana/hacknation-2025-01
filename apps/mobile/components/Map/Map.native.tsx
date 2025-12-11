@@ -110,6 +110,10 @@ export const Map: React.FC = () => {
   );
   const [showPublicPointDialog, setShowPublicPointDialog] = useState(false);
   const recentlyTriggeredPublicPointIdRef = useRef<number | null>(null);
+  const playedAudioForStopRef = useRef<Set<number>>(new Set());
+  const playedAudioForPublicPointRef = useRef<Set<number>>(new Set());
+  const dialogOpenRef = useRef(false);
+  const [showPathCompletedNotification, setShowPathCompletedNotification] = useState(false);
 
   useEffect(() => {
     const setupAudio = async () => {
@@ -231,6 +235,7 @@ export const Map: React.FC = () => {
   };
 
   const formatManeuverText = (step: OsrmStep | undefined): string => {
+    console.log(step);
     if (!step) return "Brak danych o następnym manewrze";
     const { type, modifier } = step.maneuver || {};
     const street = step.name ? ` w ${step.name}` : "";
@@ -418,7 +423,14 @@ export const Map: React.FC = () => {
 
         if (audioSoundRef.current) {
           console.log("[Map] Stopping current audio");
-          await audioSoundRef.current.unloadAsync();
+          try {
+            const status = await audioSoundRef.current.getStatusAsync();
+            if (status.isLoaded) {
+              await audioSoundRef.current.unloadAsync();
+            }
+          } catch (e) {
+            console.log("[Map] Error unloading previous audio:", e);
+          }
           audioSoundRef.current = null;
         }
 
@@ -450,25 +462,19 @@ export const Map: React.FC = () => {
               currentlyPlayingAudioRef.current = null;
               sound.unloadAsync();
               audioSoundRef.current = null;
-            } else {
-              if (__DEV__) {
-                console.log("[Map] Audio status:", {
-                  isPlaying: status.isPlaying,
-                  positionMillis: status.positionMillis,
-                  durationMillis: status.durationMillis,
-                });
-              }
             }
-          } else {
-            console.warn("[Map] Audio status not loaded:", status);
           }
         });
 
         setTimeout(async () => {
-          const status = await sound.getStatusAsync();
-          if (status.isLoaded && !status.isPlaying) {
-            console.warn("[Map] Audio created but not playing, attempting to play");
-            await sound.playAsync();
+          try {
+            const status = await sound.getStatusAsync();
+            if (status.isLoaded && !status.isPlaying) {
+              console.warn("[Map] Audio created but not playing, attempting to play");
+              await sound.playAsync();
+            }
+          } catch (e) {
+            console.log("[Map] Error checking/playing audio:", e);
           }
         }, 100);
       } catch (error) {
@@ -502,14 +508,20 @@ export const Map: React.FC = () => {
       try {
         const result = await markPointVisited(stop.point_id, pathProgress.progress.id);
         if (result.success) {
+          // Dodaj do playedAudioForStopRef, żeby nie odtwarzać ponownie audio
+          playedAudioForStopRef.current.add(stop.point_id);
+          
+          // Dodaj do recentlyVisitedStopIdRef na dłuższy czas (30s zamiast 10s)
           recentlyVisitedStopIdRef.current = stop.point_id;
           setTimeout(() => {
             recentlyVisitedStopIdRef.current = null;
-          }, 5000);
+          }, 30000); // Zwiększone z 10s do 30s
 
+          // Zamknij dialog PRZED pokazaniem nagrody
           setShowCharacterDialog(false);
           setSelectedStop(null);
 
+          // Pokaż notyfikację o nagrodzie
           if (stop.reward_label || stop.reward_icon_url) {
             setRewardData({
               label: stop.reward_label || undefined,
@@ -522,7 +534,14 @@ export const Map: React.FC = () => {
             }, 3000);
           }
 
+
           if (result.isCompleted) {
+            // Pokaż komunikat o ukończeniu ścieżki
+            setShowPathCompletedNotification(true);
+            setTimeout(() => {
+              setShowPathCompletedNotification(false);
+            }, 5000);
+            
             setPathProgress(null);
             setTimeout(() => {
               setShowRewardNotification(false);
@@ -549,10 +568,71 @@ export const Map: React.FC = () => {
     [pathProgress, markingVisited],
   );
 
-  useEffect(() => {
-    if (!userLocation || showCharacterDialog || showPublicPointDialog) return;
+  const handleCloseDialog = useCallback(async () => {
+    console.log("[Map] handleCloseDialog called");
+    
+    setShowCharacterDialog(false);
+    setSelectedStop(null);
+    
+    // Krótkie opóźnienie przed zdjęciem blokady, żeby useEffect zdążył się zaktualizować
+    setTimeout(() => {
+      dialogOpenRef.current = false;
+    }, 500);
+    
+    if (audioSoundRef.current) {
+      try {
+        const status = await audioSoundRef.current.getStatusAsync();
+        if (status.isLoaded) {
+          await audioSoundRef.current.stopAsync();
+          await audioSoundRef.current.unloadAsync();
+        }
+      } catch (audioError) {
+        console.log("[Map] Error stopping audio:", audioError);
+      } finally {
+        audioSoundRef.current = null;
+        currentlyPlayingAudioRef.current = null;
+      }
+    }
+    
+    console.log("[Map] handleCloseDialog completed");
+  }, []);
 
+  const handleClosePublicPointDialog = useCallback(async () => {
+    console.log("[Map] handleClosePublicPointDialog called");
+    
+    setShowPublicPointDialog(false);
+    setSelectedPublicPoint(null);
+    
+    setTimeout(() => {
+      dialogOpenRef.current = false;
+    }, 500);
+    
+    if (audioSoundRef.current) {
+      try {
+        const status = await audioSoundRef.current.getStatusAsync();
+        if (status.isLoaded) {
+          await audioSoundRef.current.stopAsync();
+          await audioSoundRef.current.unloadAsync();
+        }
+      } catch (audioError) {
+        console.log("[Map] Error stopping audio:", audioError);
+      } finally {
+        audioSoundRef.current = null;
+        currentlyPlayingAudioRef.current = null;
+      }
+    }
+    
+    console.log("[Map] handleClosePublicPointDialog completed");
+  }, []);
+
+  useEffect(() => {
     const checkGeofences = () => {
+      // Sprawdź ref zamiast state - ref jest zawsze aktualny
+      if (dialogOpenRef.current) {
+        console.log("[Geofence] Dialog already open (via ref), skipping check");
+        return;
+      }
+
       if (pathProgress) {
         const unvisitedStops = pathProgress.path.stops.filter(
           (stop) => !stop.visited,
@@ -560,17 +640,11 @@ export const Map: React.FC = () => {
 
         if (__DEV__ && unvisitedStops.length > 0) {
           console.log(`[Geofence] Checking ${unvisitedStops.length} unvisited stops`);
-          unvisitedStops.forEach((stop, idx) => {
-            console.log(
-              `[Geofence] Stop ${idx + 1}: ${stop.name}, audio_url: ${
-                stop.audio_url || "MISSING"
-              }`,
-            );
-          });
         }
 
         for (const stop of unvisitedStops) {
           if (recentlyVisitedStopIdRef.current === stop.point_id) {
+            console.log(`[Geofence] Skipping recently visited stop: ${stop.name}`);
             continue;
           }
 
@@ -592,45 +666,23 @@ export const Map: React.FC = () => {
 
           if (distance <= radius) {
             console.log(`[Geofence] ✅ TRIGGERED for stop: ${stop.name}`);
-            console.log(
-              `[Geofence] Stop data:`,
-              JSON.stringify(
-                {
-                  name: stop.name,
-                  point_id: stop.point_id,
-                  audio_url: stop.audio_url,
-                  has_character: !!stop.character,
-                },
-                null,
-                2,
-              ),
-            );
-            console.log(
-              `[Geofence] Setting selectedStop and showCharacterDialog to true`,
-            );
+            
+            // Ustaw flagę PRZED otwarciem dialogu
+            dialogOpenRef.current = true;
+            
             setSelectedStop(stop);
             setShowCharacterDialog(true);
-            console.log(`[Geofence] State updated - dialog should appear now`);
 
-            console.log(`[Geofence] Checking audio - audio_url:`, stop.audio_url);
-            console.log(
-              `[Geofence] Currently playing:`,
-              currentlyPlayingAudioRef.current,
-            );
-            if (stop.audio_url) {
+            if (stop.audio_url && !playedAudioForStopRef.current.has(stop.point_id)) {
               console.log(
-                `[Geofence] ✅ Stop has audio_url: ${stop.audio_url}`,
+                `[Geofence] 🎵 Triggering audio playback for: ${stop.audio_url}`,
               );
-              if (stop.audio_url !== currentlyPlayingAudioRef.current) {
-                console.log(
-                  `[Geofence] 🎵 Triggering audio playback for: ${stop.audio_url}`,
-                );
-                playAudio(stop.audio_url);
-              } else {
-                console.log(`[Geofence] ⏸️ Audio already playing, skipping`);
-              }
+              playAudio(stop.audio_url);
+              playedAudioForStopRef.current.add(stop.point_id);
+            } else if (playedAudioForStopRef.current.has(stop.point_id)) {
+              console.log(`[Geofence] ⏸️ Audio already played for this stop, skipping`);
             } else {
-              console.log(`[Geofence] ❌ Stop has no audio_url property`);
+              console.log(`[Geofence] ℹ️ Stop has no audio_url property`);
             }
 
             return;
@@ -666,19 +718,10 @@ export const Map: React.FC = () => {
             console.log(
               `[Geofence] ✅ TRIGGERED for public point: ${publicPoint.name}`,
             );
-            console.log(
-              `[Geofence] Public point data:`,
-              JSON.stringify(
-                {
-                  name: publicPoint.name,
-                  point_id: publicPoint.point_id,
-                  audio_url: publicPoint.audio_url,
-                  has_character: !!publicPoint.character,
-                },
-                null,
-                2,
-              ),
-            );
+            
+            // Ustaw flagę PRZED otwarciem dialogu
+            dialogOpenRef.current = true;
+            
             setSelectedPublicPoint(publicPoint);
             setShowPublicPointDialog(true);
 
@@ -692,13 +735,14 @@ export const Map: React.FC = () => {
               }
             }, 5000);
 
-            if (publicPoint.audio_url) {
+            if (publicPoint.audio_url && !playedAudioForPublicPointRef.current.has(publicPoint.point_id)) {
               console.log(
                 `[Geofence] 🎵 Triggering audio playback for public point: ${publicPoint.audio_url}`,
               );
-              if (publicPoint.audio_url !== currentlyPlayingAudioRef.current) {
-                playAudio(publicPoint.audio_url);
-              }
+              playAudio(publicPoint.audio_url);
+              playedAudioForPublicPointRef.current.add(publicPoint.point_id);
+            } else if (playedAudioForPublicPointRef.current.has(publicPoint.point_id)) {
+              console.log(`[Geofence] ⏸️ Audio already played for this public point, skipping`);
             }
 
             return;
@@ -720,9 +764,8 @@ export const Map: React.FC = () => {
     userLocation,
     pathProgress,
     publicPoints,
-    showCharacterDialog,
-    showPublicPointDialog,
     playAudio,
+    // USUNIĘTE: showCharacterDialog, showPublicPointDialog
   ]);
 
   const clampZoom = (z: number) => {
@@ -813,13 +856,24 @@ export const Map: React.FC = () => {
     }
   };
 
-  const openInGoogleMaps = () => {
+  const openInMaps = () => {
     if (!routePins.length) return;
     const dest = routePins[routePins.length - 1];
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${dest.lat},${dest.lng}&travelmode=walking`;
-    Linking.openURL(url).catch((err) =>
-      console.log("Error opening Google Maps", err),
-    );
+    
+    let url: string;
+    if (Platform.OS === 'ios') {
+      url = `maps://app?daddr=${dest.lat},${dest.lng}&dirflg=w`;
+    } else {
+      url = `https://www.google.com/maps/dir/?api=1&destination=${dest.lat},${dest.lng}&travelmode=walking`;
+    }
+    
+    Linking.openURL(url).catch((err) => {
+      console.log("Error opening maps:", err);
+      const fallbackUrl = `https://www.google.com/maps/dir/?api=1&destination=${dest.lat},${dest.lng}&travelmode=walking`;
+      Linking.openURL(fallbackUrl).catch((fallbackErr) =>
+        console.log("Error opening fallback Google Maps:", fallbackErr),
+      );
+    });
   };
 
   if (!userLocation) {
@@ -1019,9 +1073,33 @@ export const Map: React.FC = () => {
         <View style={[styles.floatingRouteCard, { top: floatingTop }]}>
           <View style={styles.routeCardHeaderRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.routeTitle} numberOfLines={1}>
-                {routeTitle}
-              </Text>
+              {/* Dynamiczny tytuł - pokazuje aktualny punkt lub następny cel */}
+              {showCharacterDialog && selectedStop ? (
+                <>
+                  <Text style={styles.routeCurrentLocationLabel}>Jesteś przy:</Text>
+                  <Text style={styles.routeTitle} numberOfLines={1}>
+                    {selectedStop.name}
+                  </Text>
+                </>
+              ) : (
+                <>
+                  {(() => {
+                    const nextUnvisited = pathProgress?.path.stops.find((s) => !s.visited);
+                    return nextUnvisited ? (
+                      <>
+                        <Text style={styles.routeCurrentLocationLabel}>Następny cel:</Text>
+                        <Text style={styles.routeTitle} numberOfLines={1}>
+                          {nextUnvisited.name}
+                        </Text>
+                      </>
+                    ) : (
+                      <Text style={styles.routeTitle} numberOfLines={1}>
+                        {routeTitle}
+                      </Text>
+                    );
+                  })()}
+                </>
+              )}
               <Text style={styles.routeSubtitle}>{progressText}</Text>
             </View>
 
@@ -1059,9 +1137,11 @@ export const Map: React.FC = () => {
           <View style={styles.appleRow}>
             <TouchableOpacity
               style={styles.appleButton}
-              onPress={openInGoogleMaps}
+              onPress={openInMaps}
             >
-              <Text style={styles.appleButtonText}>Otwórz w Google Maps</Text>
+              <Text style={styles.appleButtonText}>
+                {Platform.OS === 'ios' ? 'Otwórz w Apple Maps' : 'Otwórz w Google Maps'}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1166,10 +1246,11 @@ export const Map: React.FC = () => {
                       setShowCharacterDialog(true);
                       if (
                         stop.audio_url &&
-                        stop.audio_url !== currentlyPlayingAudioRef.current
+                        !playedAudioForStopRef.current.has(stop.point_id)
                       ) {
                         console.log("[DEBUG] Triggering audio playback");
                         playAudio(stop.audio_url);
+                        playedAudioForStopRef.current.add(stop.point_id);
                       }
                       break;
                     }
@@ -1212,15 +1293,25 @@ export const Map: React.FC = () => {
             <Text style={styles.stopDescription}>
               {selectedStop.place_description}
             </Text>
-            <TouchableOpacity
-              style={styles.completeButton}
-              onPress={() => handleMarkVisited(selectedStop)}
-              disabled={markingVisited}
-            >
-              <Text style={styles.completeButtonText}>
-                {markingVisited ? "Zapisywanie..." : "Oznacz jako odwiedzone"}
-              </Text>
-            </TouchableOpacity>
+            
+            <View style={styles.dialogButtonsRow}>
+              <TouchableOpacity
+                style={styles.closeButtonSecondary}
+                onPress={handleCloseDialog}
+              >
+                <Text style={styles.closeButtonSecondaryText}>Zamknij</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.completeButton}
+                onPress={() => handleMarkVisited(selectedStop)}
+                disabled={markingVisited}
+              >
+                <Text style={styles.completeButtonText}>
+                  {markingVisited ? "Zapisywanie..." : "Odwiedzone"}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {selectedStop.character && selectedStop.character.avatarUrl ? (
@@ -1295,10 +1386,7 @@ export const Map: React.FC = () => {
             )}
             <TouchableOpacity
               style={styles.closeButton}
-              onPress={() => {
-                setShowPublicPointDialog(false);
-                setSelectedPublicPoint(null);
-              }}
+              onPress={handleClosePublicPointDialog}
             >
               <Text style={styles.closeButtonText}>Zamknij</Text>
             </TouchableOpacity>
@@ -1369,6 +1457,13 @@ export const Map: React.FC = () => {
               </Text>
             </View>
           </View>
+        </View>
+      )}
+
+      {showPathCompletedNotification && (
+        <View style={styles.pathCompletedNotification}>
+          <Text style={styles.pathCompletedTitle}>Gratulacje!</Text>
+          <Text style={styles.pathCompletedText}>Ukończyłeś trasę</Text>
         </View>
       )}
     </View>
@@ -1462,6 +1557,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     color: "#111827",
+  },
+  routeCurrentLocationLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: COLORS.blue,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 2,
   },
   routeSubtitle: {
     marginTop: 2,
@@ -1679,15 +1782,17 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   completeButton: {
+    flex: 1,
     backgroundColor: COLORS.red,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     borderRadius: 12,
     alignItems: "center",
+    justifyContent: "center",
   },
   completeButtonText: {
     color: "#FFFFFF",
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
   },
   characterAvatarContainer: {
@@ -1781,15 +1886,64 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     backgroundColor: COLORS.blue,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     borderRadius: 12,
     alignItems: "center",
+    justifyContent: "center",
   },
   closeButtonText: {
     color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  dialogButtonsRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 4,
+  },
+  closeButtonSecondary: {
+    flex: 1,
+    backgroundColor: "#F3F4F6",
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  closeButtonSecondaryText: {
+    color: "#6B7280",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  pathCompletedNotification: {
+    position: "absolute",
+    top: 60,
+    left: 16,
+    right: 16,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  pathCompletedTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: COLORS.red,
+    marginBottom: 4,
+    textAlign: "center",
+  },
+  pathCompletedText: {
     fontSize: 14,
     fontWeight: "600",
+    color: COLORS.blue,
+    textAlign: "center",
   },
 });
 

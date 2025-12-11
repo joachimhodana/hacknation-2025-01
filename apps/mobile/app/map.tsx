@@ -3,7 +3,6 @@ import { View, StyleSheet, Platform, ActivityIndicator, BackHandler } from "reac
 import { useRouter, useNavigation } from "expo-router";
 import Map from "@/components/Map/Map";
 import Navbar from "@/components/Navbar";
-import { PointsBadge } from "@/components/PointsBadge";
 import { authClient } from "@/lib/auth-client";
 
 export default function MapScreen() {
@@ -58,7 +57,6 @@ export default function MapScreen() {
   return (
     <View style={styles.container}>
       <Map />
-      <PointsBadge showIcon={true} />
       <Navbar />
     </View>
   );
