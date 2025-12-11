@@ -31,6 +31,7 @@ export const auth = betterAuth({
         "exp://",
         "exp://10.250.163.140:8081",
         "exp://192.168.1.14:8081",
+        "exp://192.168.0.150:8081",
         ...(process.env.EXPO_PUBLIC_BETTER_AUTH_URL_NATIVE ? [`exp://${process.env.EXPO_PUBLIC_BETTER_AUTH_URL_NATIVE}`] : []),
         ...(process.env.EXPO_PUBLIC_BETTER_AUTH_URL_WEB ? [`exp://${process.env.EXPO_PUBLIC_BETTER_AUTH_URL_WEB}`] : []),
         "exp://*/*",
